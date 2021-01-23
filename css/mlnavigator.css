@@ -1,0 +1,73 @@
+.def {
+	margin-top: 50px;
+}
+
+.defTables, .selected {
+	overflow: auto;
+}
+
+td, th {
+	padding-left: 5px;
+}
+
+.complexityContainer {
+	min-width: 690px;
+}
+
+.frameContainer {
+	float: left;
+	text-align: left;
+}
+
+.frameContainer input[type=checkbox], .extContainer input[type=checkbox] {
+	vertical-align: middle;
+}
+
+.resultsTableContainer table, .resultsTableContainer th, .resultsTableContainer tr, .resultsTableContainer td {
+	border: 1px solid black;
+}
+
+.frameContainer table, .frameContainer th, .frameContainer td:nth-child(n+4) {
+	border: 1px solid black;
+}
+
+.frameContainer td {
+	border-bottom: 1px solid black;
+}
+
+.extContainer {
+	overflow:hidden;
+	padding-left: 10px;
+}
+
+.extContainer table, .extContainer th {
+	border: 1px solid black;
+}
+
+.extContainer td {
+	border-bottom: 1px solid black;
+}
+
+.extContainer td:nth-child(-n+2) {
+	width: 20px;
+}
+
+.selected {
+	margin-top: 10px;
+}
+
+.reset {
+	text-align: center;
+}
+
+.logicNameDesc {
+	text-align: center;
+}
+
+.logicName {
+	display: inline-block;
+}
+
+.results {
+	margin-top: 100px;
+}
