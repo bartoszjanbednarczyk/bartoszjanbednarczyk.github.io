@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Ladner77",
+    "title": "The computational complexity of provability in systems of modal propositional logic",
+    "year": "1977",
+    "link": "https://epubs.siam.org/doi/10.1137/0206033",
+    "authors": "Richard E. Ladner",
+    "type": "Journal",
+    "publisher": "SIAM J. Comput. 6(3): 467-480 (1977)",
+    "abstract": "The computational complexity of the provability problem in systems of modal propositional logic is investigated. Every problem computable in polynomial space is log space reducible to the provability problem in any modal system between K and S4. In particular, the provability problem in K, T, and S4 are log space complete in polynomial space. The nonprovability problem in $S5$ is \\log space complete in polynomial space. The nonprovability problem in $S5$ is \\log space complete innondeterministic polynomial time."
+  },
+  {
+    "name": "Tobies2001",
+    "title": "PSPACE Reasoning for Graded Modal Logics",
+    "year": "2001",
+    "link": "https://academic.oup.com/logcom/article/11/1/85/938137",
+    "authors": "Stefan Tobies",
+    "type": "Journal",
+    "publisher": "J. Log. Comput. 11(1): 85-106 (2001)",
+    "abstract": "We present a PSPACE algorithm that decides satisfiability of the graded modal logic Gr(KR)?a natural extension of propositional modal logic KR by counting expressions?which plays an important role in the area of knowledge representation. The algorithm employs a tableaux approach and is the first known algorithm which meets the lower bound for the complexity of the problem. Thus, we exactly fix the complexity of the problem and refute an EXPTIME?hardness conjecture. We extend the results to the logic Gr(K R??1), which augments Gr(KR) with inverse relations and intersection of accessibility relations. This establishes a kind of ?theoretical benchmark? that all algorithmic approaches can be measured against."
+  },
+  {
+    "name": "BednarczykKW2018",
+    "title": "On the Complexity of Graded Modal Logics with Converse",
+    "year": "2018",
+    "link": "https://arxiv.org/pdf/1812.04413.pdf",
+    "authors": "Bartosz Bednarczyk, Emanuel Kieronski, Piotr Witkowski",
+    "type": "Conference",
+    "publisher": "Submitted... (Preprint on Arxiv)",
+    "abstract": "A complete classification of the complexity of the local and global satisfiability problems for graded modal language over traditional classes of frames, that is, all classes of frames characterized by any positive combination of reflexivity, seriality, symmetry, transitivity and the Euclidean property, has already been established. In this paper we fill the gaps remaining in an analogous classification of the graded modal language with graded converse modalities. In particular we show its NExpTime-completeness over the class of Euclidean frames, demonstrating this way that over this class the considered language is harder than the language without graded modalities or without converse modalities. We also consider its variation disallowing graded converse modalities, but still admitting basic converse modalities. Our most important result for this variation is confirming a conjecture stated in a few earlier papers that it is decidable over transitive frames. This contrasts with the undecidability of the language with graded converse modalities."
+  },
+  {
+  "name": "Schild91",
+  "title": "A Correspondence Theory for Terminological Logics: Preliminary Report",
+  "year": "1991",
+  "link": "https://www.ijcai.org/Proceedings/91-1/Papers/072.pdf",
+  "authors": "Klaus Schild",
+  "type": "Conference",
+  "publisher": "IJCAI 1991: 466-471",
+  "abstract": " We show that the terminological logic ACC comprising Boolean operations on concepts and value restrictions is a notational variant of the propositional modal logic K(m)- To demonstrate the utility of the correspondence, we give two of its immediate by-products, Namely, we axiomatize ACC and give a simple proof that subsumption in ACC is PSPACE-complete, replacing the original six-page one. Furthermore, we consider an extension of ACC additionally containing both the identity role and the composition, union, transitive-reflexive closure, range restriction, and inverse of roles. It turns out that this language, called TSL, is a notational variant of the propositional dynamic logic converse-PDL. Using this correspondence, we prove that it suffices to consider finite TSLmodels, show that TSL-subsumption is decidable, and obtain an axiomatization of TSL By discovering that features correspond to deterministic programs in dynamic logic, we show that adding them to TSC preserves decidability, although violates its finite model property. Additionally, we describe an algorithm for deciding the coherence of inverse-free TSCconcepts with features. Finally, we prove that universal implications can be expressed within TSC."
+  },
+  {
+    "name": "KupkePS15",
+    "title": "Reasoning with Global Assumptions in Arithmetic Modal Logics",
+    "year": "2015",
+    "link": "https://doi.org/10.1007/978-3-319-22177-9_28",
+    "authors": "Clemens Kupke, Dirk Pattinson, Lutz Schröder",
+    "type": "Conference",
+    "publisher": "FCT 2015: 367-380",
+    "abstract": "We establish a generic upper bound EXPTIME for reasoning with global assumptions in coalgebraic modal logics. Unlike earlier results of this kind, we do not require a tractable set of tableau rules for the instance logics, so that the result applies to wider classes of logics. Examples are Presburger modal logic, which extends graded modal logic with linear inequalities over numbers of successors, and probabilistic modal logic with polynomial inequalities over probabilities. We establish the theoretical upper bound using a type elimination algorithm. We also provide a global caching algorithm that offers potential for practical reasoning."
+  },
+  {
+    "name": "ChagrovR02",
+    "title": "How Many Variables Does One Need to Prove PSPACE-hardness of Modal Logics",
+    "year": "2002",
+    "link": "http://www.aiml.net/volumes/volume4/Chagrov-Rybakov.ps",
+    "authors": "Alexander V. Chagrov, Mikhail N. Rybakov",
+    "type": "Conference",
+    "publisher": "Advances in Modal Logic 2002: 71-82",
+    "abstract": "The main result of the paper is that the decision problem for the variable-free fragments of both K and K4 is PSPACE-complete. It is also proved that the decision problem for one-variable fragments of S4, Grz, and GL is PSPACE-complete too. The questions about complexity of variable-free, one-variable, and two-variable fragments of some closed logics are dscussed."
+  },
+  {
+    "name": "SchroderP08",
+    "title": "Shallow Models for Non-iterative Modal Logics",
+    "year": "2008",
+    "link": "https://doi.org/10.1007/978-3-540-85845-4_40",
+    "authors": "Lutz Schröder, Dirk Pattinson",
+    "type": "Conference",
+    "publisher": "KI 2008: 324-331",
+    "abstract": "Modal logics see a wide variety of applications in artificial intelligence, e.g. in reasoning about knowledge, belief, uncertainty, agency, defaults, and relevance. From the perspective of applications, the attractivity of modal logics stems from a combination of expressive power and comparatively low computational complexity. Compared to the classical treatment of modal logics with relational semantics, the use of modal logics in AI has two characteristic traits: Firstly, a large and growing variety of logics is used, adapted to the concrete situation at hand, and secondly, these logics are often non-normal. Here, we present a shallow model construction that witnesses PSPACE bounds for a broad class of mostly non-normal modal logics. Our approach is uniform and generic: we present general criteria that uniformly apply to and are easily checked in large numbers of examples. Thus, we not only re-prove known complexity bounds for a wide variety of structurally different logics and obtain previously unknown PSPACE-bounds, e.g. for Elgesem’s logic of agency, but also lay the foundations upon which the complexity of newly emerging logics can be determined."
+  },
+  {
+    "name": "Cook71",
+    "title": "The Complexity of Theorem-Proving Procedures",
+    "year": "1971",
+    "link": "https://doi.org/10.1145/800157.805047",
+    "authors": "Stephen A. Cook",
+    "type": "Conference",
+    "publisher": "STOC 1971: 151-158",
+    "abstract": "It is shown that any recognition problem solved by a polynomial time-bounded nondeterministic Turing machine can be “reduced” to the problem of determining whether a given propositional formula is a tautology. Here “reduced” means, roughly speaking, that the first problem can be solved deterministically in polynomial time provided an oracle is available for solving the second. From this notion of reducible, polynomial degrees of difficulty are defined, and it is shown that the problem of determining tautologyhood has the same polynomial degree as the problem of determining whether the first of two given graphs is isomorphic to a subgraph of the second. Other examples are discussed. A method of measuring the complexity of proof procedures for the predicate calculus is introduced and discussed."
+  },
+  {
+    "name": "KazakovP09",
+    "title": "A Note on the Complexity of the Satisfiability Problem for Graded Modal Logics",
+    "year": "2009",
+    "link": "https://doi.org/10.1109/LICS.2009.17",
+    "authors": "Yevgeny Kazakov, Ian Pratt-Hartmann",
+    "type": "Conference",
+    "publisher": "LICS 2009: 407-416",
+    "abstract": "Graded modal logic is the formal language obtained from ordinary (propositional) modal logic by endowing its modal operators with cardinality constraints. Under the familiar possible-worlds semantics, these augmented modal operators receive interpretations such as \"It is true at no fewer than 15 accessible worlds that...\", or \"It is true at no more than 2 accessible worlds that...\". We investigate the complexity of satisfiability for this language over some familiar classes of frames. This problem is more challenging than its ordinary modal logic counterpart--especially in the case of transitive frames, where graded modal logic lacks the tree-model property. We obtain tight complexity bounds for the problem of determining the satisfiability of a given graded modal logic formula over the classes of frames characterized by any combination of reflexivity, seriality, symmetry, transitivity and the Euclidean property."
+  },
+  {
+    "name": "Zolin17",
+    "title": "Undecidability of the transitive graded modal logic with converse",
+    "year": "2009",
+    "link": "https://doi.org/10.1093/logcom/exw026",
+    "authors": "Evgeny Zolin",
+    "type": "Journal",
+    "publisher": "J. Log. Comput. 27(5): 1399-1420 (2017)",
+    "abstract": "We extend the language of the modal logic K4 of transitive frames with two sorts of modalities. In addition to the usual possibility modality (which means that a formula holds in some successor of a given point), we consider graded modalities (a formula holds in at least n successors) and converse graded modalities (a formula holds in at least n predecessors). We show that the resulting logic, GrIK4\u2060, is both locally and globally undecidable. The same result is obtained for all logics between GrIK4 and its reflexive companion GrIS4 and for some other modal logics. As a consequence, for the ‘unrestricted version’ of the description logic \uE23F\uE235\uE23D\u2060, the problem of concept satisfiability (even with respect to the empty terminology) is undecidable. We also give a survey of results on the local and global decidability, complexity, and the finite model property for fragments of GrIK4."
+  },
+  {
+    "name": "DemriN05",
+    "title": "Deciding Regular Grammar Logics with Converse Through First-Order Logic",
+    "year": "2005",
+    "link": "https://doi.org/10.1007/s10849-005-5788-9",
+    "authors": "Stephane Demri, Hans de Nivelle",
+    "type": "Journal",
+    "publisher": "Journal of Logic, Language and Information 14(3): 289-329 (2005)",
+    "abstract": "We provide a simple translation of the satisfiability problem for regular grammar logics with converse into GF2, which is the intersection of the guarded fragment and the 2-variable fragment of first-order logic. The translation is theoretically interesting because it translates modal logics with certain frame conditions into first-order logic, without explicitly expressing the frame conditions. It is practically relevant because it makes it possible to use a decision procedure for the guarded fragment in order to decide regular grammar logics with converse. The class of regular grammar logics includes numerous logics from various application domains. A consequence of the translation is that the general satisfiability problem for every regular grammar logics with converse is in EXPTIME. This extends a previous result of the first author for grammar logics without converse. Other logics that can be translated into GF2 include nominal tense logics and intuitionistic logic. In our view, the results in this paper show that the natural first-order fragment corresponding to regular grammar logics is simply GF2 without extra machinery such as fixed-point operators."
+  },
+  {
+    "name": "Spaan1993",
+    "title": "The Complexity of Propositional Tense Logics",
+    "year": "1993",
+    "link": "https://link.springer.com/chapter/10.1007/978-94-015-8242-1_10",
+    "authors": "Edith Spaan",
+    "type": "Journal",
+    "publisher": "Diamonds and Defaults: Studies in Pure and Applied Intensional Logic",
+    "abstract": "In [4], Ladner investigated the complexity of the provability problems for modal logics. In particular, he showed that provability in all modal logics between K and S4 is PSPACE-hard, and he constructed polynomial space bounded algorithms for deciding provability in K, T, and S4, which implies that the provability problems for these logics are PSPACE-complete. In this paper, we investigate to what extent these results go through for tense logics. Note that any lower bound for provability in a modal logic 8 carries over to the corresponding tense logic 8t . In particular, it follows that for any modal logic 8 between K and 84, the provability problem for the tense logic 8t is PSPACE-hard. [...]"
+  }
+]
