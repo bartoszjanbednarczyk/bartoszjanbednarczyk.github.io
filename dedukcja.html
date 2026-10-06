@@ -1,27 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
-    <!-- GitHub Pages serves this page for missing URLs at any depth (e.g. /a/b/c),
-         so relative links must resolve from the site root. Opened from disk
-         (file://), they resolve from this folder instead. -->
-    <script>
-    if (location.protocol !== 'file:') {
-        var b = document.createElement('base'); b.href = '/'; document.head.appendChild(b);
-    }
-    </script>
-    <title>Bartosz Bednarczyk – Page not found</title>
+    <title>Bartosz Bednarczyk – Dedukcja naturalna</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="author" content="Bartosz Bednarczyk">
-    <meta name="description" content="Page not found.">
-    <meta name="robots" content="noindex">
+    <meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku i eksport do LaTeX-a.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/dedukcja.html">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bartosz Bednarczyk">
+    <meta property="og:title" content="Bartosz Bednarczyk – Dedukcja naturalna">
+    <meta property="og:description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku i eksport do LaTeX-a.">
+    <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/dedukcja.html">
+    <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
+    <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
+    <meta property="og:locale" content="pl_PL">
+    <meta name="twitter:card" content="summary_large_image">
 
     <!--CSS styles-->
     <link rel="stylesheet" href="css/bootstrap.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link id="theme-style" rel="stylesheet" href="css/styles/default.css">
+    <link rel="stylesheet" href="css/dedukcja.css">
     <!--/CSS styles-->
 
     <!--Javascript files-->
@@ -29,13 +31,6 @@
     <script type="text/javascript" src="js/custom.js"></script>
     <!--/Javascript files-->
 
-    <!-- Lato over HTTPS (the http:// @font-face URLs in style.css are blocked on GitHub Pages) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/aboutme.css">
-    <link rel="stylesheet" href="css/home.css">
-    
 </head>
 <body>
 
@@ -107,7 +102,7 @@
                             </a>
                         </li>
 
-                        <li>
+                        <li class="currentmenu">
                             <a href="dedukcja.html">
                                 <i class="fa fa-nd" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="2" y="2" width="20" height="20" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.2 6.5v11M8.2 12h8.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></i>
                                 <div class="text">Dedukcja naturalna [PL]</div>
@@ -153,23 +148,23 @@
     </div>
 
     <div id="main">
-        <div id="biography" class="page home am" data-pos="home">
-            <header class="am-hero" style="min-height:100%">
-                <div class="am-wrap" style="max-width:820px">
-                    <p class="am-eyebrow">Error 404</p>
-                    <h1>This page has no&nbsp;model.</h1>
-                    <p class="am-lead">The address you followed does not satisfy any page on this site, not even an infinite one. Perhaps it was moved during the last redesign, or there is a typo in the&nbsp;link.</p>
-                    <nav class="am-actions" aria-label="Where to go next">
-                        <a class="am-btn" href="index.html"><i class="fa fa-home"></i> Home page</a>
-                        <a class="am-btn ghost" href="publications.html"><i class="fa fa-file-text-o"></i> Publications</a>
-                        <a class="am-btn ghost" href="cv/cv.pdf"><i class="fa fa-file-pdf-o"></i> Academic CV</a>
-                        <a class="am-btn ghost" href="contact.html"><i class="fa fa-envelope-o"></i> Contact</a>
-                    </nav>
-                </div>
-            </header>
+        <div id="dedukcja" class="page home nd-page" data-pos="home">
+            <h1 class="nd-sr">Dedukcja naturalna — interaktywny system dowodzenia dla rachunku zdań</h1>
+            <div class="nd-bar">
+                <span class="nd-bar-title">Dedukcja naturalna</span>
+                <a class="nd-bar-full" href="dedukcja/index.html" target="_blank" rel="noopener"><i class="fa fa-expand"></i>Pełny ekran</a>
+            </div>
+            <iframe id="nd-frame" class="nd-frame" src="dedukcja/index.html" title="Dedukcja naturalna — aplikacja" allow="clipboard-write"></iframe>
+            <noscript><p style="padding:20px">Aplikacja wymaga JavaScriptu. <a href="dedukcja/index.html">Otwórz ją bezpośrednio</a>.</p></noscript>
         </div>
     </div>
 </div>
-<script src="js/typography.js"></script>
+<script>
+    /* link z dowodem (#d=...) trafia do aplikacji w ramce */
+    (function () {
+        var h = location.hash;
+        if (/^#d=[\w-]+$/.test(h)) document.getElementById('nd-frame').src = 'dedukcja/index.html' + h;
+    })();
+</script>
 </body>
 </html>

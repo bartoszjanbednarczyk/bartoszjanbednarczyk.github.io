@@ -1,0 +1,1699 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dedukcja naturalna</title>
+<meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami) i eksport do LaTeX-a.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff; --canvas:#ffffff; --panel:#ffffff; --ink:#1a1c1e; --ink2:#3d4247; --muted:#6c7278; --line:#e3e4e0; --line2:#cfd1cc; --soft:#f5f6f3;
+  --accent:#03cc85; --accent-strong:#02a86d; --accent-ink:#016b45; --accent-soft:#e2f8ee; --on-accent:#03291b;
+  --open:#b85f00; --open-bg:#fff3e2; --open-line:#f0a24a;
+  --sel:#1f63d6; --sel-bg:#e5eeff; --hint:#c27c00; --hint-bg:#fff7e0; --hint-ink:#7a4d00;
+  --err:#c62828; --box:#1a1c1e;
+  --shadow:0 1px 2px rgba(20,24,28,.05),0 4px 14px rgba(20,24,28,.06);
+  --shadow-lg:0 10px 40px rgba(20,24,28,.18);
+  --fs:20px;
+  --math:"Latin Modern Math","STIX Two Math","Cambria Math","STIX Two Text","Times New Roman",serif;
+  --ui:"Lato",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --canvas:#000000; --panel:#0d0e0f; --ink:#f2f2ef; --ink2:#d0d2d3; --muted:#9a9fa5; --line:#26292b; --line2:#363a3d; --soft:#16181a;
+    --accent:#2fd99a; --accent-strong:#5fe6b2; --accent-ink:#6fe9bb; --accent-soft:#0c2a1f; --on-accent:#03291b;
+    --open:#ffb35c; --open-bg:#2a1c0a; --open-line:#c98a3c;
+    --sel:#86b4ff; --sel-bg:#13223b; --err:#ff8080; --box:#e8e8e6; --hint:#ffc44d; --hint-bg:#2a2208; --hint-ink:#ffd77a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25); --shadow-lg:0 10px 40px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --canvas:#000000; --panel:#0d0e0f; --ink:#f2f2ef; --ink2:#d0d2d3; --muted:#9a9fa5; --line:#26292b; --line2:#363a3d; --soft:#16181a;
+  --accent:#2fd99a; --accent-strong:#5fe6b2; --accent-ink:#6fe9bb; --accent-soft:#0c2a1f; --on-accent:#03291b;
+  --open:#ffb35c; --open-bg:#2a1c0a; --open-line:#c98a3c;
+  --sel:#86b4ff; --sel-bg:#13223b; --err:#ff8080; --box:#e8e8e6; --hint:#ffc44d; --hint-bg:#2a2208; --hint-ink:#ffd77a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25); --shadow-lg:0 10px 40px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit}
+a.btn{color:inherit;text-decoration:none}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.ic{width:18px;height:18px;flex:none;display:block}
+.math{font-family:var(--math)}
+[hidden]{display:none!important}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--panel);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap;font-size:.92rem;transition:border-color .15s,background .15s}
+.btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn:focus-visible,.rcard:focus-visible,.chip:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.primary:hover:not(:disabled){background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn.lg{padding:11px 20px;font-size:1.02rem;border-radius:11px}
+.btn.ghost,.btn.icon{border-color:transparent;background:transparent}
+.btn.icon{padding:7px}
+.btn.ghost:hover:not(:disabled),.btn.icon:hover:not(:disabled){background:var(--soft);border-color:var(--line)}
+.btn.danger:hover:not(:disabled){border-color:var(--err);background:transparent;color:var(--err)}
+
+/* ---------- header ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 20px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--math);font-size:22px;font-weight:700;flex:none}
+.brand h1{font-size:1.12rem;margin:0;font-weight:900;letter-spacing:-.01em;line-height:1.15}
+.brand p{margin:0;color:var(--muted);font-size:.82rem}
+.top .sp{flex:1}
+.tools{display:flex;align-items:center;gap:2px}
+.tools .sep{width:1px;height:22px;background:var(--line);margin:0 6px}
+.tseg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:2px;gap:2px}
+.tseg button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.86rem;color:var(--muted)}
+.tseg button:hover{color:var(--ink)}
+.tseg button.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow);font-weight:700}
+.tseg .ic{width:16px;height:16px}
+.vsep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:left;color:var(--muted)}
+.seg button b{font-size:.92rem;color:var(--ink2);font-weight:700}
+.seg button small{font-size:.74rem}
+.seg button.on{background:var(--panel);box-shadow:var(--shadow)}
+.seg button.on b{color:var(--accent-ink)}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:372px minmax(0,1fr);gap:20px;padding:18px 20px 150px;align-items:start;max-width:1700px;margin:0 auto}
+aside{position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto;scrollbar-width:thin}
+main,aside{min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+
+/* ---------- rules panel ---------- */
+.rules-head{padding:14px 16px 4px}
+.rules-head h2{margin:0;font-size:1rem;font-weight:900}
+.rules-head p{margin:2px 0 0;font-size:.82rem;color:var(--muted);min-height:2.4em}
+.rtable{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);gap:6px 7px;padding:6px 12px 12px;align-items:stretch}
+.rtable .colh{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:0 2px}
+.rtable .con{font-family:var(--math);font-size:19px;color:var(--muted);display:grid;place-items:center;border-right:1px solid var(--line);padding-right:4px}
+.rtable .cell{display:flex;gap:6px;min-width:0}
+.rtable .rowsep{grid-column:1/-1;height:1px;background:var(--line);margin:2px 0}
+.rcard{flex:1 1 0;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;padding:8px 3px 6px;display:flex;align-items:center;justify-content:center;min-height:62px;font-size:12.5px;transition:background .15s,border-color .15s,opacity .15s,box-shadow .15s}
+.rcard:hover{border-color:var(--accent);background:var(--accent-soft)}
+.rcard.ok{border-color:var(--accent)}
+.rcard.best{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.rcard .inf>.lbl{font-size:.88em}
+.rcard.off{opacity:.3}
+.rcard.off:hover{border-color:var(--line);background:var(--panel)}
+.rcard.hypc{width:100%;min-height:54px}
+.rcard .math{white-space:nowrap}
+.rcard .inf>.prem{gap:.7em}
+.settings{border-top:1px solid var(--line);padding:10px 16px 14px}
+label.chk{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;color:var(--ink2);cursor:pointer}
+label.chk input{margin-top:3px;accent-color:var(--accent)}
+
+/* ---------- proof drawing ---------- */
+.fm{font-family:var(--math);white-space:nowrap;display:inline-block;padding:1px 5px;border-radius:6px;border:1.5px solid transparent;line-height:1.3;transition:background .12s,border-color .12s}
+.ws .fm[data-id]{cursor:pointer}
+.ws .fm[data-id]:hover{background:var(--sel-bg)}
+.fm.open{border:1.5px dashed var(--open-line);background:var(--open-bg);color:var(--open)}
+.fm.sel{border:1.5px solid var(--sel)!important;background:var(--sel-bg)!important;color:var(--ink)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--sel) 18%,transparent)}
+.fm.err{border:1.5px solid var(--err);color:var(--err)}
+.fm.fresh{animation:pop .7s ease-out}
+@keyframes pop{0%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+.inf{display:inline-grid;grid-template-columns:auto auto;vertical-align:bottom}
+.inf>.prem{grid-area:1/1/2/2;display:flex;align-items:flex-end;justify-content:center;gap:1.3em;padding:0 .2em;min-height:.35em}
+.inf>.bar{grid-area:2/1/3/2;border-top:1.3px solid currentColor;margin:3px 0 2px}
+.inf>.lbl{grid-area:2/2/3/3;align-self:center;line-height:0;white-space:nowrap;padding-left:.3em;font-size:.76em;font-family:var(--math);color:var(--ink2)}
+.inf>.concl{grid-area:3/1/4/2;text-align:center}
+.box{display:inline-flex;flex-direction:column;align-items:center;border:1.3px solid var(--box);padding:.35em .7em .45em;gap:.45em}
+.box>.bhead{white-space:nowrap}
+.box>.bhead .zal{font-family:var(--math);margin-left:.8em;color:var(--ink2)}
+.lbl sub,.chip sub{font-size:.72em}
+.dots{display:flex;flex-direction:column;align-items:center;line-height:1.05}
+.dots .v{font-size:.9em}
+
+/* ---------- workspace ---------- */
+.wsbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.wsbar .sp{flex:1}
+.status{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;padding:2px 10px;border-radius:999px;background:var(--open-bg);color:var(--open);font-weight:700;line-height:1.5}
+.pill .ic{width:14px;height:14px}
+.pill.ok{background:var(--accent-soft);color:var(--accent-ink)}
+.pill.bad{background:transparent;border:1px solid var(--err);color:var(--err)}
+.hint{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--ink2);background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:9px 12px;margin-bottom:14px}
+.hint .ic{color:var(--accent-ink);margin-top:1px}
+.hint b{color:var(--ink)}
+.ws{display:flex;flex-direction:column;gap:16px}
+.frag{overflow:hidden}
+.frag.has-sel{border-color:color-mix(in srgb,var(--sel) 55%,var(--line))}
+.frag.done{border-color:color-mix(in srgb,var(--accent) 60%,var(--line))}
+.fhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 10px 8px 16px;border-bottom:1px solid var(--line)}
+.frag.done .fhead{background:color-mix(in srgb,var(--accent-soft) 70%,transparent)}
+.fhead .num{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.fhead .seq{font-family:var(--math);font-size:1.06rem}
+.fhead .sp{flex:1}
+.fbody{overflow-x:auto;padding:26px 20px 22px;font-size:var(--fs);text-align:center;background-color:var(--canvas)}
+.fbody>.inner{display:inline-block;text-align:left;margin:0 auto}
+
+.menu{position:relative}
+.menu>summary{list-style:none}
+.menu>summary::-webkit-details-marker{display:none}
+.menu-list{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:min(420px,calc(100vw - 32px));max-height:min(480px,70vh);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px}
+.menu-list button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:7px 10px;cursor:pointer}
+.menu-list button:hover{background:var(--accent-soft)}
+.menu-list .t{font-size:.84rem;font-weight:700}
+.menu-list .t small{font-weight:400;color:var(--muted);margin-left:6px;font-size:.95em}
+.menu-list .f{font-family:var(--math);font-size:1.02rem;color:var(--ink2)}
+.menu-list .grp{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:8px 10px 2px}
+
+.empty{padding:44px 24px 40px;text-align:center}
+.empty .big{font-family:var(--math);font-size:44px;color:var(--accent);line-height:1}
+.empty h2{margin:12px 0 6px;font-size:1.45rem;font-weight:900}
+.empty p{margin:0 auto 18px;max-width:520px;color:var(--muted)}
+.empty .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;max-width:640px;margin:28px auto 0;text-align:left}
+.empty .modes div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--canvas)}
+.empty .modes b{display:block;margin-bottom:2px}
+.empty .modes span{font-size:.86rem;color:var(--muted)}
+.exchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:18px}
+.exchips .lab{width:100%;font-size:.8rem;color:var(--muted);margin-bottom:2px}
+.exchips button{font-family:var(--math);font-size:1rem;border:1px solid var(--line2);border-radius:999px;padding:4px 12px;background:var(--panel);cursor:pointer}
+.exchips button:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+/* ---------- action dock ---------- */
+.dock{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:25;width:min(1000px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:8px 10px 10px 16px;display:flex;flex-direction:column;gap:7px;animation:up .18s ease-out}
+@keyframes up{from{transform:translate(-50%,12px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.dock-top{display:flex;align-items:center;gap:10px;min-width:0}
+.dock-sel{flex:1;min-width:0;font-size:.9rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-sel .math{color:var(--ink);font-size:1.1rem}
+.dock-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dock-row .grp{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-right:4px;min-width:52px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--panel);border-radius:999px;padding:5px 13px;cursor:pointer;font-size:.88rem;transition:background .12s,border-color .12s}
+.chip .math{font-size:1.02rem}
+.chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.chip.best{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.chip.best:hover{background:var(--accent-strong)}
+.chip.op{border-style:dashed}
+.dock .note{font-size:.86rem;color:var(--muted)}
+
+/* ---------- podpowiedzi ---------- */
+.btn.hintb{border-color:color-mix(in srgb,var(--hint) 55%,var(--line2));color:var(--hint-ink)}
+.btn.hintb:hover:not(:disabled){background:var(--hint-bg);border-color:var(--hint)}
+.btn.hintb .ic{color:var(--hint)}
+.dock-hint{display:flex;gap:10px;align-items:flex-start;background:var(--hint-bg);border:1px solid color-mix(in srgb,var(--hint) 45%,transparent);border-radius:12px;padding:9px 10px 9px 12px;font-size:.9rem;color:var(--ink);animation:up .18s ease-out}
+.dock-hint>.ic{color:var(--hint);margin-top:2px}
+.dock-hint .htext{flex:1;min-width:0}
+.dock-hint .hlev{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--hint-ink);margin-bottom:1px}
+.dock-hint .math{font-size:1.05em}
+.dock-hint .hbtns{display:flex;gap:6px;flex-wrap:wrap;align-self:center}
+.dock-hint .btn{padding:5px 11px;font-size:.86rem}
+.dock-hint.dead{background:color-mix(in srgb,var(--err) 9%,var(--panel));border-color:color-mix(in srgb,var(--err) 45%,transparent)}
+.dock-hint.dead>.ic,.dock-hint.dead .hlev{color:var(--err)}
+.chip.hintc{border-color:color-mix(in srgb,var(--hint) 60%,var(--line2));color:var(--hint-ink)}
+.chip.hintc:hover{background:var(--hint-bg);border-color:var(--hint)}
+.chip.hintc .ic{width:15px;height:15px;color:var(--hint)}
+.chip.hinted,.rcard.hinted{animation:hintpulse 1.3s ease-in-out infinite;border-color:var(--hint)!important}
+@keyframes hintpulse{0%,100%{box-shadow:0 0 0 2px var(--hint)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--hint) 30%,transparent)}}
+.fm.dead{border:1.5px dashed var(--err)!important;background:color-mix(in srgb,var(--err) 10%,transparent)!important;color:var(--err)!important}
+.fm.culprit{box-shadow:0 0 0 3px color-mix(in srgb,var(--err) 35%,transparent)}
+@media (prefers-reduced-motion: reduce){.chip.hinted,.rcard.hinted{animation:none;box-shadow:0 0 0 3px var(--hint)}}
+
+/* ---------- modals ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(10,14,18,.42);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;max-width:600px;width:100%;padding:18px 20px;border:1px solid var(--line);box-shadow:var(--shadow-lg);max-height:calc(100vh - 32px);overflow:auto;animation:mod .16s ease-out}
+.modal.wide{max-width:820px}
+@keyframes mod{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+.mhead{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.mhead h3{margin:4px 0 0;font-size:1.12rem;font-weight:900;flex:1}
+.modal .desc{color:var(--muted);font-size:.92rem;margin-bottom:12px}
+.modal .desc .math{color:var(--ink)}
+.fin{width:100%;font-family:var(--math);font-size:22px;padding:10px 12px;border:1.5px solid var(--line2);border-radius:10px;background:var(--canvas);color:var(--ink)}
+.fin:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.prev{min-height:1.7em;font-size:.92rem;margin:8px 2px 0}
+.prev .ok{color:var(--accent-ink);font-weight:700} .prev .bad{color:var(--err)}
+.pal{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px}
+.pal .prow{display:flex;gap:6px;align-items:center}
+.pal .plab{width:74px;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;flex:none}
+.pal .pbtns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;flex:1}
+.pal button{font-family:var(--math);font-size:20px;height:42px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);cursor:pointer;display:grid;place-items:center;transition:background .1s,border-color .1s}
+.pal button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.pal button:active{transform:translateY(1px)}
+.pal button.ui{font-family:var(--ui);font-size:.86rem}
+@media (max-width:520px){.pal .plab{display:none}}
+.sugw .lab{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.chips button{font-family:var(--math);font-size:15.5px;border:1px solid var(--line2);border-radius:999px;padding:3px 11px;background:var(--canvas);cursor:pointer}
+.chips button:hover{border-color:var(--accent)}
+.chips button.best{border-color:var(--accent);background:var(--accent-soft)}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center}
+.mfoot .sp{flex:1}
+textarea{width:100%;min-height:300px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.5;border:1px solid var(--line2);border-radius:10px;padding:10px 12px;background:var(--canvas);color:var(--ink);resize:vertical}
+select{font:inherit;padding:7px 8px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);max-width:100%}
+.help h4{margin:16px 0 6px;font-size:.95rem}
+.help ul{padding-left:20px;margin:4px 0}
+.help li{margin:3px 0;color:var(--ink2)}
+.kbd{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:.8em;border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--canvas)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:.86rem;color:var(--ink2);margin:6px 0}
+.toast{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:.96}
+
+/* ---------- responsive ---------- */
+@media (max-width:1300px){
+  .hide-md{display:none!important}
+  .brand p{display:none}
+  .app{grid-template-columns:340px minmax(0,1fr);gap:16px;padding-left:16px;padding-right:16px}
+}
+@media (max-width:1000px){
+  .app{grid-template-columns:minmax(0,1fr);padding:14px 16px 190px}
+  aside{position:static;max-height:none;order:2}
+  .seg button small{display:none}
+}
+@media (max-width:640px){
+  .top{padding:8px 12px 8px 16px;gap:8px}
+  .top .sp{display:none}
+  .brand{flex:1}
+  .brand p{display:none}
+  .brand h1{font-size:.98rem;white-space:nowrap}
+  html.embed .brand h1{display:none}
+  .logo{width:32px;height:32px;font-size:19px}
+  .tseg button{padding:5px 7px}
+  .btn.icon{padding:6px}
+  .seg{order:3;width:100%}
+  .seg button{flex:1;align-items:center}
+  .hide-sm{display:none!important}
+  .dock{bottom:0;border-radius:16px 16px 0 0;width:100vw;border-bottom:0;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .dock-row .grp{display:none}
+  .fbody{padding:20px 12px 18px}
+  .wsbar .status .lbltxt{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">⊢</div>
+    <div><h1>Dedukcja naturalna</h1><p>rachunek zdań · dowody z oknami, jak w rozdz. 2.9 skryptu</p></div>
+  </div>
+  <div class="seg" id="modeSeg" role="tablist" aria-label="Tryb budowania">
+    <button data-mode="back" class="on" role="tab"><b>↑ Od celu</b><small>reguła dopisuje przesłanki</small></button>
+    <button data-mode="fwd" role="tab"><b>↓ Od przesłanek</b><small>reguła dopisuje wniosek</small></button>
+  </div>
+  <span class="sp"></span>
+  <div class="tools">
+    <a class="btn icon hide-sm" id="homeBtn" href="../dedukcja.html" title="Wróć na stronę Bartosza Bednarczyka" aria-label="Strona główna" hidden><i data-ic="home"></i></a>
+    <a class="btn icon hide-sm" id="fullBtn" href="index.html" target="_blank" rel="noopener" title="Otwórz na pełnym ekranie (w nowej karcie)" aria-label="Pełny ekran" hidden><i data-ic="expand"></i></a>
+    <button class="btn ghost" id="texOpen" title="Eksport do LaTeX-a"><i data-ic="code"></i><span class="hide-sm">LaTeX</span></button>
+    <button class="btn icon" id="share" title="Kopiuj link z bieżącym dowodem" aria-label="Udostępnij"><i data-ic="link"></i></button>
+    <button class="btn icon" id="helpOpen" title="Pomoc" aria-label="Pomoc"><i data-ic="help"></i></button>
+    <span class="sep hide-sm"></span>
+    <div class="tseg" id="themeSeg" role="radiogroup" aria-label="Tło">
+      <button data-th="light" role="radio" title="Białe tło"><i data-ic="sun"></i><span class="hide-sm">Białe</span></button>
+      <button data-th="dark" role="radio" title="Czarne tło"><i data-ic="moon"></i><span class="hide-sm">Czarne</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+<aside class="card" id="rulesPanel">
+  <div class="rules-head">
+    <h2>Reguły</h2>
+    <p id="rulesSub"></p>
+  </div>
+  <div class="rtable" id="rtable"></div>
+  <div class="settings">
+    <label class="chk"><input type="checkbox" id="autoHyp" checked> Automatycznie zamykaj cele, które są założeniami otaczającego okna</label>
+  </div>
+</aside>
+
+<main>
+  <div class="wsbar">
+    <button class="btn primary" id="newF"><i data-ic="plus"></i><span id="newFLab">Nowy cel</span></button>
+    <details class="menu" id="exMenu">
+      <summary class="btn" title="Przykłady i zadania"><i data-ic="book"></i><span class="hide-sm hide-md">Przykłady</span></summary>
+      <div class="menu-list" id="exList"></div>
+    </details>
+    <span class="status" id="status"></span>
+    <button class="btn hintb" id="hintBtn" title="Podpowiedź dla zaznaczonego lub następnego celu (H)"><i data-ic="bulb"></i><span class="hide-sm">Podpowiedź</span></button>
+    <span class="sp"></span>
+    <button class="btn icon" id="undo" title="Cofnij (Ctrl+Z)" aria-label="Cofnij"><i data-ic="undo"></i></button>
+    <button class="btn icon hide-sm" id="redo" title="Ponów (Ctrl+Y)" aria-label="Ponów"><i data-ic="redo"></i></button>
+    <span class="vsep hide-sm hide-md"></span>
+    <button class="btn icon hide-sm" id="zoomOut" title="Pomniejsz" aria-label="Pomniejsz"><i data-ic="zoomout"></i></button>
+    <button class="btn icon hide-sm" id="zoomIn" title="Powiększ" aria-label="Powiększ"><i data-ic="zoomin"></i></button>
+    <button class="btn icon danger hide-sm" id="reset" title="Usuń wszystko" aria-label="Usuń wszystko"><i data-ic="trash"></i></button>
+  </div>
+  <div class="hint" id="hint"></div>
+  <div class="ws" id="ws"></div>
+</main>
+</div>
+
+<!-- pasek akcji dla zaznaczenia -->
+<div class="dock" id="dock" hidden>
+  <div class="dock-top">
+    <div class="dock-sel" id="dockSel"></div>
+    <button class="btn icon" id="dockClose" title="Odznacz (Esc)" aria-label="Odznacz"><i data-ic="x"></i></button>
+  </div>
+  <div class="dock-hint" id="dockHint" hidden></div>
+  <div class="dock-row" id="dockRules"></div>
+  <div class="dock-row" id="dockOps"></div>
+</div>
+
+<!-- kreator formuł -->
+<div class="modal-bg" id="mbg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="mhead"><h3 id="mTitle"></h3><button class="btn icon" data-close aria-label="Zamknij"><i data-ic="x"></i></button></div>
+    <div class="desc" id="mDesc"></div>
+    <input class="fin" id="mIn" autocomplete="off" spellcheck="false" placeholder="kliknij symbole poniżej…" aria-label="Formuła">
+    <div class="prev" id="mPrev"></div>
+    <div class="pal" id="mPal"></div>
+    <div class="sugw" id="mSugW"><div class="lab">Podpowiedzi</div><div class="chips" id="mSug"></div></div>
+    <div class="mfoot">
+      <button class="btn" data-close>Anuluj</button>
+      <button class="btn primary" id="mOk">Zatwierdź</button>
+    </div>
+  </div>
+</div>
+
+<!-- LaTeX -->
+<div class="modal-bg" id="texModal">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="texTitle">
+    <div class="mhead"><h3 id="texTitle">Eksport do LaTeX-a</h3><button class="btn icon" data-close aria-label="Zamknij"><i data-ic="x"></i></button></div>
+    <div class="desc">Kod używa pakietu <code>proof</code> (polecenie <code>\infer</code>) i makra <code>\okno</code>, które rysuje pudełko z założeniem. Kompiluje się pdflatex-em; dokument <code>standalone</code> daje przycięty obrazek dowodu.</div>
+    <div class="mfoot" style="margin:0 0 10px;justify-content:flex-start">
+      <select id="texFrag" aria-label="Dowód do eksportu"></select>
+      <label class="chk" style="align-items:center"><input type="checkbox" id="texFull" checked style="margin:0"> pełny dokument (standalone)</label>
+    </div>
+    <textarea id="tex" readonly spellcheck="false" aria-label="Kod LaTeX"></textarea>
+    <div class="mfoot">
+      <span class="sp" id="texNote" style="font-size:.85rem;color:var(--open)"></span>
+      <button class="btn" id="texCopy"><i data-ic="copy"></i>Kopiuj</button>
+      <button class="btn primary" id="texDl"><i data-ic="download"></i>Pobierz .tex</button>
+    </div>
+  </div>
+</div>
+
+<!-- pomoc -->
+<div class="modal-bg" id="helpModal">
+  <div class="modal wide help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="mhead"><h3 id="helpTitle">Jak korzystać</h3><button class="btn icon" data-close aria-label="Zamknij"><i data-ic="x"></i></button></div>
+    <div class="legend">
+      <span><span class="fm open">φ</span> otwarty cel / niezamknięta hipoteza</span>
+      <span><span class="fm sel">φ</span> zaznaczenie</span>
+      <span><span class="box math" style="padding:2px 8px;display:inline-flex">α&nbsp;&nbsp;założenie</span> okno z założeniem</span>
+    </div>
+    <h4>Dwa tryby</h4>
+    <ul>
+      <li><b>↑ Od celu.</b> Dodaj cel, kliknij go i wybierz regułę. Nad celem pojawią się przesłanki, a dla (⇒i), (¬i) i (∨e) — okna z założeniami. Powtarzaj, aż nie zostanie żaden otwarty cel.</li>
+      <li><b>↓ Od przesłanek.</b> Dodaj przesłanki (hipotezy), zaznacz formuły na dole fragmentów i wybierz regułę — pod spodem pojawi się wniosek. Kolejność kliknięć ma znaczenie, np. dla (∧i) i (∨e). Reguły z oknem zamykają w nim wszystkie hipotezy równe założeniu.</li>
+      <li>Tryby można łączyć: gotowy fragment wstawisz w otwarty cel o tej samej formule (<i>Wstaw fragment w cel</i>), a poddrzewo możesz odłączyć jako osobny fragment.</li>
+    </ul>
+    <h4>Założenia są lokalne</h4>
+    <ul>
+      <li>Założenia wolno używać tylko wewnątrz jego okna — reguła <i>założenie</i> jest dostępna tylko tam.</li>
+      <li>Otwarte cele to po prostu niezamknięte hipotezy. W trybie „od przesłanek” nagłówek fragmentu pokazuje sekwent <span class="math">Γ ⊢ φ</span>, gdzie Γ to te hipotezy. Dowód jest kompletny, gdy Γ jest puste — wtedy nagłówek pokazuje <span class="math">⊢ φ</span>.</li>
+    </ul>
+    <h4>Wpisywanie formuł</h4>
+    <ul>
+      <li>Klikaj symbole w kreatorze albo pisz: <code>~ ! -</code> → ¬, <code>&amp; /\</code> → ∧, <code>| \/</code> → ∨, <code>-&gt; =&gt;</code> → ⇒, <code>T 1</code> → ⊤, <code>F 0</code> → ⊥.</li>
+      <li>Kolejność wiązania: ¬, ∧, ∨, ⇒; ∧ i ∨ łączą w lewo, ⇒ w prawo (np. <span class="math"><i>p</i> ⇒ <i>q</i> ⇒ <i>r</i></span> to <span class="math"><i>p</i> ⇒ (<i>q</i> ⇒ <i>r</i>)</span>).</li>
+    </ul>
+    <h4>Skróty</h4>
+    <ul>
+      <li><span class="kbd">Shift</span>/<span class="kbd">Ctrl</span>/<span class="kbd">⌘</span> + klik — dodaj do zaznaczenia (w trybie „od przesłanek” każdy klik dodaje).</li>
+      <li><span class="kbd">N</span> następny otwarty cel · <span class="kbd">Delete</span> usuń uzasadnienie · <span class="kbd">Esc</span> odznacz · <span class="kbd">Ctrl+Z</span> / <span class="kbd">Ctrl+Y</span> cofnij / ponów.</li>
+    </ul>
+    <h4>Podpowiedzi</h4>
+    <ul>
+      <li>Przycisk <b>Podpowiedź</b> (skrót <span class="kbd">H</span>) działa dla zaznaczonego celu, a gdy nic nie jest zaznaczone — dla następnego otwartego celu.</li>
+      <li>Kolejne naciśnięcia odsłaniają coraz więcej: <b>1.</b> wskazówka, od czego zacząć; <b>2.</b> konkretna reguła z parametrem (pulsuje na pasku i w tabeli); <b>3.</b> wykonanie tego kroku.</li>
+      <li>Jeśli cel w danym miejscu <b>nie wynika</b> z dostępnych założeń, podpowiedź pokaże kontrprzykład (wartościowanie) i wskaże krok, w którym dowód skręcił w ślepy zaułek — można go cofnąć jednym kliknięciem.</li>
+    </ul>
+    <h4>Zapis i udostępnianie</h4>
+    <ul>
+      <li>Praca zapisuje się automatycznie w tej przeglądarce. Przycisk z łańcuchem kopiuje link zawierający cały dowód.</li>
+      <li>Przełącznik <b>Białe / Czarne</b> w nagłówku zmienia tło aplikacji; wybór jest zapamiętywany. Bez wyboru obowiązuje ustawienie systemu.</li>
+    </ul>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+function $(id){ return document.getElementById(id); }
+
+/* =====================================================================
+   0. IKONY
+   ===================================================================== */
+const ICONS = {
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>',
+  code:'<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  next:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/>',
+  zoomin:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6M11 8v6"/>',
+  zoomout:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  expand:'<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+  shrink:'<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
+  home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  bulb:'<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>',
+  alert:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',
+};
+const icon = n => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+document.querySelectorAll('i[data-ic]').forEach(el => { el.outerHTML = icon(el.dataset.ic); });
+
+/* =====================================================================
+   1. FORMUŁY
+   ===================================================================== */
+const VARS = ['p','q','r','s','t'];
+const TOP = {t:'T'}, BOT = {t:'F'};
+const V = n => ({t:'v', n});
+const NOT = a => ({t:'not', a});
+const AND = (a,b) => ({t:'and', a, b});
+const OR  = (a,b) => ({t:'or', a, b});
+const IMP = (a,b) => ({t:'imp', a, b});
+const PREC = {imp:1, or:2, and:3, not:4, v:5, T:5, F:5};
+
+function printer(S){
+  const go = f => {
+    switch(f.t){
+      case 'v': return S.v(f.n);
+      case 'T': return S.T;
+      case 'F': return S.F;
+      case 'not': return S.not + par(f.a, PREC[f.a.t] < 4);
+      default: {
+        const P = PREC[f.t];
+        const lp = PREC[f.a.t] < P || (f.t === 'imp' && PREC[f.a.t] === P);
+        const rp = PREC[f.b.t] < P || (f.t !== 'imp' && PREC[f.b.t] === P);
+        return par(f.a, lp) + S[f.t] + par(f.b, rp);
+      }
+    }
+  };
+  const par = (g, b) => b ? S.lp + go(g) + S.rp : go(g);
+  return go;
+}
+const key  = printer({v:n=>n, T:'T', F:'F', not:'~', and:'&', or:'|', imp:'>', lp:'(', rp:')'});
+const uni  = printer({v:n=>n, T:'⊤', F:'⊥', not:'¬', and:' ∧ ', or:' ∨ ', imp:' ⇒ ', lp:'(', rp:')'});
+const html = printer({v:n=>'<i>'+n+'</i>', T:'⊤', F:'⊥', not:'¬', and:' ∧ ', or:' ∨ ', imp:' ⇒ ', lp:'(', rp:')'});
+const tex  = printer({v:n=>n, T:'\\top', F:'\\bot', not:'\\neg ', and:' \\land ', or:' \\lor ', imp:' \\Rightarrow ', lp:'(', rp:')'});
+const eq = (a,b) => key(a) === key(b);
+const M = f => '<span class="math">'+html(f)+'</span>';
+
+function tokenize(s){
+  const out = []; let i = 0;
+  const table = [['->','imp'],['=>','imp'],['/\\','and'],['\\/','or'],['⇒','imp'],['→','imp'],['∧','and'],['&','and'],['^','and'],
+    ['∨','or'],['|','or'],['¬','not'],['~','not'],['!','not'],['-','not'],['⊤','T'],['⊥','F'],['(','lp'],[')','rp']];
+  while(i < s.length){
+    const c = s[i];
+    if(/\s/.test(c)){ i++; continue; }
+    let hit = null;
+    for(const [lit,t] of table) if(s.startsWith(lit, i)){ hit = [lit,t]; break; }
+    if(hit){ out.push({t:hit[1]}); i += hit[0].length; continue; }
+    if(VARS.includes(c)){ out.push({t:'v', n:c}); i++; continue; }
+    if(c === 'T' || c === '1'){ out.push({t:'T'}); i++; continue; }
+    if(c === 'F' || c === '0'){ out.push({t:'F'}); i++; continue; }
+    throw {msg:`Niedozwolony znak „${c}” — dostępne zmienne to ${VARS.join(', ')}`};
+  }
+  return out;
+}
+function parse(s){
+  const T = tokenize(s); let k = 0;
+  if(!T.length) throw {msg:'Pusta formuła'};
+  const peek = () => T[k], eat = t => (T[k] && T[k].t === t) ? T[k++] : null;
+  const imp = () => { const a = or(); return eat('imp') ? IMP(a, imp()) : a; };
+  const or  = () => { let a = and(); while(eat('or')) a = OR(a, and()); return a; };
+  const and = () => { let a = un(); while(eat('and')) a = AND(a, un()); return a; };
+  const un  = () => eat('not') ? NOT(un()) : atom();
+  const atom = () => {
+    const x = peek();
+    if(!x) throw {msg:'Formuła jest niedokończona — brakuje argumentu na końcu'};
+    if(x.t === 'v'){ k++; return V(x.n); }
+    if(x.t === 'T'){ k++; return TOP; }
+    if(x.t === 'F'){ k++; return BOT; }
+    if(x.t === 'lp'){ k++; const f = imp(); if(!eat('rp')) throw {msg:'Brakuje nawiasu zamykającego'}; return f; }
+    throw {msg:'Nieoczekiwany symbol — brakuje argumentu spójnika'};
+  };
+  const f = imp();
+  if(k < T.length) throw {msg: T[k].t === 'rp' ? 'Nadmiarowy nawias zamykający' : 'Nieoczekiwany symbol — może brakuje spójnika?'};
+  return f;
+}
+function subformulas(f, m){ m.set(key(f), f); if(f.a) subformulas(f.a, m); if(f.b) subformulas(f.b, m); return m; }
+
+/* =====================================================================
+   2. REGUŁY
+   ===================================================================== */
+const R = {
+  andI:{lab:'∧i', tex:'\\land\\mathrm{i}', name:'wprowadzanie koniunkcji'},
+  orI1:{lab:'∨i<sub>1</sub>', tex:'\\lor\\mathrm{i}_1', name:'wprowadzanie alternatywy (lewy człon)'},
+  orI2:{lab:'∨i<sub>2</sub>', tex:'\\lor\\mathrm{i}_2', name:'wprowadzanie alternatywy (prawy człon)'},
+  topI:{lab:'⊤i', tex:'\\top\\mathrm{i}', name:'wprowadzanie prawdy'},
+  impI:{lab:'⇒i', tex:'\\Rightarrow\\mathrm{i}', name:'wprowadzanie implikacji'},
+  notI:{lab:'¬i', tex:'\\neg\\mathrm{i}', name:'wprowadzanie negacji'},
+  andE1:{lab:'∧e<sub>1</sub>', tex:'\\land\\mathrm{e}_1', name:'eliminacja koniunkcji (lewy człon)'},
+  andE2:{lab:'∧e<sub>2</sub>', tex:'\\land\\mathrm{e}_2', name:'eliminacja koniunkcji (prawy człon)'},
+  impE:{lab:'⇒e', tex:'\\Rightarrow\\mathrm{e}', name:'eliminacja implikacji (modus ponens)'},
+  notE:{lab:'¬e', tex:'\\neg\\mathrm{e}', name:'eliminacja negacji (sprzeczność)'},
+  botE:{lab:'⊥e', tex:'\\bot\\mathrm{e}', name:'eliminacja fałszu'},
+  nnE:{lab:'¬¬e', tex:'\\neg\\neg\\mathrm{e}', name:'eliminacja podwójnej negacji'},
+  orE:{lab:'∨e', tex:'\\lor\\mathrm{e}', name:'eliminacja alternatywy (rozpatrywanie przypadków)'},
+  hyp:{lab:'założenie', name:'użycie założenia otaczającego okna'},
+};
+const TABLE = [
+  ['∧', ['andI'], ['andE1','andE2']],
+  ['∨', ['orI1','orI2'], ['orE']],
+  ['⇒', ['impI'], ['impE']],
+  ['¬', ['notI'], ['notE','nnE']],
+  ['⊤⊥', ['topI'], ['botE']],
+];
+const INTRO = ['andI','orI1','orI2','topI','impI','notI'];
+const ELIM = ['andE1','andE2','impE','notE','botE','nnE','orE'];
+const MAIN_INTRO = {and:['andI'], or:['orI1','orI2'], imp:['impI'], not:['notI'], T:['topI'], F:['notE']};
+
+/* =====================================================================
+   3. STAN
+      węzeł: {id, f, rule, prem:[węzeł | okno]};  okno: {box:true, a, body}
+      rule === null → otwarty cel / niezamknięta hipoteza
+   ===================================================================== */
+let S = {frags:[], next:1};
+let mode = 'back';
+let sel = [];
+let IDX = new Map();
+let undoStack = [], redoStack = [];
+const FRESH = new Set();
+
+const N = (f, rule=null, prem=[]) => { const id = S.next++; FRESH.add(id); return {id, f, rule, prem}; };
+const B = (a, body) => ({box:true, a, body});
+
+function walk(cb){
+  const rec = (n, ctx) => {
+    cb(n, ctx);
+    n.prem.forEach((p, i) => p.box
+      ? rec(p.body, {fi:ctx.fi, parent:p, slot:'body', scope:[...ctx.scope, p.a], up:n.id})
+      : rec(p, {fi:ctx.fi, parent:n, slot:i, scope:ctx.scope, up:n.id}));
+  };
+  S.frags.forEach((r, fi) => rec(r, {fi, parent:null, slot:null, scope:[], up:null}));
+}
+function reindex(){ IDX = new Map(); walk((n, c) => IDX.set(n.id, {n, ...c})); }
+const inScope = (info, f) => info.scope.some(a => eq(a, f));
+const isRoot = info => info.parent === null;
+const isOpen = n => n.rule === null;
+function openLeaves(root){ const o = []; const rec = n => { if(isOpen(n)) o.push(n); n.prem.forEach(p => rec(p.box ? p.body : p)); }; rec(root); return o; }
+function replaceAt(info, newNode){
+  if(info.parent === null) S.frags[info.fi] = newNode;
+  else if(info.parent.box) info.parent.body = newNode;
+  else info.parent.prem[info.slot] = newNode;
+}
+function normalize(){
+  walk((n, c) => { if(n.rule === 'hyp' && !c.scope.some(a => eq(a, n.f))) n.rule = null; });
+  reindex();
+}
+function autoClose(){
+  if(!$('autoHyp').checked) return;
+  walk((n, c) => { if(n.rule === null && c.scope.some(a => eq(a, n.f))) n.rule = 'hyp'; });
+}
+function discharge(node, a){
+  const rec = n => { if(n.rule === null && eq(n.f, a)) n.rule = 'hyp'; n.prem.forEach(p => rec(p.box ? p.body : p)); };
+  rec(node);
+}
+
+function verify(){
+  const errs = new Map();
+  walk((n, c) => {
+    const P = n.prem, f = n.f, nd = i => P[i] && !P[i].box ? P[i] : null, bx = i => P[i] && P[i].box ? P[i] : null;
+    const len = k => P.length === k;
+    let ok;
+    switch(n.rule){
+      case null: ok = len(0); break;
+      case 'hyp': ok = len(0) && c.scope.some(a => eq(a, f)); break;
+      case 'topI': ok = len(0) && f.t === 'T'; break;
+      case 'andI': ok = len(2) && nd(0) && nd(1) && f.t === 'and' && eq(f.a, P[0].f) && eq(f.b, P[1].f); break;
+      case 'orI1': ok = len(1) && nd(0) && f.t === 'or' && eq(f.a, P[0].f); break;
+      case 'orI2': ok = len(1) && nd(0) && f.t === 'or' && eq(f.b, P[0].f); break;
+      case 'impI': ok = len(1) && bx(0) && f.t === 'imp' && eq(f.a, P[0].a) && eq(f.b, P[0].body.f); break;
+      case 'notI': ok = len(1) && bx(0) && f.t === 'not' && eq(f.a, P[0].a) && P[0].body.f.t === 'F'; break;
+      case 'andE1': ok = len(1) && nd(0) && P[0].f.t === 'and' && eq(P[0].f.a, f); break;
+      case 'andE2': ok = len(1) && nd(0) && P[0].f.t === 'and' && eq(P[0].f.b, f); break;
+      case 'impE': ok = len(2) && nd(0) && nd(1) && P[1].f.t === 'imp' && eq(P[1].f.a, P[0].f) && eq(P[1].f.b, f); break;
+      case 'notE': ok = len(2) && nd(0) && nd(1) && f.t === 'F' && P[1].f.t === 'not' && eq(P[1].f.a, P[0].f); break;
+      case 'botE': ok = len(1) && nd(0) && P[0].f.t === 'F'; break;
+      case 'nnE': ok = len(1) && nd(0) && eq(P[0].f, NOT(NOT(f))); break;
+      case 'orE': ok = len(3) && nd(0) && bx(1) && bx(2) && P[0].f.t === 'or' && eq(P[1].a, P[0].f.a) && eq(P[2].a, P[0].f.b) && eq(P[1].body.f, f) && eq(P[2].body.f, f); break;
+      default: ok = false;
+    }
+    if(!ok) errs.set(n.id, 'Niepoprawne zastosowanie reguły');
+  });
+  return errs;
+}
+
+function ser(n){ const o = {f:key(n.f)}; if(n.rule) o.r = n.rule; if(n.prem.length) o.p = n.prem.map(p => p.box ? {a:key(p.a), b:ser(p.body)} : ser(p)); return o; }
+function deser(o){ const n = N(parseKey(o.f), o.r || null, []); n.prem = (o.p || []).map(p => p.a !== undefined ? B(parseKey(p.a), deser(p.b)) : deser(p)); return n; }
+const parseKey = s => parse(s.replace(/>/g, '->'));
+const snapshot = () => JSON.stringify(S.frags.map(ser));
+function restore(str){ const arr = JSON.parse(str); S = {frags:[], next:1}; S.frags = arr.map(deser); sel = []; FRESH.clear(); normalize(); }
+
+function commit(fn){
+  const before = snapshot();
+  const r = fn();
+  if(r === false) return;
+  normalize();
+  if(snapshot() !== before){ undoStack.push(before); if(undoStack.length > 200) undoStack.shift(); redoStack = []; }
+  render();
+}
+
+/* =====================================================================
+   4. OKNA DIALOGOWE
+   ===================================================================== */
+const openModal = id => $(id).classList.add('show');
+const anyModal = () => !!document.querySelector('.modal-bg.show');
+function closeModal(id){ if(id === 'mbg') return closeAsk(null); $(id).classList.remove('show'); }
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('mousedown', e => { bg.dataset.down = e.target === bg ? '1' : ''; });
+  bg.addEventListener('click', e => { if(e.target === bg && bg.dataset.down) closeModal(bg.id); bg.dataset.down = ''; });
+  bg.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(bg.id)));
+});
+
+/* kreator formuł */
+let askResolve = null, askCheck = null;
+const PAL = [
+  ['zmienne', [['p'],['q'],['r'],['s'],['t']]],
+  ['spójniki', [['¬'],['∧'],['∨'],['⇒'],['⊤'],['⊥']]],
+  ['edycja', [['('],[')'],['←','left'],['→','right'],['⌫','back'],['wyczyść','clr']]],
+];
+(function buildPalette(){
+  const pal = $('mPal');
+  PAL.forEach(([lab, btns]) => {
+    const row = document.createElement('div'); row.className = 'prow';
+    row.innerHTML = `<span class="plab">${lab}</span><div class="pbtns"></div>`;
+    const box = row.querySelector('.pbtns');
+    btns.forEach(([s, act]) => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.innerHTML = VARS.includes(s) ? '<i>'+s+'</i>' : s;
+      if(act) b.className = 'ui';
+      b.title = {left:'kursor w lewo', right:'kursor w prawo', back:'usuń znak', clr:'wyczyść'}[act] || s;
+      b.addEventListener('mousedown', e => e.preventDefault());
+      b.addEventListener('click', () => palPress(s, act));
+      box.appendChild(b);
+    });
+    pal.appendChild(row);
+  });
+})();
+function palPress(s, act){
+  const inp = $('mIn'), v = inp.value;
+  let a = inp.selectionStart ?? v.length; const z = inp.selectionEnd ?? a;
+  if(act === 'clr'){ inp.value = ''; a = 0; }
+  else if(act === 'left'){ a = Math.max(0, a - 1); }
+  else if(act === 'right'){ a = Math.min(v.length, z + 1); }
+  else if(act === 'back'){
+    if(a !== z) inp.value = v.slice(0,a) + v.slice(z);
+    else if(a > 0){ const m = v.slice(0, a).match(/ [∧∨⇒] $/); const cut = m ? 3 : 1; inp.value = v.slice(0, a-cut) + v.slice(a); a -= cut; }
+  } else {
+    const ins = /[∧∨⇒]/.test(s) ? ' '+s+' ' : s;
+    inp.value = v.slice(0,a) + ins + v.slice(z); a += ins.length;
+  }
+  inp.setSelectionRange(a, a); inp.focus(); preview();
+}
+function preview(){
+  const v = $('mIn').value, out = $('mPrev');
+  if(!v.trim()){ out.innerHTML = '<span style="color:var(--muted)">Tu pojawi się podgląd formuły.</span>'; $('mOk').disabled = true; return null; }
+  try{
+    const f = parse(v);
+    const extra = askCheck ? askCheck(f) : null;
+    if(extra){ out.innerHTML = '<span class="bad">'+extra+'</span>'; $('mOk').disabled = true; return null; }
+    out.innerHTML = '<span class="ok">✓</span> '+M(f); $('mOk').disabled = false; return f;
+  }catch(e){ out.innerHTML = '<span class="bad">'+(e.msg || 'Błąd składni')+'</span>'; $('mOk').disabled = true; return null; }
+}
+function ask({title, desc='', check=null, best=[], sugg=[], okLabel='Zatwierdź'}){
+  $('mTitle').textContent = title; $('mDesc').innerHTML = desc; $('mOk').textContent = okLabel;
+  const inp = $('mIn'); inp.value = ''; askCheck = check;
+  const chips = $('mSug'); chips.innerHTML = '';
+  const seen = new Set(), list = [];
+  const add = (f, b) => { const k = key(f); if(!seen.has(k)){ seen.add(k); list.push([f, b]); } };
+  best.forEach(f => add(f, true)); sugg.forEach(f => add(f, false));
+  list.slice(0, 18).forEach(([f, b]) => {
+    const c = document.createElement('button'); c.type = 'button'; c.innerHTML = html(f);
+    if(b){ c.className = 'best'; c.title = 'pasuje do tej reguły'; }
+    c.addEventListener('click', () => { inp.value = uni(f); preview(); inp.focus(); });
+    chips.appendChild(c);
+  });
+  $('mSugW').hidden = !list.length;
+  openModal('mbg'); preview();
+  setTimeout(() => inp.focus(), 30);
+  return new Promise(res => { askResolve = res; });
+}
+function closeAsk(val){ $('mbg').classList.remove('show'); const r = askResolve; askResolve = null; if(r) r(val); }
+$('mIn').addEventListener('input', preview);
+$('mIn').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); const f = preview(); if(f) closeAsk(f); } });
+$('mOk').addEventListener('click', () => { const f = preview(); if(f) closeAsk(f); });
+
+function candidates(info){
+  const m = new Map();
+  if(info) info.scope.forEach(a => subformulas(a, m));
+  S.frags.forEach(r => { subformulas(r.f, m); openLeaves(r).forEach(l => subformulas(l.f, m)); });
+  return [...m.values()].sort((a,b) => key(a).length - key(b).length);
+}
+
+/* =====================================================================
+   5. STOSOWANIE REGUŁ
+   ===================================================================== */
+function selInfo(){ return sel.map(id => IDX.get(id)).filter(Boolean); }
+
+function availability(rule){
+  const I = selInfo();
+  if(rule === 'hyp'){
+    if(I.length !== 1) return 'Zaznacz jeden otwarty cel';
+    if(!isOpen(I[0].n)) return 'Ta formuła ma już uzasadnienie';
+    if(!inScope(I[0], I[0].n.f)) return 'Ta formuła nie jest założeniem żadnego okna, w którym leży';
+    return null;
+  }
+  if(mode === 'back'){
+    if(I.length !== 1) return 'Zaznacz jeden otwarty cel (pomarańczowa ramka)';
+    const n = I[0].n, t = n.f.t;
+    if(!isOpen(n)) return 'Ta formuła ma już uzasadnienie — usuń je, aby wybrać inną regułę';
+    switch(rule){
+      case 'andI': return t === 'and' ? null : 'Cel nie jest koniunkcją';
+      case 'orI1': case 'orI2': return t === 'or' ? null : 'Cel nie jest alternatywą';
+      case 'topI': return t === 'T' ? null : 'Cel nie jest stałą ⊤';
+      case 'impI': return t === 'imp' ? null : 'Cel nie jest implikacją';
+      case 'notI': return t === 'not' ? null : 'Cel nie jest negacją';
+      case 'notE': return t === 'F' ? null : 'Cel nie jest stałą ⊥';
+      default: return null;
+    }
+  }
+  if(I.some(i => !isRoot(i))) return 'W trybie „od przesłanek” zaznaczaj formuły na samym dole fragmentów';
+  const F = I.map(i => i.n.f), k = F.length;
+  const need = c => k === c ? null : (k < c ? `Zaznacz ${c} ${c === 1 ? 'formułę' : 'formuły'}` : `Za dużo zaznaczonych formuł (potrzeba ${c})`);
+  switch(rule){
+    case 'andI': return need(2);
+    case 'orI1': case 'orI2': case 'impI': return need(1);
+    case 'topI': return k === 0 ? null : '(⊤i) nie potrzebuje przesłanek — odznacz wszystko';
+    case 'notI': return need(1) || (F[0].t === 'F' ? null : 'Potrzebny fragment kończący się ⊥');
+    case 'andE1': case 'andE2': return need(1) || (F[0].t === 'and' ? null : 'Potrzebna koniunkcja');
+    case 'botE': return need(1) || (F[0].t === 'F' ? null : 'Potrzebne ⊥');
+    case 'nnE': return need(1) || (F[0].t === 'not' && F[0].a.t === 'not' ? null : 'Potrzebna formuła postaci ¬¬α');
+    case 'impE': return need(2) || (pairImp(F) ? null : 'Potrzebne α oraz α ⇒ β');
+    case 'notE': return need(2) || (pairNot(F) ? null : 'Potrzebne α oraz ¬α');
+    case 'orE': return need(3) || (tripleOr(F) ? null : 'Potrzebne α ∨ β oraz dwa fragmenty z tym samym wnioskiem γ');
+  }
+  return 'Niedostępne';
+}
+function pairImp(F){ if(F[1].t === 'imp' && eq(F[1].a, F[0])) return [0,1]; if(F[0].t === 'imp' && eq(F[0].a, F[1])) return [1,0]; return null; }
+function pairNot(F){ if(F[1].t === 'not' && eq(F[1].a, F[0])) return [0,1]; if(F[0].t === 'not' && eq(F[0].a, F[1])) return [1,0]; return null; }
+function tripleOr(F){ for(const [d,x,y] of [[0,1,2],[1,0,2],[2,0,1]]) if(F[d].t === 'or' && eq(F[x], F[y])) return [d,x,y]; return null; }
+
+async function apply(rule){
+  const why = availability(rule);
+  if(why){ toast(why); return; }
+  const I = selInfo();
+  if(rule === 'hyp'){ commit(() => { I[0].n.rule = 'hyp'; sel = []; selectNextOpen(I[0].fi); }); return; }
+  if(mode === 'back') return applyBack(rule, I[0]);
+  return applyFwd(rule, I);
+}
+
+async function applyBack(rule, info, preset){
+  const n = info.n, f = n.f, id = n.id;
+  const C = candidates(info);
+  const hb = hintBest(rule, id);
+  const askOr = async o => preset !== undefined ? preset : await ask({...o, best:[...hb, ...(o.best || [])]});
+  let prem = null, x;
+  switch(rule){
+    case 'andI': prem = [N(f.a), N(f.b)]; break;
+    case 'orI1': prem = [N(f.a)]; break;
+    case 'orI2': prem = [N(f.b)]; break;
+    case 'topI': prem = []; break;
+    case 'impI': prem = [B(f.a, N(f.b))]; break;
+    case 'notI': prem = [B(f.a, N(BOT))]; break;
+    case 'botE': prem = [N(BOT)]; break;
+    case 'nnE':  prem = [N(NOT(NOT(f)))]; break;
+    case 'andE1':
+      x = await askOr({title:'Eliminacja koniunkcji (∧e₁)', desc:`Wyprowadzimy ${M(f)} z koniunkcji ${M(f)} ∧ β. Jaka jest formuła β?`,
+        best:C.filter(c => c.t === 'and' && eq(c.a, f)).map(c => c.b), sugg:C});
+      if(!x) return render(); prem = [N(AND(f, x))]; break;
+    case 'andE2':
+      x = await askOr({title:'Eliminacja koniunkcji (∧e₂)', desc:`Wyprowadzimy ${M(f)} z koniunkcji α ∧ ${M(f)}. Jaka jest formuła α?`,
+        best:C.filter(c => c.t === 'and' && eq(c.b, f)).map(c => c.a), sugg:C});
+      if(!x) return render(); prem = [N(AND(x, f))]; break;
+    case 'impE':
+      x = await askOr({title:'Modus ponens (⇒e)', desc:`Wyprowadzimy ${M(f)} z przesłanek α oraz α ⇒ ${M(f)}. Jaka jest formuła α?`,
+        best:C.filter(c => c.t === 'imp' && eq(c.b, f)).map(c => c.a), sugg:C});
+      if(!x) return render(); prem = [N(x), N(IMP(x, f))]; break;
+    case 'notE':
+      x = await askOr({title:'Sprzeczność (¬e)', desc:`Wyprowadzimy ⊥ z przesłanek α oraz ¬α. Jaka jest formuła α?`,
+        best:C.filter(c => c.t === 'not').map(c => c.a), sugg:C});
+      if(!x) return render(); prem = [N(x), N(NOT(x))]; break;
+    case 'orE':
+      x = await askOr({title:'Rozpatrywanie przypadków (∨e)', desc:`Udowodnimy alternatywę α ∨ β, a potem ${M(f)} osobno w oknie z założeniem α i w oknie z założeniem β. Jaka to alternatywa?`,
+        check:g => g.t === 'or' ? null : 'Ta formuła musi być alternatywą (spójnik główny ∨)',
+        best:C.filter(c => c.t === 'or'), sugg:[]});
+      if(!x) return render(); prem = [N(x), B(x.a, N(f)), B(x.b, N(f))]; break;
+  }
+  commit(() => {
+    const cur = IDX.get(id); if(!cur || !isOpen(cur.n)) return false;
+    cur.n.rule = rule; cur.n.prem = prem;
+    reindex(); autoClose(); reindex();
+    sel = []; selectNextOpen(cur.fi, cur.n);
+  });
+}
+
+async function applyFwd(rule, I){
+  const F = I.map(i => i.n.f), nodes = I.map(i => i.n);
+  let newRoot = null, used = nodes, x, pre = null;
+  const allOpen = () => { const m = new Map(); S.frags.forEach(r => openLeaves(r).forEach(l => m.set(key(l.f), l.f))); return [...m.values()]; };
+  switch(rule){
+    case 'andI': newRoot = N(AND(F[0], F[1]), rule, [nodes[0], nodes[1]]); break;
+    case 'orI1':
+      x = await ask({title:'Wprowadzanie alternatywy (∨i₁)', desc:`Z ${M(F[0])} wyprowadzimy ${M(F[0])} ∨ β. Jaka jest formuła β?`, best:allOpen().filter(g => g.t === 'or' && eq(g.a, F[0])).map(g => g.b), sugg:candidates(null)});
+      if(!x) return render(); newRoot = N(OR(F[0], x), rule, [nodes[0]]); break;
+    case 'orI2':
+      x = await ask({title:'Wprowadzanie alternatywy (∨i₂)', desc:`Z ${M(F[0])} wyprowadzimy α ∨ ${M(F[0])}. Jaka jest formuła α?`, best:allOpen().filter(g => g.t === 'or' && eq(g.b, F[0])).map(g => g.a), sugg:candidates(null)});
+      if(!x) return render(); newRoot = N(OR(x, F[0]), rule, [nodes[0]]); break;
+    case 'topI': newRoot = N(TOP, 'topI', []); used = []; break;
+    case 'impI': case 'notI': {
+      const hyps = openLeaves(nodes[0]).map(l => l.f);
+      x = await ask({title: rule === 'impI' ? 'Wprowadzanie implikacji (⇒i)' : 'Wprowadzanie negacji (¬i)',
+        desc:`Fragment trafi do okna z założeniem α, a otwarte hipotezy równe α zostaną w nim zamknięte. Wynik: ${rule === 'impI' ? 'α ⇒ '+M(F[0]) : '¬α'}. Jakie jest założenie α?`,
+        best:hyps, sugg:candidates(null)});
+      if(!x) return render();
+      pre = () => discharge(nodes[0], x);
+      newRoot = N(rule === 'impI' ? IMP(x, F[0]) : NOT(x), rule, [B(x, nodes[0])]); break;
+    }
+    case 'andE1': newRoot = N(F[0].a, rule, [nodes[0]]); break;
+    case 'andE2': newRoot = N(F[0].b, rule, [nodes[0]]); break;
+    case 'nnE': newRoot = N(F[0].a.a, rule, [nodes[0]]); break;
+    case 'botE':
+      x = await ask({title:'Eliminacja fałszu (⊥e)', desc:'Z ⊥ wynika dowolna formuła. Którą wyprowadzić?', best:allOpen(), sugg:candidates(null)});
+      if(!x) return render(); newRoot = N(x, rule, [nodes[0]]); break;
+    case 'impE': { const [a,b] = pairImp(F); newRoot = N(F[b].b, rule, [nodes[a], nodes[b]]); break; }
+    case 'notE': { const [a,b] = pairNot(F); newRoot = N(BOT, rule, [nodes[a], nodes[b]]); break; }
+    case 'orE': {
+      const [d,c1,c2] = tripleOr(F), D = F[d];
+      pre = () => { discharge(nodes[c1], D.a); discharge(nodes[c2], D.b); };
+      newRoot = N(F[c1], rule, [nodes[d], B(D.a, nodes[c1]), B(D.b, nodes[c2])]); break;
+    }
+  }
+  commit(() => {
+    if(pre) pre();
+    const idx = used.map(n => S.frags.indexOf(n)).filter(i => i >= 0);
+    const at = idx.length ? Math.min(...idx) : S.frags.length;
+    S.frags = S.frags.filter(r => !used.includes(r));
+    S.frags.splice(Math.min(at, S.frags.length), 0, newRoot);
+    sel = [newRoot.id];
+  });
+}
+
+function selectNextOpen(fi, under){
+  reindex();
+  const root = S.frags[fi]; if(!root) return;
+  const pick = (under ? openLeaves(under)[0] : null) || openLeaves(root)[0];
+  if(pick && mode === 'back') sel = [pick.id];
+}
+function gotoNextOpen(){
+  reindex();
+  const all = []; S.frags.forEach(r => openLeaves(r).forEach(l => all.push(l.id)));
+  if(!all.length){ toast('Brak otwartych celów'); return; }
+  const cur = sel.length ? all.indexOf(sel[sel.length-1]) : -1;
+  sel = [all[(cur + 1) % all.length]];
+  render();
+  document.querySelector(`.fm[data-id="${sel[0]}"]`)?.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+}
+
+/* operacje na drzewie */
+function opState(){
+  const I = selInfo();
+  const one = I.length === 1 ? I[0] : null;
+  const leaf = I.find(i => isOpen(i.n)), root = I.find(i => isRoot(i) && i !== leaf);
+  return {
+    clear: !!(one && !isOpen(one.n)),
+    detach: !!(one && !isRoot(one) && !isOpen(one.n)),
+    merge: !!(I.length === 2 && leaf && root && leaf.fi !== root.fi && eq(leaf.n.f, root.n.f)),
+  };
+}
+const OPS = {
+  clear(){ if(!opState().clear) return; commit(() => { const i = selInfo()[0]; i.n.rule = null; i.n.prem = []; sel = [i.n.id]; }); },
+  detach(){ if(!opState().detach) return; commit(() => { const i = selInfo()[0]; const leaf = N(i.n.f); FRESH.delete(leaf.id); replaceAt(i, leaf); S.frags.splice(i.fi + 1, 0, i.n); sel = [i.n.id]; }); },
+  merge(){ if(!opState().merge) return; commit(() => {
+    const I = selInfo(), leaf = I.find(i => isOpen(i.n)), root = I.find(i => isRoot(i) && i !== leaf);
+    replaceAt(leaf, root.n); S.frags = S.frags.filter(r => r !== root.n);
+    reindex(); autoClose(); sel = [];
+  }); },
+};
+
+/* =====================================================================
+   6. RYSOWANIE
+   ===================================================================== */
+let ERRS = new Map();
+function nodeHTML(n){
+  const cls = (sel.includes(n.id) ? ' sel' : '') + (ERRS.has(n.id) ? ' err' : '') + (FRESH.has(n.id) ? ' fresh' : '')
+    + (HINT && HINT.dead && HINT.goalId === n.id ? ' dead' : '') + (HINT && HINT.culprit === n.id ? ' culprit' : '');
+  if(n.prem.length === 0 && (n.rule === null || n.rule === 'hyp')){
+    const open = n.rule === null;
+    return `<span class="fm${open ? ' open' : ''}${cls}" data-id="${n.id}" title="${open ? 'otwarty cel — kliknij, aby wybrać regułę' : 'użycie założenia'}">${html(n.f)}</span>`;
+  }
+  const prem = n.prem.map(p => p.box ? boxHTML(p) : nodeHTML(p)).join('');
+  return `<div class="inf"><div class="prem">${prem}</div><div class="bar"></div><div class="lbl">(${R[n.rule]?.lab || '?'})</div>`+
+    `<div class="concl"><span class="fm${cls}" data-id="${n.id}" title="${R[n.rule]?.name || ''}">${html(n.f)}</span></div></div>`;
+}
+function boxHTML(b){
+  return `<div class="box"><div class="bhead"><span class="math">${html(b.a)}</span><span class="zal">założenie</span></div>${nodeHTML(b.body)}</div>`;
+}
+
+function schemaHTML(rule){
+  const m = n => `<span class="math"><i>${n}</i></span>`;
+  const f = s => `<span class="math">${s}</span>`;
+  const inf = (prems, concl, lab) => `<div class="inf"><div class="prem">${prems.join('')}</div><div class="bar"></div><div class="lbl">(${lab})</div><div class="concl">${concl}</div></div>`;
+  const bx = (a, b) => `<div class="box" style="padding:.1em .4em;gap:0"><div class="dots">${a}<span class="v">⋮</span>${b}</div></div>`;
+  const a = m('α'), b = m('β'), g = m('γ'), L = R[rule].lab;
+  switch(rule){
+    case 'andI': return inf([a,b], f('<i>α</i> ∧ <i>β</i>'), L);
+    case 'orI1': return inf([a], f('<i>α</i> ∨ <i>β</i>'), L);
+    case 'orI2': return inf([b], f('<i>α</i> ∨ <i>β</i>'), L);
+    case 'topI': return inf([], f('⊤'), L);
+    case 'impI': return inf([bx(a,b)], f('<i>α</i> ⇒ <i>β</i>'), L);
+    case 'notI': return inf([bx(a,f('⊥'))], f('¬<i>α</i>'), L);
+    case 'andE1': return inf([f('<i>α</i> ∧ <i>β</i>')], a, L);
+    case 'andE2': return inf([f('<i>α</i> ∧ <i>β</i>')], b, L);
+    case 'impE': return inf([a, f('<i>α</i> ⇒ <i>β</i>')], b, L);
+    case 'notE': return inf([a, f('¬<i>α</i>')], f('⊥'), L);
+    case 'botE': return inf([f('⊥')], a, L);
+    case 'nnE': return inf([f('¬¬<i>α</i>')], a, L);
+    case 'orE': return inf([f('<i>α</i> ∨ <i>β</i>'), bx(a,g), bx(b,g)], g, L);
+    case 'hyp': return `<div class="box" style="padding:.15em .6em;gap:0"><div class="dots">${f('<i>α</i>&nbsp;&nbsp;założenie')}<span class="v">⋮</span>${a}</div></div>`;
+  }
+}
+const ruleCard = r => `<div class="rcard${r === 'hyp' ? ' hypc' : ''}" data-rule="${r}" tabindex="0" role="button" aria-label="${R[r].name}">${schemaHTML(r)}</div>`;
+(function buildRules(){
+  let h = `<span></span><span class="colh">wprowadzanie</span><span class="colh">eliminacja</span>`;
+  TABLE.forEach(([con, I, E]) => {
+    h += `<div class="con">${con}</div><div class="cell">${I.map(ruleCard).join('')}</div><div class="cell">${E.map(ruleCard).join('')}</div>`;
+  });
+  h += `<div class="rowsep"></div><div class="cell" style="grid-column:1/4">${ruleCard('hyp')}</div>`;
+  $('rtable').innerHTML = h;
+  $('rtable').addEventListener('click', e => { const c = e.target.closest('.rcard'); if(c) apply(c.dataset.rule); });
+  $('rtable').addEventListener('keydown', e => { const c = e.target.closest('.rcard'); if(c && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); apply(c.dataset.rule); } });
+})();
+
+function seqHTML(root){
+  const m = new Map(); openLeaves(root).forEach(l => m.set(key(l.f), l.f));
+  if(!m.size) return '⊢ ' + html(root.f);
+  if(mode === 'back') return html(root.f);
+  return [...m.values()].map(f => html(f)).join(', ') + ' ⊢ ' + html(root.f);
+}
+const plural = (n, a, b, c) => n === 1 ? a : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? b : c;
+const goals = n => `${n} ${plural(n, 'otwarty cel', 'otwarte cele', 'otwartych celów')}`;
+
+function render(){
+  reindex();
+  sel = sel.filter(id => IDX.has(id));
+  validateHint();
+  ERRS = verify();
+  const ws = $('ws');
+  if(!S.frags.length){
+    ws.innerHTML = emptyHTML();
+  } else {
+    const selFr = new Set(selInfo().map(i => i.fi));
+    ws.innerHTML = S.frags.map((r, i) => {
+      const open = openLeaves(r).length, errs = [...ERRS.keys()].filter(id => IDX.get(id)?.fi === i).length;
+      const done = !open && !errs;
+      const tag = errs ? `<span class="pill bad">błędy: ${errs}</span>`
+        : open ? `<span class="pill">${goals(open)}</span>`
+        : `<span class="pill ok">${icon('check')}dowód kompletny</span>`;
+      return `<section class="frag card${selFr.has(i) ? ' has-sel' : ''}${done ? ' done' : ''}" data-fi="${i}">
+        <div class="fhead"><span class="num">${S.frags.length > 1 ? 'Fragment ' + (i+1) : 'Dowód'}</span><span class="seq">${seqHTML(r)}</span>${tag}<span class="sp"></span>
+          <button class="btn ${done ? '' : 'ghost'}" data-tex="${i}" title="Kod LaTeX tego dowodu">${icon('code')}LaTeX</button>
+          <button class="btn icon danger" data-delfrag="${i}" title="Usuń ten fragment" aria-label="Usuń fragment">${icon('trash')}</button></div>
+        <div class="fbody"><div class="inner">${nodeHTML(r)}</div></div></section>`;
+    }).join('');
+  }
+  FRESH.clear();
+  renderRules(); renderDock(); renderStatus(); hint();
+  $('undo').disabled = !undoStack.length; $('redo').disabled = !redoStack.length;
+  $('reset').disabled = !S.frags.length;
+  $('newFLab').textContent = mode === 'back' ? 'Nowy cel' : 'Nowa przesłanka';
+  if($('texModal').classList.contains('show')) texUI();
+  save();
+}
+
+function emptyHTML(){
+  const ex = EXAMPLES.map((e, i) => [e, i]).filter(([e]) => e[4] === 's29').slice(0, 6);
+  return `<div class="card empty">
+    <div class="big">⊢ φ</div>
+    <h2>Co chcesz udowodnić?</h2>
+    <p>Wpisz formułę rachunku zdań i buduj jej dowód, klikając reguły dedukcji naturalnej. Aplikacja pilnuje poprawności każdego kroku i rysuje dowód z oknami, tak jak w skrypcie.</p>
+    <button class="btn primary lg" data-act="new">${icon('plus')}Wpisz formułę</button>
+    <div class="exchips"><span class="lab">albo zacznij od przykładu ze skryptu:</span>
+      ${ex.map(([e, i]) => `<button data-ex="${i}" title="${e[0]} — ${e[3]}">${html(parse(e[1]))}</button>`).join('')}
+    </div>
+    <div class="modes">
+      <div><b>↑ Od celu</b><span>Klikasz cel i regułę — nad celem pojawiają się przesłanki do udowodnienia. Najprostszy sposób na start.</span></div>
+      <div><b>↓ Od przesłanek</b><span>Zaczynasz od hipotez i łączysz je regułami w coraz większe fragmenty, aż dojdziesz do celu.</span></div>
+    </div>
+  </div>`;
+}
+
+function bestRules(ok){
+  const I = selInfo(), best = new Set();
+  if(ok.includes('hyp')) best.add('hyp');
+  else if(mode === 'back' && I.length === 1) (MAIN_INTRO[I[0].n.f.t] || []).forEach(r => { if(ok.includes(r)) best.add(r); });
+  return best;
+}
+function renderRules(){
+  const anySel = sel.length > 0;
+  const okList = Object.keys(R).filter(r => !availability(r));
+  const best = mode === 'fwd' ? new Set(okList) : bestRules(okList);
+  let n = 0;
+  document.querySelectorAll('.rcard').forEach(c => {
+    const r = c.dataset.rule, why = availability(r);
+    const ok = !why && (anySel || r === 'topI');
+    if(ok) n++;
+    c.classList.toggle('ok', ok);
+    c.classList.toggle('best', ok && best.has(r));
+    c.classList.toggle('hinted', !!(HINT && HINT.step && HINT.level >= 2 && HINT.step.rule === r));
+    c.classList.toggle('off', !!why && anySel);
+    c.title = `(${R[r].lab.replace(/<\/?sub>/g,'')}) ${R[r].name}` + (why && anySel ? ` — ${why}` : '');
+  });
+  $('rulesSub').textContent = anySel
+    ? (n ? (mode === 'back' && best.size ? 'Wypełniona karta to naturalny wybór dla tego celu; obramowane też pasują.' : `Pasujące reguły (${n}) są obramowane.`) : 'Żadna reguła nie pasuje do tego zaznaczenia.')
+    : (mode === 'back' ? 'Zaznacz otwarty cel, a podświetlą się reguły, które można do niego zastosować.' : 'Zaznacz formuły na dole fragmentów, a podświetlą się pasujące reguły.');
+}
+
+function chipHTML(r, best, hinted){
+  const lab = r === 'hyp' ? 'założenie' : `<span class="math">(${R[r].lab})</span>`;
+  return `<button class="chip${best ? ' best' : ''}${hinted ? ' hinted' : ''}" data-rule="${r}" title="${R[r].name}">${lab}</button>`;
+}
+function renderDock(){
+  const I = selInfo(), dock = $('dock');
+  if(!I.length){ dock.hidden = true; return; }
+  dock.hidden = false;
+  let d;
+  if(I.length === 1){
+    const n = I[0].n;
+    d = isOpen(n) ? `${mode === 'back' ? 'Cel' : 'Hipoteza'}: ${M(n.f)}` :
+        n.rule === 'hyp' ? `Założenie: ${M(n.f)}` : `${M(n.f)} &nbsp;— z reguły <span class="math">(${R[n.rule].lab})</span>`;
+  } else d = 'Zaznaczone: ' + I.map((i,k) => `<b>${k+1}.</b>&nbsp;${M(i.n.f)}`).join(' &nbsp; ');
+  $('dockSel').innerHTML = d;
+
+  const ok = Object.keys(R).filter(r => !availability(r));
+  const n1 = I.length === 1 ? I[0].n : null;
+  let rules;
+  if(ok.length){
+    const best = bestRules(ok);
+    const order = ['hyp', ...INTRO, ...ELIM].filter(r => ok.includes(r));
+    const hr = HINT && HINT.step && HINT.level >= 2 ? HINT.step.rule : null;
+    rules = `<span class="grp">Reguły</span>` + order.map(r => chipHTML(r, best.has(r), r === hr)).join('');
+    if(mode === 'back' && n1 && isOpen(n1) && !HINT) rules += `<button class="chip hintc" data-hintgo="1" title="Podpowiedź (H)">${icon('bulb')}Podpowiedź</button>`;
+  } else {
+    let msg;
+    if(n1 && n1.rule === 'hyp') msg = 'To użycie założenia otaczającego okna.';
+    else if(mode === 'back' && n1 && !isOpen(n1)) msg = 'Ta formuła jest już uzasadniona.';
+    else if(mode === 'back' && I.length > 1) msg = 'W trybie „od celu” reguły stosuje się do jednego celu naraz.';
+    else if(mode === 'fwd' && I.some(i => !isRoot(i))) msg = 'W trybie „od przesłanek” zaznaczaj formuły na dole fragmentów.';
+    else msg = 'Żadna reguła nie pasuje do tego zaznaczenia.';
+    rules = `<span class="note">${msg}</span>`;
+  }
+  $('dockRules').innerHTML = rules;
+  const os = opState(), ops = [];
+  if(os.merge) ops.push(`<button class="chip op" data-op="merge">Wstaw fragment w cel</button>`);
+  if(os.clear) ops.push(`<button class="chip op" data-op="clear" title="Delete">Usuń uzasadnienie</button>`);
+  if(os.detach) ops.push(`<button class="chip op" data-op="detach">Odłącz poddrzewo</button>`);
+  $('dockOps').innerHTML = ops.length ? `<span class="grp">Edycja</span>` + ops.join('') : '';
+  $('dockOps').hidden = !ops.length;
+  renderHintRow();
+}
+$('dock').addEventListener('click', e => {
+  const h = e.target.closest('[data-hintgo]'); if(h){ hintAction(h.dataset.hintgo); return; }
+  const r = e.target.closest('[data-rule]'); if(r){ apply(r.dataset.rule); return; }
+  const o = e.target.closest('[data-op]'); if(o) OPS[o.dataset.op]();
+});
+$('dockClose').onclick = () => { sel = []; render(); };
+
+function renderStatus(){
+  const st = $('status');
+  if(!S.frags.length){ st.innerHTML = ''; return; }
+  let open = 0; S.frags.forEach(r => { open += openLeaves(r).length; });
+  st.innerHTML = open
+    ? `<button class="btn ghost" id="nextOpen" title="Zaznacz następny otwarty cel (N)">${icon('next')}<span class="lbltxt hide-md">Następny cel</span><span class="pill">${open}</span></button>`
+    : `<span class="pill ok">${icon('check')}${S.frags.length === 1 ? 'dowód kompletny' : 'wszystkie fragmenty kompletne'}</span>`;
+  $('nextOpen')?.addEventListener('click', gotoNextOpen);
+}
+
+function hint(){
+  const I = selInfo(), h = $('hint');
+  if(!S.frags.length){ h.hidden = true; return; }
+  h.hidden = false;
+  const anyOpen = S.frags.some(r => openLeaves(r).length);
+  let t;
+  if(mode === 'back'){
+    if(!anyOpen) t = '<b>Gotowe!</b> Wszystkie cele są zamknięte. Kod do pracy lub prezentacji pobierzesz przyciskiem <b>LaTeX</b> przy dowodzie.';
+    else if(!I.length) t = 'Kliknij <b>otwarty cel</b> (pomarańczowa ramka) i wybierz regułę — nad celem pojawią się przesłanki. Utknąłeś? Naciśnij <b>Podpowiedź</b>.';
+    else if(I.length === 1 && isOpen(I[0].n)) t = inScope(I[0], I[0].n.f)
+      ? 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.'
+      : 'Wybierz regułę z paska na dole ekranu albo z tabeli. Reguła wprowadzania pasująca do spójnika głównego jest wyróżniona.';
+    else t = 'Kliknij <b>otwarty cel</b>, aby kontynuować. Uzasadnioną formułę możesz edytować z paska na dole.';
+  } else {
+    if(!I.length) t = 'Zaznacz <b>formuły na dole fragmentów</b> (kolejność kliknięć ma znaczenie) i wybierz regułę — pod spodem pojawi się wniosek. Przesłanki dodasz przyciskiem <b>Nowa przesłanka</b>.';
+    else t = 'Możesz zaznaczyć kolejne formuły albo wybrać regułę z paska na dole ekranu.';
+  }
+  h.innerHTML = icon('info') + '<div>' + t + '</div>';
+}
+
+/* =====================================================================
+   7. LaTeX
+   ===================================================================== */
+function nodeTeX(n, ind){
+  const pad = '  '.repeat(ind);
+  if(n.prem.length === 0 && (n.rule === null || n.rule === 'hyp')) return pad + tex(n.f);
+  const prem = n.prem.map(p => p.box
+      ? `${pad}  \\okno{${tex(p.a)}}{%\n${nodeTeX(p.body, ind+2)}%\n${pad}  }`
+      : nodeTeX(p, ind+1)).join('\n' + pad + '  &\n');
+  return `${pad}\\infer[(${R[n.rule].tex})]{${tex(n.f)}}{%\n${prem}${n.prem.length ? '%\n' : ''}${pad}}`;
+}
+const PREAMBLE = String.raw`\usepackage[T1]{fontenc}
+\usepackage{proof}
+% okno (pudełko) z założeniem, jak w skrypcie; zerowanie przesunięć proof.sty,
+% aby kreska pod oknem obejmowała całe okno
+\makeatletter
+\newcommand{\okno}[2]{\raisebox{\depth}{\fbox{$\begin{array}{@{}c@{}}#1\quad\mbox{założenie}\\[5pt]#2\end{array}$}}%
+  \global\@LeftOffset=0pt\global\@RightOffset=0pt}
+\makeatother`;
+function texFor(i, full){
+  const r = S.frags[i]; if(!r) return '';
+  const open = openLeaves(r).length;
+  const warn = open ? `% UWAGA: dowód niekompletny (otwarte cele: ${open})\n` : '';
+  if(!full) return `% w preambule:\n${PREAMBLE.split('\n').map(l => '%   ' + l).join('\n')}\n\n${warn}\\[\n${nodeTeX(r, 1)}\n\\]\n`;
+  return `\\documentclass[border=10pt]{standalone}\n${PREAMBLE}\n\\begin{document}\n${warn}$\\displaystyle\n${nodeTeX(r, 1)}\n$\n\\end{document}\n`;
+}
+let texIdx = 0;
+function texUI(){
+  const s = $('texFrag');
+  if(texIdx >= S.frags.length) texIdx = 0;
+  s.innerHTML = S.frags.map((r, i) => `<option value="${i}">${S.frags.length > 1 ? (i+1) + '. ' : ''}${uni(r.f)}${openLeaves(r).length ? ' (niekompletny)' : ''}</option>`).join('');
+  s.value = String(texIdx);
+  s.hidden = S.frags.length < 2;
+  $('tex').value = texFor(texIdx, $('texFull').checked);
+  const open = S.frags[texIdx] ? openLeaves(S.frags[texIdx]).length : 0;
+  $('texNote').textContent = open ? `Dowód nie jest jeszcze kompletny (${goals(open)}).` : '';
+}
+function openTex(i){
+  if(!S.frags.length){ toast('Najpierw zbuduj dowód'); return; }
+  texIdx = i ?? (selInfo()[0]?.fi ?? 0);
+  texUI(); openModal('texModal');
+}
+$('texOpen').onclick = () => openTex();
+$('texFrag').onchange = e => { texIdx = +e.target.value; texUI(); };
+$('texFull').onchange = texUI;
+$('texCopy').onclick = () => copy($('tex').value, 'Skopiowano kod LaTeX');
+$('texDl').onclick = () => {
+  const blob = new Blob([texFor(texIdx, true)], {type:'application/x-tex'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `dowod-${texIdx+1}.tex`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Pobrano plik .tex');
+};
+
+/* =====================================================================
+   8. ZDARZENIA, PRZYKŁADY, ZAPIS
+   ===================================================================== */
+$('ws').addEventListener('click', e => {
+  const t = e.target.closest('[data-tex]'); if(t){ openTex(+t.dataset.tex); return; }
+  const d = e.target.closest('[data-delfrag]'); if(d){ commit(() => { S.frags.splice(+d.dataset.delfrag, 1); sel = []; }); toast('Usunięto — możesz to cofnąć'); return; }
+  if(e.target.closest('[data-act="new"]')){ newFormula(); return; }
+  const x = e.target.closest('[data-ex]'); if(x){ loadExample(+x.dataset.ex); return; }
+  const el = e.target.closest('[data-id]');
+  if(!el){ if(e.target.closest('.fbody') && sel.length){ sel = []; render(); } return; }
+  const id = +el.dataset.id, multi = mode === 'fwd' || e.shiftKey || e.ctrlKey || e.metaKey;
+  if(multi) sel = sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id];
+  else sel = (sel.length === 1 && sel[0] === id) ? [] : [id];
+  render();
+});
+function setModeSilent(m){ mode = m; document.querySelectorAll('#modeSeg button').forEach(x => { x.classList.toggle('on', x.dataset.mode === m); x.setAttribute('aria-selected', x.dataset.mode === m); }); }
+function setMode(m){ setModeSilent(m); if(mode === 'back' && sel.length > 1) sel = sel.slice(-1); render(); }
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('autoHyp').onchange = () => { if($('autoHyp').checked) commit(() => { autoClose(); }); else save(); };
+
+async function newFormula(){
+  const f = await ask({title: mode === 'back' ? 'Nowy cel' : 'Nowa przesłanka', desc: mode === 'back'
+    ? 'Formuła, którą chcesz udowodnić (np. tautologia). Pojawi się jako otwarty cel.'
+    : 'Formuła-hipoteza. Pozostaje otwarta, dopóki nie zamkniesz jej w oknie regułą (⇒i), (¬i) lub (∨e).',
+    sugg: S.frags.length ? candidates(null) : [], okLabel: mode === 'back' ? 'Dodaj cel' : 'Dodaj przesłankę'});
+  if(!f) return;
+  commit(() => { const n = N(f); S.frags.push(n); sel = [n.id]; });
+  setTimeout(() => document.querySelector(`.fm[data-id="${sel[0]}"]`)?.scrollIntoView({behavior:'smooth', block:'center'}), 50);
+}
+$('newF').onclick = newFormula;
+
+const EXAMPLES = [
+  // [tytuł, formuła, gotowy dowód?, opis, grupa]
+  ['Przykład 48', '~(p|q) -> ~p & ~q', null, 'prawo De Morgana', 's29'],
+  ['Przykład 49', 'p | ~p', null, 'prawo wyłączonego środka', 's29'],
+  ['Zadanie 141', '~(p&q) -> ~p | ~q', null, 'wymaga (¬¬e)', 's29'],
+  ['Zadanie 143', '((p->q)->p)->p', null, 'prawo Peirce’a', 's29'],
+  ['Zadanie 144', '(~q -> ~p) -> (p -> q)', null, 'kontrapozycja', 's29'],
+  ['Zadanie 145', '(p->q) & (q->r) & ~r & (p|s) & (s->t) -> t', null, 'okulary pana Hilarego', 's29'],
+  ['Zadanie 146 (1)', 'p | (q & r) -> (p | q) & (p | r)', null, 'rozdzielność', 's29'],
+  ['Zadanie 146 (2)', '(p | q) & (p | r) -> p | (q & r)', null, 'rozdzielność', 's29'],
+  ['Str. 52', 'p -> (p -> q) -> q', null, 'przykład w notacji sekwentowej', 's29'],
+  ['41.1', '(p -> q) & p -> q', null, 'modus ponens', 'z41'],
+  ['41.2', '(p -> q) & ~q -> ~p', null, 'modus tollens', 'z41'],
+  ['41.3', '(p | q -> r) -> p -> r', null, 'prawo kompozycji', 'z41'],
+  ['41.4', '(p | q -> r) -> q -> r', null, 'prawo kompozycji', 'z41'],
+  ['41.5', 'p & q -> p', null, 'prawo symplifikacji', 'z41'],
+  ['41.6', 'q -> p | q', null, 'prawo symplifikacji', 'z41'],
+  ['41.7', 'p -> q -> p', null, 'prawo symplifikacji', 'z41'],
+  ['41.8', '~p -> p -> q', null, 'prawo Dunsa Szkota', 'z41'],
+  ['41.9', '(p -> r) & (q -> r) & (p | q) -> r', null, 'prawo dylematu konstrukcyjnego', 'z41'],
+  ['41.10', '(p & q -> r) -> p -> q -> r', null, 'prawo eksportacji', 'z41'],
+  ['41.11', '(p -> q -> r) -> p & q -> r', null, 'prawo importacji', 'z41'],
+  ['41.12', '(p -> ~p) -> ~p', null, 'prawo redukcji do absurdu', 'z41'],
+  ['41.13', '~(p & ~p)', null, 'prawo sprzeczności', 'z41'],
+  ['41.14', 'p | ~p', null, 'prawo wyłączonego środka', 'z41'],
+  ['41.15', '(p -> q) -> (q -> r) -> p -> r', null, 'prawo sylogizmu hipotetycznego', 'z41'],
+  ['41.16', '((p -> q) -> p) -> p', null, 'prawo Peirce’a', 'z41'],
+  ['41.17', '(~p -> p) -> p', null, 'prawo Claviusa', 'z41'],
+  ['41.18', '(p -> p) & (p -> p)', null, 'prawo tożsamości: p ⇔ p jako skrót', 'z41'],
+  ['Przykład 48', '~(p|q) -> ~p & ~q', 'demo48', 'gotowy dowód', 'demo'],
+  ['Przykład 49', 'p | ~p', 'demo49', 'gotowy dowód', 'demo'],
+];
+const EX_GROUPS = [['s29', 'Rozdział 2.9'], ['z41', 'Zadanie 41 — tautologie'], ['demo', 'Gotowe dowody ze skryptu']];
+(function buildExamples(){
+  const L = $('exList');
+  const item = (e, i) => `<button data-ex="${i}"><span class="t">${e[0]}<small>${e[3]}</small></span><span class="f">${html(parse(e[1]))}</span></button>`;
+  L.innerHTML = EX_GROUPS.map(([g, lab]) => `<div class="grp">${lab}</div>` + EXAMPLES.map((e, i) => e[4] === g ? item(e, i) : '').join('')).join('');
+  L.addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if(b){ $('exMenu').open = false; loadExample(+b.dataset.ex); } });
+  document.addEventListener('click', e => { if(!e.target.closest('#exMenu')) $('exMenu').open = false; });
+})();
+function loadExample(i){
+  const ex = EXAMPLES[i]; if(!ex) return;
+  if(!ex[2] && mode !== 'back') setModeSilent('back');
+  commit(() => {
+    const n = ex[2] === 'demo48' ? demo48() : ex[2] === 'demo49' ? demo49() : N(parse(ex[1]));
+    S.frags.push(n); sel = ex[2] ? [] : [n.id];
+  });
+  setTimeout(() => { const fr = document.querySelectorAll('.frag'); fr[fr.length-1]?.scrollIntoView({behavior:'smooth', block:'start'}); }, 50);
+}
+function demo48(){
+  const P = V('p'), Q = V('q'), PQ = OR(P,Q), H = NOT(PQ);
+  const side = (x, r) => N(NOT(x), 'notI', [B(x, N(BOT, 'notE', [N(PQ, r, [N(x, 'hyp')]), N(H, 'hyp')]))]);
+  return N(IMP(H, AND(NOT(P), NOT(Q))), 'impI', [B(H, N(AND(NOT(P), NOT(Q)), 'andI', [side(P, 'orI1'), side(Q, 'orI2')]))]);
+}
+function demo49(){
+  const P = V('p'), L = OR(P, NOT(P)), H = NOT(L);
+  const inner = N(NOT(P), 'notI', [B(P, N(BOT, 'notE', [N(L, 'orI1', [N(P, 'hyp')]), N(H, 'hyp')]))]);
+  return N(L, 'nnE', [N(NOT(H), 'notI', [B(H, N(BOT, 'notE', [N(L, 'orI2', [inner]), N(H, 'hyp')]))])]);
+}
+
+$('undo').onclick = () => { if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); };
+$('redo').onclick = () => { if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); };
+$('reset').onclick = () => { if(!S.frags.length) return; commit(() => { S.frags = []; sel = []; }); toast('Wyczyszczono — możesz to cofnąć'); };
+let fs = 20;
+function setFs(v){ fs = Math.max(12, Math.min(34, v)); document.documentElement.style.setProperty('--fs', fs + 'px'); try{ localStorage.setItem('nd-fs', fs); }catch(e){} }
+$('zoomIn').onclick = () => setFs(fs + 2);
+$('zoomOut').onclick = () => setFs(fs - 2);
+$('helpOpen').onclick = () => openModal('helpModal');
+
+function b64e(s){ return btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64d(s){ s = s.replace(/-/g,'+').replace(/_/g,'/'); return new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))); }
+const EMBED = (() => { try{ return window.self !== window.top; }catch(e){ return true; } })();
+if(EMBED){ document.documentElement.classList.add('embed'); $('fullBtn').hidden = false; $('fullBtn').href = location.href.split('#')[0]; }
+else if(/\/dedukcja\/(index\.html)?$/.test(location.pathname)) $('homeBtn').hidden = false;
+/* w ramce na stronie: przycisk zwija/rozwija menu boczne strony (gdy strona to umożliwia) */
+const parentApi = () => { try{ const P = window.parent; return P !== window && typeof P.ndToggleSidebar === 'function' ? P : null; }catch(e){ return null; } };
+const sidebarFoldable = () => { const P = parentApi(); try{ return !!P && P.innerWidth >= 992; }catch(e){ return false; } };
+window.ndSidebarState = folded => {
+  const b = $('fullBtn'); if(!b) return;
+  if(!sidebarFoldable()){ b.innerHTML = icon('expand'); b.title = 'Otwórz na pełnym ekranie (w nowej karcie)'; b.setAttribute('aria-label', 'Pełny ekran'); b.removeAttribute('aria-pressed'); return; }
+  b.innerHTML = icon(folded ? 'shrink' : 'expand');
+  b.title = folded ? 'Pokaż menu strony' : 'Zwiń menu strony — więcej miejsca na dowód';
+  b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', folded ? 'true' : 'false');
+};
+$('fullBtn').addEventListener('click', e => {
+  save();
+  const P = parentApi();
+  if(P && sidebarFoldable()){ e.preventDefault(); P.ndToggleSidebar(); }
+});
+if(EMBED){ const P = parentApi(); window.ndSidebarState(P && typeof P.ndSidebarFolded === 'function' ? P.ndSidebarFolded() : false); window.addEventListener('resize', () => { const Q = parentApi(); window.ndSidebarState(Q && Q.ndSidebarFolded ? Q.ndSidebarFolded() : false); }); }
+$('share').onclick = () => {
+  if(!S.frags.length){ toast('Nie ma jeszcze czego udostępnić'); return; }
+  let base = location.href;
+  if(EMBED){ try{ base = window.top.location.href; }catch(e){} }
+  const url = base.split('#')[0] + '#d=' + b64e(snapshot());
+  if(!EMBED){ try{ history.replaceState(null, '', url); }catch(e){} }
+  copy(url, 'Skopiowano link do bieżącego dowodu');
+};
+function copy(text, msg){
+  const done = () => toast(msg);
+  const fallback = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Nie udało się skopiować'); } t.remove(); };
+  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+}
+let toastT;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+
+function save(){ try{ localStorage.setItem('nd-proof', snapshot()); localStorage.setItem('nd-mode', mode); localStorage.setItem('nd-auto', $('autoHyp').checked ? '1' : '0'); }catch(e){} }
+function load(){
+  try{
+    const m = localStorage.getItem('nd-mode'); if(m === 'back' || m === 'fwd') setModeSilent(m);
+    const a = localStorage.getItem('nd-auto'); if(a) $('autoHyp').checked = a === '1';
+    const f = +localStorage.getItem('nd-fs'); if(f) setFs(f);
+  }catch(e){}
+  const h = location.hash.match(/#d=([\w-]+)/);
+  if(h){ try{ restore(b64d(h[1])); return; }catch(e){ toast('Nie udało się odczytać dowodu z linku'); } }
+  try{ const s = localStorage.getItem('nd-proof'); if(s) restore(s); }catch(e){}
+}
+
+document.addEventListener('keydown', e => {
+  if(anyModal()){
+    if(e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(m => closeModal(m.id));
+    return;
+  }
+  if(e.target.closest && e.target.closest('input,textarea,select')) return;
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if(mod && k === 'z' && !e.shiftKey){ e.preventDefault(); $('undo').click(); }
+  else if(mod && (k === 'y' || (k === 'z' && e.shiftKey))){ e.preventDefault(); $('redo').click(); }
+  else if(e.key === 'Delete' || e.key === 'Backspace'){ if(opState().clear){ e.preventDefault(); OPS.clear(); } }
+  else if(e.key === 'Escape'){ if(sel.length){ sel = []; render(); } }
+  else if(!mod && !e.altKey && k === 'n'){ gotoNextOpen(); }
+  else if(!mod && !e.altKey && k === 'h'){ hintPress(); }
+});
+
+
+/* =====================================================================
+   9. PODPOWIEDZI
+      semantyka (tabela prawdy) + automatyczny dowodzący dla systemu ze skryptu
+   ===================================================================== */
+function fvars(f, s = new Set()){ if(f.t === 'v') s.add(f.n); if(f.a) fvars(f.a, s); if(f.b) fvars(f.b, s); return s; }
+function evalF(f, v){
+  switch(f.t){
+    case 'v': return v[f.n]; case 'T': return true; case 'F': return false;
+    case 'not': return !evalF(f.a, v);
+    case 'and': return evalF(f.a, v) && evalF(f.b, v);
+    case 'or': return evalF(f.a, v) || evalF(f.b, v);
+    case 'imp': return !evalF(f.a, v) || evalF(f.b, v);
+  }
+}
+const CM_CACHE = new Map();
+/* null, gdy G ⊨ φ; w przeciwnym razie wartościowanie-kontrprzykład */
+function countermodel(G, phi){
+  const k = G.map(key).sort().join(',') + '⊢' + key(phi);
+  if(CM_CACHE.has(k)) return CM_CACHE.get(k);
+  const vs = new Set(); G.forEach(g => fvars(g, vs)); fvars(phi, vs);
+  const X = [...vs].sort(); let res = null;
+  for(let m = 0; m < (1 << X.length); m++){
+    const v = {}; X.forEach((x, i) => { v[x] = !!((m >> i) & 1); });
+    if(G.every(g => evalF(g, v)) && !evalF(phi, v)){ res = v; break; }
+  }
+  if(CM_CACHE.size > 50000) CM_CACHE.clear();
+  CM_CACHE.set(k, res);
+  return res;
+}
+const entails = (G, phi) => !countermodel(G, phi);
+
+const Prover = (() => {
+  const P = (f, rule, prem = []) => ({f, rule, prem});
+  const PB = (a, body) => ({box:true, a, body});
+  let calls = 0; const LIMIT = 300000;
+  const add = (K, f, pf) => { const k = key(f); if(!K.has(k)) K.set(k, pf); };
+  /* domknięcie wiedzy regułami eliminacji, które nie wymagają nowych celów */
+  function saturate(K){
+    let changed = true;
+    while(changed){
+      changed = false;
+      for(const pf of [...K.values()]){
+        const f = pf.f, n0 = K.size;
+        if(f.t === 'and'){ add(K, f.a, P(f.a, 'andE1', [pf])); add(K, f.b, P(f.b, 'andE2', [pf])); }
+        else if(f.t === 'imp'){ const a = K.get(key(f.a)); if(a) add(K, f.b, P(f.b, 'impE', [a, pf])); }
+        else if(f.t === 'not'){
+          const a = K.get(key(f.a)); if(a) add(K, BOT, P(BOT, 'notE', [a, pf]));
+          if(f.a.t === 'not') add(K, f.a.a, P(f.a.a, 'nnE', [pf]));
+        }
+        if(K.size !== n0) changed = true;
+      }
+    }
+    return K;
+  }
+  const extend = (K, f, pf) => { const K2 = new Map(K); add(K2, f, pf); return saturate(K2); };
+  const hyp = f => P(f, 'hyp');
+
+  function prove(K, H, phi, d, st){
+    if(++calls > LIMIT) throw 'limit';
+    const k = key(phi);
+    if(K.has(k)) return K.get(k);
+    if(phi.t === 'T') return P(TOP, 'topI');
+    if(K.has('F')) return P(phi, 'botE', [K.get('F')]);
+    const sk = k + '|' + [...K.keys()].sort().join(',');
+    if(st.stack.has(sk)) return null;
+    st.stack.add(sk);
+    try{
+      /* reguły wprowadzania odwracalne — zawsze bezpieczne */
+      if(phi.t === 'imp'){ const r = prove(extend(K, phi.a, hyp(phi.a)), [...H, phi.a], phi.b, d, st); return r && P(phi, 'impI', [PB(phi.a, r)]); }
+      if(phi.t === 'and'){ const a = prove(K, H, phi.a, d, st); if(!a) return null; const b = prove(K, H, phi.b, d, st); return b && P(phi, 'andI', [a, b]); }
+      if(phi.t === 'not'){ const r = prove(extend(K, phi.a, hyp(phi.a)), [...H, phi.a], BOT, d, st); return r && P(phi, 'notI', [PB(phi.a, r)]); }
+      if(d <= 0) return null;
+      /* alternatywa: wybierz człon, który wynika z założeń */
+      if(phi.t === 'or'){
+        if(entails(H, phi.a)){ const r = prove(K, H, phi.a, d - 1, st); if(r) return P(phi, 'orI1', [r]); }
+        if(entails(H, phi.b)){ const r = prove(K, H, phi.b, d - 1, st); if(r) return P(phi, 'orI2', [r]); }
+      }
+      /* sprzeczność: α oraz ¬α */
+      if(phi.t === 'F'){
+        for(const npf of [...K.values()]){
+          const g = npf.f; if(g.t !== 'not' || !entails(H, g.a)) continue;
+          const r = prove(K, H, g.a, d - 1, st); if(r) return P(BOT, 'notE', [r, npf]);
+        }
+      }
+      /* rozpatrywanie przypadków */
+      for(const [dk, dpf] of [...K]){
+        const g = dpf.f; if(g.t !== 'or' || st.usedOr.has(dk)) continue;
+        st.usedOr.add(dk);
+        try{
+          const r1 = prove(extend(K, g.a, hyp(g.a)), [...H, g.a], phi, d - 1, st); if(!r1) continue;
+          const r2 = prove(extend(K, g.b, hyp(g.b)), [...H, g.b], phi, d - 1, st); if(!r2) continue;
+          return P(phi, 'orE', [dpf, PB(g.a, r1), PB(g.b, r2)]);
+        } finally { st.usedOr.delete(dk); }
+      }
+      /* modus ponens z poprzednikiem, który trzeba najpierw udowodnić */
+      for(const ipf of [...K.values()]){
+        const g = ipf.f;
+        if(g.t !== 'imp' || K.has(key(g.b)) || K.has(key(g.a)) || !entails(H, g.a)) continue;
+        const ra = prove(K, H, g.a, d - 1, st); if(!ra) continue;
+        const r = prove(extend(K, g.b, P(g.b, 'impE', [ra, ipf])), H, phi, d - 1, st); if(r) return r;
+      }
+      if(phi.t !== 'F'){
+        /* sprzeczne założenia */
+        if(entails(H, BOT)){ const r = prove(K, H, BOT, d - 1, st); if(r) return P(phi, 'botE', [r]); }
+        /* dowód nie wprost: (¬¬e) + (¬i) */
+        if(!st.raa.has(k)){
+          st.raa.add(k);
+          try{
+            const n = NOT(phi);
+            const r = prove(extend(K, n, hyp(n)), [...H, n], BOT, d - 1, st);
+            if(r) return P(phi, 'nnE', [P(NOT(n), 'notI', [PB(n, r)])]);
+          } finally { st.raa.delete(k); }
+        }
+      }
+      return null;
+    } finally { st.stack.delete(sk); }
+  }
+  function proveTop(G, phi){
+    if(!entails(G, phi)) return null;
+    const K = new Map(); G.forEach(g => add(K, g, hyp(g))); saturate(K);
+    calls = 0;
+    try{
+      for(let d = 0; d <= 16; d++){
+        const r = prove(K, G, phi, d, {stack:new Set(), usedOr:new Set(), raa:new Set()});
+        if(r) return r;
+      }
+    }catch(e){ if(e !== 'limit') throw e; }
+    return null;
+  }
+  return {prove: proveTop, stats: () => calls};
+})();
+
+/* ---------- stan i logika podpowiedzi ---------- */
+let HINT = null;   // {goalId, level, step, t1, t2} | {goalId, dead, cm, culprit} | {goalId, fail}
+function validateHint(){
+  if(!HINT) return;
+  const g = IDX.get(HINT.goalId);
+  if(!g || !isOpen(g.n) || mode !== 'back' || sel.length !== 1 || sel[0] !== HINT.goalId) HINT = null;
+  else if(HINT.culprit && !IDX.has(HINT.culprit)) HINT = null;
+}
+function hintBest(rule, id){
+  return HINT && HINT.step && HINT.goalId === id && HINT.step.rule === rule && HINT.step.arg ? [HINT.step.arg] : [];
+}
+function stepOf(pf){
+  const P0 = pf.prem[0];
+  switch(pf.rule){
+    case 'andE1': return {rule:'andE1', arg:P0.f.b};
+    case 'andE2': return {rule:'andE2', arg:P0.f.a};
+    case 'impE': case 'notE': case 'orE': return {rule:pf.rule, arg:P0.f};
+    default: return {rule:pf.rule};
+  }
+}
+function srcHyp(pf){
+  for(let x = pf; x; ){
+    if(x.rule === 'hyp') return x.f;
+    if(['andE1','andE2','nnE'].includes(x.rule)) x = x.prem[0];
+    else if(x.rule === 'impE' || x.rule === 'notE') x = x.prem[1];
+    else return null;
+  }
+  return null;
+}
+const isRAA = pf => pf.rule === 'nnE' && pf.prem[0].rule === 'notI' && pf.prem[0].prem[0].box && eq(pf.prem[0].prem[0].a, NOT(pf.f));
+const RL = r => `<b class="math">(${R[r].lab})</b>`;
+function hintTexts(pf, phi){
+  const P0 = pf.prem[0], src = srcHyp(pf.rule === 'impE' || pf.rule === 'notE' ? pf : (P0 || pf));
+  const srcTxt = src ? ` Przyjrzyj się założeniu ${M(src)}.` : '';
+  const a = phi.a, b = phi.b;
+  switch(pf.rule){
+    case 'hyp': return ['Spójrz na założenia okien, w których leży ten cel.',
+      `Zastosuj regułę <b>założenie</b>: ${M(phi)} jest założeniem otaczającego okna.`];
+    case 'topI': return ['⊤ jest zawsze prawdziwe.', `Zastosuj ${RL('topI')} — ⊤ nie wymaga przesłanek.`];
+    case 'andI': return ['Spójnik główny celu to ∧. Co trzeba wiedzieć, żeby wiedzieć, że koniunkcja jest prawdziwa?',
+      `Zastosuj ${RL('andI')}: udowodnisz osobno ${M(a)} oraz ${M(b)}.`];
+    case 'impI': return ['Spójnik główny celu to ⇒. Jak zwykle dowodzi się implikacji?',
+      `Zastosuj ${RL('impI')}: w oknie załóż ${M(a)} i udowodnij ${M(b)}.`];
+    case 'notI': return ['Cel jest negacją. Spróbuj założyć to, co jest negowane, i dojść do sprzeczności.',
+      `Zastosuj ${RL('notI')}: w oknie załóż ${M(a)} i wyprowadź ⊥.`];
+    case 'orI1': return ['Cel jest alternatywą. Zastanów się, który z jej członów wynika z dostępnych założeń.',
+      `Zastosuj ${RL('orI1')}: wystarczy udowodnić lewy człon ${M(a)}.`];
+    case 'orI2': return ['Cel jest alternatywą. Zastanów się, który z jej członów wynika z dostępnych założeń.',
+      `Zastosuj ${RL('orI2')}: wystarczy udowodnić prawy człon ${M(b)}.`];
+    case 'andE1': return ['Cel jest członem koniunkcji, którą da się uzyskać z założeń.' + srcTxt,
+      `Zastosuj ${RL('andE1')} z β = ${M(P0.f.b)}: cel wynika z ${M(P0.f)}.`];
+    case 'andE2': return ['Cel jest członem koniunkcji, którą da się uzyskać z założeń.' + srcTxt,
+      `Zastosuj ${RL('andE2')} z α = ${M(P0.f.a)}: cel wynika z ${M(P0.f)}.`];
+    case 'impE': return ['Cel jest następnikiem implikacji, którą masz do dyspozycji. Pomyśl o modus ponens.' + srcTxt,
+      `Zastosuj ${RL('impE')} z α = ${M(P0.f)}: udowodnisz ${M(P0.f)} oraz ${M(IMP(P0.f, phi))}.`];
+    case 'notE': return ['Cel to ⊥, więc szukasz sprzeczności: formuły, którą umiesz udowodnić razem z jej negacją.' + srcTxt,
+      `Zastosuj ${RL('notE')} z α = ${M(P0.f)}: udowodnisz ${M(P0.f)} oraz ${M(NOT(P0.f))}.`];
+    case 'botE': return ['Założenia w tym oknie są ze sobą sprzeczne — a ze sprzeczności wynika wszystko.',
+      `Zastosuj ${RL('botE')}: wystarczy wyprowadzić ⊥.`];
+    case 'orE': {
+      const D = P0.f, fromHyp = P0.rule === 'hyp';
+      return [`${fromHyp ? 'Wśród założeń jest' : 'Z założeń łatwo otrzymać'} alternatywę ${M(D)}. Rozważ oba przypadki osobno.`,
+        `Zastosuj ${RL('orE')} dla ${M(D)}: udowodnisz ${M(phi)} raz przy założeniu ${M(D.a)}, raz przy założeniu ${M(D.b)}.`];
+    }
+    case 'nnE':
+      if(isRAA(pf)) return ['Wprost się nie uda. Spróbuj dowodu nie wprost: załóż, że cel jest fałszywy, i dojdź do sprzeczności.',
+        `Zastosuj ${RL('nnE')}, a potem ${RL('notI')}: w oknie załóż ${M(NOT(phi))} i wyprowadź ⊥.`];
+      return ['Cel kryje się pod podwójną negacją.' + srcTxt, `Zastosuj ${RL('nnE')}: cel wynika z ${M(NOT(NOT(phi)))}.`];
+  }
+  return ['', `Zastosuj ${RL(pf.rule)}.`];
+}
+function cmText(v){
+  const e = Object.entries(v);
+  return e.length ? e.map(([x, b]) => `<span class="math"><i>${x}</i></span> = ${b ? 1 : 0}`).join(', ') : 'dowolnego wartościowania';
+}
+function computeHint(info){
+  const phi = info.n.f, G = info.scope;
+  const cm = countermodel(G, phi);
+  if(cm){
+    let culprit = null;
+    for(let u = info.up; u != null; ){
+      const ui = IDX.get(u);
+      if(!countermodel(ui.scope, ui.n.f)){ culprit = u; break; }
+      u = ui.up;
+    }
+    return {goalId:info.n.id, dead:true, cm, culprit};
+  }
+  const pf = Prover.prove(G, phi);
+  if(!pf) return {goalId:info.n.id, fail:true};
+  const [t1, t2] = hintTexts(pf, phi);
+  return {goalId:info.n.id, level:1, step:stepOf(pf), t1, t2};
+}
+function hintTarget(){
+  reindex();
+  const cur = sel.length ? IDX.get(sel[sel.length - 1]) : null;
+  if(cur && sel.length === 1 && isOpen(cur.n)) return cur;
+  const order = cur ? [S.frags[cur.fi], ...S.frags.filter((_, i) => i !== cur.fi)] : S.frags;
+  for(const r of order){ const o = openLeaves(r)[0]; if(o) return IDX.get(o.id); }
+  return null;
+}
+function hintPress(){
+  if(anyModal()) return;
+  if(!S.frags.length){ toast('Najpierw dodaj cel do udowodnienia'); return; }
+  if(mode === 'fwd'){ setModeSilent('back'); toast('Podpowiedzi działają w trybie „od celu” — przełączono'); }
+  const t = hintTarget();
+  if(!t){ HINT = null; render(); toast('Wszystkie cele są zamknięte — dowód jest kompletny'); return; }
+  if(HINT && HINT.goalId === t.n.id && sel.length === 1 && sel[0] === t.n.id){
+    if(HINT.step && HINT.level === 1){ HINT.level = 2; render(); return; }
+    if(HINT.step && HINT.level >= 2){ hintAction('do'); return; }
+    if(HINT.dead && HINT.culprit != null){ hintAction('undo'); return; }
+    render(); return;
+  }
+  sel = [t.n.id];
+  HINT = computeHint(t);
+  render();
+  document.querySelector(`.fm[data-id="${t.n.id}"]`)?.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+}
+async function hintAction(a){
+  if(a === '1'){ hintPress(); return; }
+  if(!HINT) return;
+  if(a === 'more' && HINT.step){ HINT.level = 2; render(); return; }
+  if(a === 'do' && HINT.step){
+    const info = IDX.get(HINT.goalId), step = HINT.step; HINT = null;
+    if(!info || !isOpen(info.n)) return render();
+    if(step.rule === 'hyp'){ commit(() => { info.n.rule = 'hyp'; sel = []; selectNextOpen(info.fi); }); return; }
+    await applyBack(step.rule, info, step.arg);
+    return;
+  }
+  if(a === 'undo' && HINT.culprit != null){
+    const c = HINT.culprit; HINT = null;
+    commit(() => { const ci = IDX.get(c); if(!ci) return false; ci.n.rule = null; ci.n.prem = []; sel = [c]; });
+    toast('Usunięto krok prowadzący do ślepego zaułka');
+  }
+}
+function renderHintRow(){
+  const box = $('dockHint');
+  if(!HINT){ box.hidden = true; box.className = 'dock-hint'; return; }
+  box.hidden = false;
+  const g = IDX.get(HINT.goalId);
+  if(HINT.dead){
+    box.className = 'dock-hint dead';
+    const scope = g.scope.length;
+    let t = `<span class="hlev">Ślepy zaułek</span>Tego celu nie da się tu udowodnić: dla ${cmText(HINT.cm)} ${scope ? 'wszystkie założenia dostępne w tym miejscu są prawdziwe, a ' : ''}cel ${M(g.n.f)} jest fałszywy.`;
+    let btn = '';
+    if(HINT.culprit != null){
+      const c = IDX.get(HINT.culprit);
+      t += ` Błąd nastąpił wcześniej: reguła ${RL(c.n.rule)} zastosowana do ${M(c.n.f)} dała przesłankę nie do udowodnienia.`;
+      btn = `<button class="btn" data-hintgo="undo">${icon('undo')}Cofnij ten krok</button>`;
+    } else t += ' Ta formuła nie jest tautologią, więc nie ma dowodu.';
+    box.innerHTML = icon('alert') + `<div class="htext">${t}</div><div class="hbtns">${btn}</div>`;
+    return;
+  }
+  box.className = 'dock-hint';
+  if(HINT.fail){
+    box.innerHTML = icon('bulb') + `<div class="htext"><span class="hlev">Podpowiedź</span>Nie udało mi się znaleźć podpowiedzi dla tego celu. Spróbuj dowodu nie wprost: ${RL('nnE')}, a potem ${RL('notI')}.</div>`;
+    return;
+  }
+  const lv = HINT.level;
+  box.innerHTML = icon('bulb') + `<div class="htext"><span class="hlev">${lv === 1 ? 'Wskazówka' : 'Następny krok'}</span>${lv === 1 ? HINT.t1 : HINT.t2}</div>`
+    + `<div class="hbtns">${lv === 1 ? '<button class="btn" data-hintgo="more">Pokaż regułę</button>' : '<button class="btn primary" data-hintgo="do">Wykonaj ten krok</button>'}</div>`;
+}
+$('hintBtn').onclick = hintPress;
+
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const effTheme = () => document.documentElement.dataset.theme || (darkMQ.matches ? 'dark' : 'light');
+function syncTheme(){ const t = effTheme(); document.querySelectorAll('#themeSeg button').forEach(b => { b.classList.toggle('on', b.dataset.th === t); b.setAttribute('aria-checked', b.dataset.th === t); }); }
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => {
+  document.documentElement.dataset.theme = b.dataset.th;
+  try{ localStorage.setItem('nd-theme', b.dataset.th); }catch(e){}
+  syncTheme();
+});
+darkMQ.addEventListener?.('change', syncTheme);
+try{ const t = localStorage.getItem('nd-theme'); if(t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; }catch(e){}
+syncTheme();
+
+load();
+render();
+</script>
+</body>
+</html>

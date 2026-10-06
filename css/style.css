@@ -1299,3 +1299,41 @@ ul.grid li a,ul.grid li img {
 
 /* sidebar: the Contact item uses a drawn electrical socket (Polish "kontakt") */
 ul#navigation li .fa-socket svg { width: 25px; height: 25px; vertical-align: middle; margin-top: -2px; }
+ul#navigation li .fa-nd svg { width: 25px; height: 25px; vertical-align: middle; margin-top: -2px; }
+
+/* Foldable sidebar (desktop only; on small screens the template's slide-in menu is used).
+ * Toggled by js/custom.js: class sb-folded on <html>, state kept in localStorage.
+ **************************************************/
+.sb-fold { display: none; }
+@media (min-width: 992px) {
+	#sidebar { transition: transform .35s ease; }
+	#main { transition: left .35s ease; }
+	html.sb-folded #sidebar { transform: translateX(-100%); }
+	html.sb-folded #main { left: 0 !important; right: 0 !important; }
+	.sb-fold {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: fixed;
+		top: 50%;
+		left: 250px;
+		transform: translateY(-50%);
+		z-index: 1003;
+		width: 16px;
+		height: 64px;
+		padding: 0;
+		border: 0;
+		border-radius: 0 8px 8px 0;
+		background: #2b2b2b;
+		color: #fff;
+		cursor: pointer;
+		box-shadow: 2px 0 6px rgba(0, 0, 0, .15);
+		transition: left .35s ease, background-color .2s, color .2s, width .2s;
+	}
+	.sb-fold:hover, .sb-fold:focus-visible { background: #03cc85; color: #03291b; width: 20px; outline: none; }
+	.sb-fold svg { width: 12px; height: 12px; transition: transform .35s ease; }
+	html.sb-folded .sb-fold { left: 0; }
+	html.sb-folded .sb-fold svg { transform: rotate(180deg); }
+	html.sb-noanim #sidebar, html.sb-noanim #main, html.sb-noanim .sb-fold, html.sb-noanim .sb-fold svg { transition: none !important; }
+}
+@media print { .sb-fold { display: none !important; } }
