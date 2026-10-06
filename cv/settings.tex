@@ -1,0 +1,305 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  settings.tex  --  style for the academic CV of Bartosz Jan Bednarczyk
+%  Compile with XeLaTeX or LuaLaTeX, twice:   xelatex cv && xelatex cv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% ---------------------------------------------------------------- identity ---
+\newcommand{\FirstName}{Bartosz}
+\newcommand{\MiddleName}{Jan}
+\newcommand{\LastName}{Bednarczyk}
+\newcommand{\MyName}{\FirstName\ \MiddleName\ \LastName}
+\newcommand{\EmailA}{bartek@cs.uni.wroc.pl}
+\newcommand{\EmailB}{bartosz.bednarczyk@tuwien.ac.at}
+\newcommand{\Website}{bartoszjanbednarczyk.github.io}
+\newcommand{\ORCID}{0000-0002-8267-7554}
+\newcommand{\ScholarURL}{https://scholar.google.com/citations?user=j7plXYcAAAAJ}
+\newcommand{\DBLPURL}{https://dblp.org/pers/hd/b/Bednarczyk:Bartosz}
+\newif\ifshowphoto \showphototrue        % \showphotofalse removes the photo
+
+% ---------------------------------------------------------------- packages ---
+\PassOptionsToPackage{table}{xcolor}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage[sfdefault,book,lining]{FiraSans}
+\defaultfontfeatures{Ligatures=TeX,Numbers=Lining}
+\newfontfamily\FiraLight{FiraSans-Light.otf}[BoldFont=FiraSans-SemiBold.otf]
+\newfontfamily\FiraSemi{FiraSans-SemiBold.otf}[ItalicFont=FiraSans-SemiBoldItalic.otf]
+\newfontfamily\FiraMedium{FiraSans-Medium.otf}
+\newfontfamily\FiraBook{FiraSans-Book.otf}[ItalicFont=FiraSans-BookItalic.otf]
+\usepackage{fontawesome5}
+\usepackage{academicons}
+\usepackage[none]{hyphenat}
+\usepackage[a4paper,left=18mm,right=18mm,top=16mm,bottom=18mm,footskip=9mm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning,arrows.meta,decorations.pathmorphing}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{etoolbox}
+\usepackage{needspace}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+
+% ------------------------------------------------------------------ colours ---
+\definecolor{ink}{HTML}{163A2C}       % deep forest green: headings, sidebar
+\definecolor{inksoft}{HTML}{2E5A47}
+\definecolor{accent}{HTML}{23875A}    % jade green: the single accent colour
+\definecolor{accentlight}{HTML}{9FDDB5}
+\definecolor{tint}{HTML}{EDF6F0}      % very light green: cards
+\definecolor{paper}{HTML}{F3F7F4}     % zebra rows
+\definecolor{gold}{HTML}{B7862B}      % awards only
+\definecolor{muted}{HTML}{68746D}
+\definecolor{hair}{HTML}{D4DDD7}
+\definecolor{text}{HTML}{212B26}
+
+\hypersetup{pdftitle={Curriculum Vitae -- \MyName},pdfauthor={\MyName},
+  colorlinks=true,allcolors=accent}
+
+% -------------------------------------------------------------- typography ---
+\setlength\parindent{0pt}
+\setlength\parskip{0pt}
+\linespread{1.1}
+\setlist{nosep}
+\frenchspacing
+\AtBeginDocument{\color{text}}
+\newcommand{\muted}[1]{{\color{muted}#1}}
+\newcommand{\sep}{\unskip\nobreak\hspace{0.45em}{\color{muted!45}\textbullet}\hspace{0.45em}\ignorespaces}
+\newcommand{\semi}[1]{{\FiraSemi #1}}
+\newcommand{\MonthName}{\ifcase\month\or January\or February\or March\or April\or May\or June\or
+  July\or August\or September\or October\or November\or December\fi}
+
+% --------------------------------------------------------- footer / header ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{muted}{\FiraSemi\color{ink}\MyName}\sep Curriculum Vitae\sep Last updated: \MonthName~\the\year}
+\fancyfoot[R]{\footnotesize\color{muted}{\FiraSemi\color{accent}\thepage}\,/\,\pageref*{LastPage}}
+\fancypagestyle{cover}{\fancyhf{}%
+  \fancyfoot[R]{\footnotesize\color{muted}{\FiraSemi\color{accent}\thepage}\,/\,\pageref*{LastPage}}}
+
+% ---------------------------------------------------------- entry geometry ---
+\newlength\labelcol \setlength\labelcol{22mm}
+\newlength\labelgap \setlength\labelgap{5mm}
+\newlength\entrysep \setlength\entrysep{7pt}
+\newlength\bodyindent \setlength\bodyindent{\dimexpr\labelcol+\labelgap\relax}
+\newcommand{\datefont}{\FiraSemi\footnotesize\color{accent}}
+\newcommand{\titlefont}{\FiraSemi\color{ink}}
+\newcommand{\placefont}{\small\color{muted}}
+
+% --------------------------------------------------------- section headings ---
+% \cvsection{<icon>}{<Title>}
+\newcommand{\cvsection}[2]{%
+  \par\Needspace{7\baselineskip}\addvspace{12pt}%
+  \pdfbookmark[1]{#2}{sec:\detokenize{#2}}%
+  \noindent\begin{tikzpicture}[baseline=(t.base)]
+    \path[use as bounding box] (0,0) rectangle (\linewidth,3mm);
+    \node[anchor=base east,inner sep=0pt,text=accent,font=\normalsize] at (\labelcol,0) {#1};
+    \node[anchor=base west,inner sep=0pt,text=ink,font=\FiraSemi\large] (t) at (\bodyindent,0)
+      {\addfontfeature{LetterSpace=7}\MakeUppercase{#2}};
+    \draw[hair,line width=0.6pt] ($(t.base east)+(4mm,0.55ex)$) -- (\linewidth,0.55ex);
+  \end{tikzpicture}\par\nopagebreak\vspace{8pt}\nopagebreak}
+
+% sub-heading, aligned with the entry text
+\newcommand{\cvsubsection}[1]{%
+  \par\Needspace{4\baselineskip}\addvspace{6pt}%
+  \hspace*{\bodyindent}{\color{accent}\FiraSemi\scriptsize\addfontfeature{LetterSpace=12}\MakeUppercase{#1}}%
+  \par\nopagebreak\vspace{3.5pt}\nopagebreak}
+
+% -------------------------------------------------------------- entry lists ---
+\newenvironment{entries}{%
+  \begin{list}{}{\setlength\leftmargin{\bodyindent}\setlength\labelwidth{\labelcol}%
+     \setlength\labelsep{\labelgap}\setlength\itemsep{\entrysep}\setlength\parsep{0pt}%
+     \setlength\topsep{0pt}\setlength\partopsep{0pt}\setlength\rightmargin{0pt}%
+     \renewcommand\makelabel[1]{\smash{\parbox[t]{\labelcol}{\raggedleft\strut ##1}}}}%
+   \raggedright\emergencystretch=2em}%
+  {\end{list}}
+
+% \entry{<date>}{<title>}{<place>}{<details>}
+\NewDocumentCommand{\entry}{m m m +m}{%
+  \Needspace{3.2\baselineskip}\item[{\datefont #1}]{\titlefont #2}\ifblank{#3}{}{\nobreak\hfill\nobreak{\placefont\hspace{3mm}#3}}%
+  \ifblank{#4}{}{\par\vspace{1pt}{\small #4\par}}}
+% two-line date range for the label column
+\newcommand{\range}[2]{#1\\[-1.5pt]{\FiraBook\scriptsize\color{muted}to\hspace{0.28em}#2}}
+
+% ------------------------------------------------------------------- tags ---
+\newcommand{\cvtag}[2][accent]{\tikz[baseline=(p.base)]\node[rounded corners=2pt,fill=#1!13,text=#1,
+  font=\FiraSemi\scriptsize,inner xsep=3.5pt,inner ysep=1.7pt] (p) {#2};}
+\newcommand{\goldtag}[1]{\tikz[baseline=(p.base)]\node[rounded corners=2pt,fill=gold,text=white,
+  font=\FiraSemi\scriptsize,inner xsep=3.5pt,inner ysep=1.7pt] (p) {\faTrophy\hspace{0.35em}#1};}
+
+% -------------------------------------------------------------- funding card ---
+% \grantcard{<period>}{<title>}{<funder>}{<details>}{<amount>}{<amount caption>}
+\NewDocumentCommand{\grantcard}{O{} m m m m m m}{\grantcardinner{#2}{\ifblank{#1}{#3}{\weblink{#1}{#3}}}{#4}{#5}{#6}{#7}}
+\newcommand{\grantcardinner}[6]{%
+  \begin{tcolorbox}[enhanced,colback=tint,colframe=tint,arc=2.5pt,
+      boxrule=0pt,left=4mm,right=4mm,top=2.8mm,bottom=2.8mm,
+      before skip=0pt,after skip=5pt,left skip=\bodyindent,
+      borderline west={2.4pt}{0pt}{accent},
+      overlay={\node[anchor=north east,inner sep=0pt,text width=\labelcol,align=right]
+                 at ([xshift=-\labelgap,yshift=-3.1mm]frame.north west) {\datefont #1};}]
+    \begin{minipage}[t]{0.75\linewidth}\raggedright
+      {\titlefont #2}\par{\small\color{accent}\FiraMedium #3}\par\vspace{2.5pt}{\small #4}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.23\linewidth}\raggedleft
+      {\FiraLight\fontsize{17}{18}\selectfont\color{ink}#5}\par\vspace{1.5pt}{\scriptsize\color{muted}#6}
+    \end{minipage}
+  \end{tcolorbox}}
+
+% ------------------------------------------------------------- publications ---
+\newcounter{pubC}\newcounter{pubJ}\newcounter{pubW}\newcounter{pubT}
+\newcounter{nAward}\newcounter{nThesis}\newcounter{nTalk}
+\providecommand{\TotalC}{0}\providecommand{\TotalJ}{0}\providecommand{\TotalW}{0}
+\providecommand{\TotalT}{0}\providecommand{\TotalAward}{0}\providecommand{\TotalThesis}{0}
+\providecommand{\TotalTalk}{0}
+\makeatletter
+\AtEndDocument{\immediate\write\@auxout{%
+  \gdef\string\TotalC{\arabic{pubC}}\gdef\string\TotalJ{\arabic{pubJ}}%
+  \gdef\string\TotalW{\arabic{pubW}}\gdef\string\TotalT{\arabic{pubT}}%
+  \gdef\string\TotalAward{\arabic{nAward}}\gdef\string\TotalThesis{\arabic{nThesis}}%
+  \gdef\string\TotalTalk{\arabic{nTalk}}}}
+\makeatother
+% papers per year and type (for the sidebar chart); written to the .aux file
+\newcommand{\FirstPubYear}{2017}
+\newcommand{\cvcountyear}[2]{\ifcsname c@py#2#1\endcsname\else\newcounter{py#2#1}\fi\stepcounter{py#2#1}}
+\newcommand{\cvpy}[3]{\expandafter\gdef\csname PY#1#2\endcsname{#3}}
+\newcommand{\PY}[2]{\ifcsname PY#1#2\endcsname\csname PY#1#2\endcsname\else 0\fi}
+\makeatletter
+\AtEndDocument{\foreach \y in {\FirstPubYear,...,\the\year}{\foreach \t in {C,J,W}{%
+  \ifcsname c@py\y\t\endcsname
+    \immediate\write\@auxout{\string\cvpy{\y}{\t}{\the\value{py\y\t}}}\fi}}}
+\makeatother
+\colorlet{typeC}{accent}\colorlet{typeJ}{ink}\colorlet{typeW}{muted}\colorlet{typeT}{muted}
+
+\newenvironment{publist}{\begin{entries}\setlength\itemsep{5.2pt}\setlength\parsep{0pt}}{\end{entries}}
+% \pub{<C|J|W|T>}{<acronym>}{<year>}{<title>}{<co-authors, empty if solo>}{<venue>}{<extra>}
+% optional keys:  url = publisher/DOI page (the title links there),
+%                 pdf = open-access PDF,  slides = slides,  video = recorded talk
+\NewDocumentCommand{\pub}{O{} m m m m m m +m}{%
+  \cvlinkkeys{#1}%
+  \stepcounter{pub#2}\cvcountyear{#2}{#4}%
+  \edef\pubno{\the\numexpr\csname Total#2\endcsname-\value{pub#2}+1\relax}%
+  \Needspace{3.2\baselineskip}\item[{\cvtag[type#2]{#3}\\[0.5pt]{\FiraBook\scriptsize\color{muted}#4\,\textperiodcentered\,#2\pubno}}]%
+    {\titlefont\cvlinked{\tielast{#5}}}\ifblank{#8}{}{\ #8}\par
+    {\small\color{muted}\itshape #7}\ifblank{#6}{}{{\small\color{muted}\sep with~\tienames{#6}}}\cvicons}
+\newcommand{\bestpaper}{\stepcounter{nAward}\goldtag{Best Student Paper}}
+% \preprint{<title>}{<co-authors>}
+\newcommand{\preprint}[2]{%
+  \Needspace{3\baselineskip}\item[{\cvtag[muted]{submitted}}]{\titlefont\tielast{#1}}\par{\small\color{muted}with~\tienames{#2}}}
+
+% ------------------------------------------------------------ striped tables ---
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newenvironment{stripedtable}[4]{% widths of the three columns + header texts as #4 = {A}{B}{C}
+  \par\setlength\tabcolsep{2.5mm}\renewcommand{\arraystretch}{1.1}\rowcolors{2}{paper}{white}%
+  \setlength\LTpre{0pt}\setlength\LTpost{0pt}\setlength\LTleft{2.5mm}\setlength\LTright{2.5mm}%
+  \begin{longtable}{@{}R{#1}L{#2}L{#3}@{}}}{\end{longtable}\par}
+\newcommand{\colhead}[1]{\leavevmode{\color{white}\FiraSemi\scriptsize\addfontfeature{LetterSpace=10}\MakeUppercase{#1}}}
+% \talk{<date>}{<event>}{<place>}{<title>}
+% \talk[slides=...,video=...]{<date>}{<event>}{<place>}{<title>}
+\NewDocumentCommand{\talk}{O{} m m m m}{\stepcounter{nTalk}%
+  \cvlinkkeys{#1}\cvseturlfromslides
+  \leavevmode{\datefont #2} & \leavevmode{\FiraSemi\small\color{ink}#3}\newline{\scriptsize\color{muted}#4} &
+  \leavevmode{\small\cvlinked{\tielast{#5}}\cvicons}\\}
+\newcommand{\formalsup}{{\color{accent}\textsuperscript{\FiraSemi\textdagger}}}
+% \student{<year>}{<name>}{<degree>}{<institution>}{<title>}{<publication or empty>}
+% \student[url=...]{<year>}{<name>}{<degree>}{<institution>}{<title>}{<publication or empty>}
+\NewDocumentCommand{\student}{O{} m m m m m m}{\stepcounter{nThesis}%
+  \cvlinkkeys{#1}%
+  \leavevmode{\datefont #2} & \leavevmode{\FiraSemi\small\color{ink}#3}\newline{\scriptsize\color{muted}#4\sep #5} &
+  \leavevmode{\small\itshape\cvlinked{\tielast{#6}}\cvextlink}\ifblank{#7}{}{\newline{\scriptsize\color{accent}\faLongArrowAltRight\ published at #7}}\\}
+
+% ------------------------------------------------------------------ links ---
+% Titles link silently (they keep their colour); small teal icons mark PDFs,
+% slides and videos.  \weblink{url}{text} is the same for free-standing text.
+\ExplSyntaxOn
+\tl_new:N \l__cv_url_tl  \tl_new:N \l__cv_pdf_tl
+\tl_new:N \l__cv_slides_tl \tl_new:N \l__cv_video_tl
+\keys_define:nn { cvlinks }
+  { url .tl_gset:N = \l__cv_url_tl, pdf .tl_gset:N = \l__cv_pdf_tl,
+    slides .tl_gset:N = \l__cv_slides_tl, video .tl_gset:N = \l__cv_video_tl }
+\NewDocumentCommand{\cvlinkkeys}{m}
+  { \tl_gclear:N \l__cv_url_tl \tl_gclear:N \l__cv_pdf_tl
+    \tl_gclear:N \l__cv_slides_tl \tl_gclear:N \l__cv_video_tl
+    \keys_set:nn { cvlinks } {#1} }
+% talks: the title links to the slides
+\NewDocumentCommand{\cvseturlfromslides}{}
+  { \tl_gset_eq:NN \l__cv_url_tl \l__cv_slides_tl }
+\NewDocumentCommand{\cvlinked}{m}
+  { \tl_if_empty:NTF \l__cv_url_tl {#1}
+      { \exp_args:NV \cv_href:nn \l__cv_url_tl {#1} } }
+\cs_new_protected:Npn \cv_href:nn #1#2 { \href{#1}{\color{ink}#2} }
+\cs_new_protected:Npn \cv_icon:nn #1#2 { \href{#1}{\color{accent}#2} }
+\cs_generate_variant:Nn \cv_icon:nn { V }
+\NewDocumentCommand{\cvicons}{}
+  { \bool_if:nT { ! \tl_if_empty_p:N \l__cv_pdf_tl || ! \tl_if_empty_p:N \l__cv_slides_tl
+                  || ! \tl_if_empty_p:N \l__cv_video_tl }
+      { \nobreak\hspace{0.55em}\mbox{\scriptsize
+        \tl_if_empty:NF \l__cv_pdf_tl    { \cv_icon:Vn \l__cv_pdf_tl {\faFilePdf[regular]}\hspace{0.45em} }
+        \tl_if_empty:NF \l__cv_slides_tl { \cv_icon:Vn \l__cv_slides_tl {\faDesktop}\hspace{0.45em} }
+        \tl_if_empty:NF \l__cv_video_tl  { \cv_icon:Vn \l__cv_video_tl {\faVideo}\hspace{0.45em} }
+        \unskip } } }
+\NewDocumentCommand{\cvextlink}{}
+  { \tl_if_empty:NF \l__cv_url_tl
+      { \nobreak\hspace{0.35em}{\tiny\cv_icon:Vn \l__cv_url_tl {\faExternalLink*}} } }
+\ExplSyntaxOff
+\newcommand{\weblink}[2]{\href{#1}{\color{ink}#2}\nobreak\hspace{0.35em}{\tiny\href{#1}{\color{accent}\faExternalLink*}}}
+\newcommand{\iconlink}[2]{{\scriptsize\href{#1}{\color{accent}#2}}}
+\newcommand{\slidesurl}{https://bartoszjanbednarczyk.github.io/slides/}
+
+% ------------------------------------------------- no lonely last words ---
+% \tielast{text}: ties the last word to the previous one (no one-word last lines)
+% \tienames{A B, C D}: keeps every name in a list of names on one line
+\ExplSyntaxOn
+\tl_new:N \l__cv_tmp_tl
+\NewDocumentCommand{\tielast}{m}{
+  \tl_set:Nn \l__cv_tmp_tl {#1}
+  \regex_replace_once:nnN { \s+ ([^\s]+) \Z } { \cA\~ \1 } \l__cv_tmp_tl
+  \tl_use:N \l__cv_tmp_tl }
+\NewDocumentCommand{\tienames}{m}{
+  \tl_set:Nn \l__cv_tmp_tl {#1}
+  \regex_replace_all:nnN { ([^,\s]) \s+ } { \1 \cA\~ } \l__cv_tmp_tl
+  \tl_use:N \l__cv_tmp_tl }
+\ExplSyntaxOff
+
+% ----------------------------------------------------------------- sidebar ---
+\newcommand{\sidehead}[1]{\par\vspace{6mm}%
+  {\color{accentlight}\FiraSemi\scriptsize\addfontfeature{LetterSpace=16}\MakeUppercase{#1}}\par
+  \vspace{1.3mm}{\color{white!22!ink}\rule{\linewidth}{0.5pt}}\par\vspace{2.2mm}}
+\newcommand{\sideitem}[2]{\makebox[5.5mm][l]{\color{accentlight}#1}{#2}\par\vspace{1.5mm}}
+% one headline number and a stacked bar chart of papers per year
+\newcommand{\sidepubs}{%
+  {\FiraLight\fontsize{26}{26}\selectfont\color{white}\the\numexpr\TotalC+\TotalJ+\TotalW\relax}%
+  \hspace{2mm}{\FiraBook\scriptsize\color{white!68!ink}\parbox[b]{30mm}{peer-reviewed papers\\[-0.5mm]since \FirstPubYear}}\par
+  \vspace{3.2mm}%
+  \begin{tikzpicture}[x=1mm,y=1mm]
+    \pgfmathsetmacro\nyears{\the\year-\FirstPubYear+1}
+    \pgfmathsetmacro\slot{48/\nyears}
+    \pgfmathsetmacro\bw{0.62*\slot}
+    \def\u{2.25}
+    \draw[white!30!ink,line width=0.4pt] (0,0) -- (48,0);
+    \foreach \y [count=\i from 0] in {\FirstPubYear,...,\the\year}{
+      \pgfmathsetmacro\xa{\i*\slot+(\slot-\bw)/2}
+      \pgfmathsetmacro\c{\PY{\y}{C}}\pgfmathsetmacro\j{\PY{\y}{J}}\pgfmathsetmacro\w{\PY{\y}{W}}
+      \foreach \n/\col [remember=\top as \bot (initially 0)] in
+          {\c/accentlight,\j/white!88!ink,\w/white!45!ink}{
+        \pgfmathsetmacro\top{\bot+\n}
+        \ifdim\n pt>0pt
+          \fill[\col] (\xa,\bot*\u+0.35) rectangle ++(\bw,\n*\u-0.35);
+        \fi}
+      \pgfmathtruncatemacro\yy{mod(\y,100)}
+      \node[font=\FiraBook\fontsize{5.5}{6}\selectfont,text=white!55!ink,anchor=north,inner sep=0pt]
+        at (\xa+\bw/2,-1.1) {’\yy};}
+  \end{tikzpicture}\par\vspace{2.2mm}%
+  {\fontsize{6.5}{8}\selectfont\color{white!72!ink}%
+   {\color{accentlight}\rule{1.8mm}{1.8mm}}\hspace{1mm}conference\hspace{2.2mm}%
+   {\color{white!88!ink}\rule{1.8mm}{1.8mm}}\hspace{1mm}journal\hspace{2.2mm}%
+   {\color{white!45!ink}\rule{1.8mm}{1.8mm}}\hspace{1mm}workshop}\par}
+\newcommand{\sidechip}[1]{\tikz[baseline=(c.base)]\node[rounded corners=2pt,draw=white!40!ink,
+  text=white!92!ink,font=\scriptsize,inner xsep=3pt,inner ysep=1.6pt] (c) {#1};}

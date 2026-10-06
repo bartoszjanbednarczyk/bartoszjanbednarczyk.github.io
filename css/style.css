@@ -1261,3 +1261,41 @@ ul.grid li a,ul.grid li img {
 }
 
 }
+
+/* Typography: no single words on the last line (widows/orphans).
+ * Works together with js/typography.js, which joins the last two words with a no-break space.
+ **************************************************/
+#main p, #main li, #main dd, #main address, #main figcaption, #main blockquote,
+.pl-authors, .pl-venue, .pl-note, .pubauthor, .pubcite {
+	text-wrap: pretty;
+}
+#main h1, #main h2, #main h3, #main h4, #main h5, .pl-title, .pubtitle {
+	text-wrap: balance;
+}
+
+/* Sidebar profile links (Scholar, DBLP, ORCID, GitHub, Stack Exchange, Facebook, Steam, Discord)
+ **************************************************/
+.social-icons ul { display: grid; grid-template-columns: repeat(4, 30px); justify-content: center; gap: 4px 14px; padding: 8px 0 2px; }
+.social-icons li { padding: 3px 0; display: flex; justify-content: center; }
+.social-icons a, .social-icons button { display: inline-flex; align-items: center; justify-content: center; height: 20px; min-width: 18px; transition: color .2s; }
+.social-icons button { background: none; border: 0; padding: 0; color: #ccc; cursor: pointer; position: relative; }
+.social-icons button:hover, .social-icons button:focus { color: #fff; outline: none; }
+.social-icons .si-svg svg { width: 16px; height: 16px; fill: currentColor; }
+.social-icons .si-text { font-size: 12px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.social-icons .si-tip {
+	position: absolute; bottom: 150%; left: 50%; transform: translateX(-50%); white-space: nowrap;
+	background: #fff; color: #222; font-size: 12px; padding: 4px 8px; border-radius: 4px;
+	opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.social-icons .si-discord:hover .si-tip, .social-icons .si-discord:focus .si-tip { opacity: 1; }
+.social-icons .si-copied .si-tip { opacity: 1; }
+.social-icons .si-copied .si-tip::after { content: " \2713  copied"; color: #03a46b; }
+
+/* sidebar: thin native scrollbar (replaces the old niceScroll plugin) */
+#sidebar-wrapper { scrollbar-width: thin; scrollbar-color: #555 transparent; }
+#sidebar-wrapper::-webkit-scrollbar { width: 6px; }
+#sidebar-wrapper::-webkit-scrollbar-thumb { background: #555; }
+#sidebar-wrapper::-webkit-scrollbar-track { background: transparent; }
+
+/* sidebar: the Contact item uses a drawn electrical socket (Polish "kontakt") */
+ul#navigation li .fa-socket svg { width: 25px; height: 25px; vertical-align: middle; margin-top: -2px; }

@@ -40,12 +40,27 @@ function fillTable(name) {
     $(".js-local-comment").text("");
     $(".js-global-comment").text("");
 
-    if (typeof results[name] !== 'undefined') {
+    var found = typeof results[name] !== 'undefined';
+    if (found) {
         $(".js-local-complex").append(results[name]['local-complex']);
         $(".js-global-complex").append(results[name]['global-complex']);
         $(".js-local-comment").append(results[name]['local-comment']);
         $(".js-global-comment").append(results[name]['global-comment']);
     }
+    $(".js-local-complex").attr("data-c", found ? complexityClass(results[name]['local-complex']) : null);
+    $(".js-global-complex").attr("data-c", found ? complexityClass(results[name]['global-complex']) : null);
+    $(".nv-result").toggleClass("is-empty", !found);
+}
+
+function complexityClass(text) {
+    var s = String(text).toLowerCase();
+    if (s.indexOf('undecidable') > -1) return 'undec';
+    if (s.indexOf('tower') > -1) return 'tower';
+    if (s.indexOf('nexptime') > -1) return 'nexp';
+    if (s.indexOf('exptime') > -1) return 'exp';
+    if (s.indexOf('pspace') > -1) return 'ps';
+    if (s.indexOf('np') > -1) return 'np';
+    return null;
 }
 
 function setName(name) {

@@ -1,0 +1,98 @@
+/* ESSLLI 2026 course page
+ * Builds on css/aboutme.css (tokens, hero, buttons, section heads). Classes prefixed es-.
+ **************************************************/
+.es-hero { padding: 56px 0 52px; }
+.es-hero-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.es-hero h1 { font-size: 42px; line-height: 1.15; margin-bottom: 18px; text-wrap: balance; }
+.es-sub { display: block; font-size: 22px; font-style: italic; font-weight: 400; color: var(--am-muted); margin-top: 8px; }
+.es-lecturers { font-size: 17px; line-height: 1.8; margin: 0 0 26px; color: var(--am-ink); }
+.es-lecturers a { font-weight: 700; }
+.es-lecturers span { color: var(--am-muted); font-size: 15px; margin-left: 6px; }
+.es-hero-photos { position: relative; padding: 0 0 70px 0; }
+.es-ph { margin: 0; position: relative; }
+.es-ph img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 22px 44px -22px rgba(0, 0, 0, .45), 0 0 0 6px #fff; }
+.es-ph figcaption {
+	position: absolute; left: 12px; bottom: 12px; font-size: 12.5px; font-weight: 700; color: #fff;
+	background: rgba(0, 0, 0, .55); border-radius: 999px; padding: 3px 10px;
+}
+.es-ph-main { width: 88%; margin-right: auto; }
+.es-ph-main figcaption { top: 12px; bottom: auto; }
+.es-ph-second { position: absolute; right: 0; bottom: 0; width: 46%; }
+.es-ph-second img { aspect-ratio: 4 / 3; object-fit: cover; }
+
+.es-abstract-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+.es-abstract-text p { font-size: 17px; line-height: 1.75; color: var(--am-ink-2); margin: 0 0 16px; max-width: 72ch; }
+.es-facts { background: #fff; border: 1px solid var(--am-line); border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+.es-facts h3 { font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--am-muted); margin: 0 0 4px; }
+.es-facts .am-tags { margin-top: 6px; }
+
+.es-programme-sec { background: #fff; }
+.es-legend { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--am-muted); }
+.es-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-left: 8px; }
+.es-dot-ian { background: #3a8fd9; }
+.es-dot-bart { background: var(--am-accent); }
+/* programme as a vertical timeline: one node per day on a rail */
+.es-timeline { --node: 64px; position: relative; }
+.es-timeline::before {
+	content: ""; position: absolute; left: calc(var(--node) / 2 - 1px); top: 10px; bottom: 10px; width: 2px; border-radius: 2px;
+	background: linear-gradient(180deg, var(--am-accent) 0%, #3a8fd9 100%); opacity: .45;
+}
+.es-day { position: relative; display: grid; grid-template-columns: var(--node) 1fr; gap: 26px; padding: 0 0 34px; }
+.es-day:last-child { padding-bottom: 0; }
+.es-day-node {
+	position: relative; z-index: 1; width: var(--node); height: var(--node); border-radius: 50%;
+	display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+	background: #fff; border: 2px solid var(--am-accent); color: var(--am-ink);
+	box-shadow: 0 0 0 6px #fff, 0 8px 18px -10px rgba(0, 0, 0, .35); transition: background .25s, color .25s, transform .25s;
+}
+.es-day-node b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.es-day-node span { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--am-muted); margin-top: 3px; transition: color .25s; }
+.es-day:hover .es-day-node { background: var(--am-accent); color: #fff; transform: scale(1.05); }
+.es-day:hover .es-day-node span { color: rgba(255, 255, 255, .9); }
+.es-day-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font-size: 20px; font-weight: 700; color: var(--am-ink); margin: 18px 0 14px; }
+.es-day-title span { font-size: 13.5px; font-weight: 400; color: var(--am-muted); }
+.es-day-lectures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.es-lecture {
+	--c: #3a8fd9;
+	display: grid; grid-template-columns: 44px 1fr; grid-template-rows: 1fr auto; gap: 4px 16px;
+	background: var(--am-bg); border: 1px solid var(--am-line); border-top: 3px solid var(--c); border-radius: 12px; padding: 18px 18px 16px;
+	transition: box-shadow .25s, transform .25s;
+}
+.es-lecture:hover { box-shadow: 0 12px 28px -16px rgba(0, 0, 0, .25); transform: translateY(-2px); background: #fff; }
+.es-bart { --c: var(--am-accent); }
+.es-num { grid-row: 1 / span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-size: 18px; font-weight: 700; }
+.es-body h4 { font-size: 17px; font-weight: 700; margin: 2px 0 4px; color: var(--am-ink); line-height: 1.35; text-wrap: balance; }
+.es-who { font-size: 13.5px; color: var(--am-muted); margin: 0 0 6px; }
+.es-who .fa { color: var(--c); margin-right: 3px; }
+.es-desc { font-size: 14.5px; line-height: 1.55; color: var(--am-ink-2); margin: 0; text-wrap: pretty; }
+.es-desc sup { font-size: .7em; }
+.es-pdf {
+	grid-column: 2; justify-self: start; margin-top: 10px; display: inline-flex; align-items: center; gap: 6px;
+	font-size: 13.5px; font-weight: 700; color: var(--am-ink-2) !important; background: #fff; border: 1px solid var(--am-line);
+	border-radius: 999px; padding: 6px 14px; transition: border-color .2s, color .2s, background .2s;
+}
+.es-pdf .fa { color: #d9534f; font-size: 15px; }
+.es-pdf:hover { border-color: var(--c); color: var(--am-ink) !important; }
+
+
+@media (max-width: 1150px) {
+	.es-day-lectures { grid-template-columns: 1fr; }
+}
+@media (max-width: 991px) {
+	.es-hero { padding-top: 76px; }
+	.es-hero-grid, .es-abstract-grid { grid-template-columns: 1fr; gap: 26px; }
+	.es-hero-photos { max-width: 600px; }
+	.es-day { gap: 18px; }
+}
+@media (max-width: 640px) {
+	.es-hero h1 { font-size: 30px; }
+	.es-sub { font-size: 18px; }
+	.es-hero-photos { padding-bottom: 50px; }
+	.es-lecture { grid-template-columns: 36px 1fr; padding: 16px 14px 14px; gap: 4px 12px; }
+	.es-num { width: 36px; height: 36px; font-size: 15px; }
+	.es-timeline { --node: 48px; }
+	.es-day { gap: 12px; }
+	.es-day-node b { font-size: 17px; }
+	.es-day-node span { font-size: 9.5px; }
+	.es-day-title { margin-top: 12px; font-size: 18px; }
+}

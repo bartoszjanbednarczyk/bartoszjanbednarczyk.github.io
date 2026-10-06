@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Bartosz Bednarczyk – GML Complexity Navigator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="author" content="Bartosz Bednarczyk">
+    <meta name="description" content="Interactive navigator for the complexity of satisfiability in graded and inverse modal logics over frame classes.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/mlnavigator.html">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bartosz Bednarczyk">
+    <meta property="og:title" content="Bartosz Bednarczyk – GML Complexity Navigator">
+    <meta property="og:description" content="Interactive navigator for the complexity of satisfiability in graded and inverse modal logics over frame classes.">
+    <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/mlnavigator.html">
+    <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
+    <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!--CSS styles-->
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link id="theme-style" rel="stylesheet" href="css/styles/default.css">
+    <link rel="stylesheet" href="css/mlnavigator.css">
+    <!--/CSS styles-->
+
+    <!--Javascript files-->
+    <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mixitup.min.js"></script>
+    <script type="text/javascript" src="js/custom.js"></script>
+    <script type="text/javascript" src="navigator/mlnavigator.js"></script>
+    <script type="text/javascript" src="navigator/data.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+    </script>
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+    <!--/Javascript files-->
+
+</head>
+<body>
+
+<div id="wrapper">
+    <a href="#sidebar" class="mobilemenu"><i class="fa fa-reorder"></i></a>
+    <div id="sidebar">
+        <div id="sidebar-wrapper">
+            <div id="sidebar-inner">
+                <!-- Profile/logo section-->
+                <div id="profile" class="clearfix">
+                    <div class="portrate hidden-xs"></div>
+                    <div class="title">
+                        <h2>Bartosz Bednarczyk</h2>
+                        <h3>TU Wien &</h3>
+                        <h3>University of Wrocław</h3>
+                    </div>
+                </div>
+                <!-- /Profile/logo section-->
+
+                <!-- Main navigation-->
+                <div id="main-nav">
+                    <ul id="navigation">
+                        <li>
+                            <a href="index.html">
+                                <i class="fa fa-home"></i>
+                                <div class="text">Home Page</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="aboutme.html">
+                                <i class="fa fa-user"></i>
+                                <div class="text">About Me</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="students.html">
+                                <i class="fa fa-graduation-cap"></i>
+                                <div class="text">Students</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="cv/cv.pdf">
+                                <i class="fa fa-file-text-o"></i>
+                                <div class="text">Academic CV</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="publications.html">
+                                <i class="fa fa-edit"></i>
+                                <div class="text">Publications</div>
+                            </a>
+                        </li>
+
+                        <li class="currentmenu">
+                            <a href="mlnavigator.html">
+                                <i class="fa fa-compass"></i>
+                                <div class="text">GML Navigator</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="teaching.html">
+                                <i class="fa fa-book"></i>
+                                <div class="text">Teaching &amp; Memes [PL]</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="esslli2026.html">
+                                <i class="fa fa-university"></i>
+                                <div class="text">ESSLLI 2026 Course</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="contact.html">
+                                <i class="fa fa-socket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="2" y="2" width="20" height="20" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9.2" cy="12.6" r="1.3" fill="currentColor"/><circle cx="14.8" cy="12.6" r="1.3" fill="currentColor"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/></svg></i>
+                                <div class="text">Contact</div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /Main navigation-->
+                <!-- Sidebar footer -->
+                <div id="sidebar-footer">
+                    <div class="social-icons">
+                        <ul>
+                            <li><a href="https://scholar.google.com/citations?user=j7plXYcAAAAJ" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="fa fa-graduation-cap"></i></a></li>
+                            <li><a href="https://dblp.org/pers/hd/b/Bednarczyk:Bartosz" target="_blank" rel="noopener" aria-label="DBLP" title="DBLP" class="si-text">dblp</a></li>
+                            <li><a href="https://orcid.org/0000-0002-8267-7554" target="_blank" rel="noopener" aria-label="ORCID" title="ORCID 0000-0002-8267-7554" class="si-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><text x="12" y="16.2" text-anchor="middle" font-family="Lato, Arial, sans-serif" font-weight="700" font-size="11.5" fill="#202020">iD</text></svg></a></li>
+                            <li><a href="https://github.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fa fa-github"></i></a></li>
+                            <li><a href="https://stackexchange.com/users/5638561/bartosz-bednarczyk" target="_blank" rel="noopener" aria-label="Stack Exchange" title="Stack Exchange"><i class="fa fa-stack-exchange"></i></a></li>
+                            <li><a href="https://www.facebook.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="fa fa-facebook"></i></a></li>
+                            <li><a href="https://steamcommunity.com/id/wiedzmac" target="_blank" rel="noopener" aria-label="Steam (wiedzmac)" title="Steam: wiedzmac"><i class="fa fa-steam"></i></a></li>
+                            <li><button type="button" class="si-svg si-discord" aria-label="Discord: bartoszjanbednarczyk (click to copy)" title="Discord: bartoszjanbednarczyk (click to copy)" data-copy="bartoszjanbednarczyk" onclick="var b=this;if(navigator.clipboard){navigator.clipboard.writeText(b.getAttribute('data-copy'));}b.classList.add('si-copied');setTimeout(function(){b.classList.remove('si-copied');},1600);"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span class="si-tip">Discord: bartoszjanbednarczyk</span></button></li>
+                        </ul>
+                    </div>
+                    <div id="copyright">Bartosz Bednarczyk © 2026</div>
+                </div>
+                <!-- /Sidebar footer -->
+            </div>
+
+        </div>
+    </div>
+
+    <div id="main">
+        <div id="navigator" class="page home nv" data-pos="home">
+            <header class="nv-hero">
+                <div class="nv-wrap">
+                    <p class="nv-eyebrow">Interactive tool &middot; Modal logic</p>
+                    <h1>GML Complexity Navigator</h1>
+                    <p class="nv-lead">Pick a class of frames and a modal language. The navigator shows the complexity of local and global satisfiability for the resulting logic, together with the results it follows from.</p>
+                    <p class="nv-lead">The navigator accompanies my <a href="https://www.doi.org/10.1017/S1471068421000065" target="_blank" rel="noopener">TPLP paper</a> with <a href="https://www.ii.uni.wroc.pl/~kiero/" target="_blank" rel="noopener">Emanuel Kieroński</a> and Piotr Witkowski, <em>Completing the Picture: Complexity of Graded Modal Logics with Converse</em> (<a href="https://arxiv.org/pdf/1812.04413.pdf" target="_blank" rel="noopener">arXiv</a>), which completes the classification of graded modal logics with converse over these frame&nbsp;classes.</p>
+                </div>
+            </header>
+
+            <section class="nv-section" aria-label="Choose a logic">
+                <div class="nv-wrap">
+                    <div class="nv-step">
+                        <div class="nv-step-head">
+                            <span class="nv-step-num">1</span>
+                            <h2>Frame conditions</h2>
+                            <p>Select any combination; implied conditions are added automatically.</p>
+                        </div>
+                        <div class="nv-grid frames">
+                            <div class="nv-frames-head" aria-hidden="true"><span></span><span></span><span>Frame property</span><span>Modal axiom</span><span>First-order condition</span></div>
+                            <label class="nv-opt">
+                                <input type="checkbox" value="D" class="js-frame-checkbox js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-check" aria-hidden="true"><i class="fa fa-check"></i></span>
+                                    <span class="nv-code">D</span>
+                                    <span class="nv-name">Serial</span>
+                                    <span class="nv-formula" data-label="Modal axiom">$\Box p \rightarrow \Diamond p$</span>
+                                    <span class="nv-formula" data-label="First-order condition">$\forall{x}.\exists{y}.R(x,y)$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="checkbox" value="T" class="js-frame-checkbox js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-check" aria-hidden="true"><i class="fa fa-check"></i></span>
+                                    <span class="nv-code">T</span>
+                                    <span class="nv-name">Reflexive</span>
+                                    <span class="nv-formula" data-label="Modal axiom">$p \rightarrow \Diamond p$</span>
+                                    <span class="nv-formula" data-label="First-order condition">$\forall{x}. R(x,x)$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="checkbox" value="B" class="js-frame-checkbox js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-check" aria-hidden="true"><i class="fa fa-check"></i></span>
+                                    <span class="nv-code">B</span>
+                                    <span class="nv-name">Symmetric</span>
+                                    <span class="nv-formula" data-label="Modal axiom">$p \rightarrow \Box \Diamond p$</span>
+                                    <span class="nv-formula" data-label="First-order condition">$\forall{x}. \forall{y}. R(x,y) \rightarrow R(y,x)$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="checkbox" value="4" class="js-frame-checkbox js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-check" aria-hidden="true"><i class="fa fa-check"></i></span>
+                                    <span class="nv-code">4</span>
+                                    <span class="nv-name">Transitive</span>
+                                    <span class="nv-formula" data-label="Modal axiom">$\Box p \rightarrow \Box \Box p$</span>
+                                    <span class="nv-formula" data-label="First-order condition">$\forall{x}.\forall{y}.\forall{z}. R(x,y) \wedge R(y,z) \rightarrow R(x,z)$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="checkbox" value="5" class="js-frame-checkbox js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-check" aria-hidden="true"><i class="fa fa-check"></i></span>
+                                    <span class="nv-code">5</span>
+                                    <span class="nv-name">Euclidean</span>
+                                    <span class="nv-formula" data-label="Modal axiom">$\Diamond p \rightarrow \Box \Diamond p$</span>
+                                    <span class="nv-formula" data-label="First-order condition">$\forall{x}.\forall{y}.\forall{z}. R(x,y) \wedge R(x,z) \rightarrow R(y,z)$</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="nv-step">
+                        <div class="nv-step-head">
+                            <span class="nv-step-num">2</span>
+                            <h2>Language</h2>
+                            <p>The modalities available in $\mathcal{L}^*$.</p>
+                        </div>
+                        <div class="nv-grid langs">
+                            <label class="nv-opt">
+                                <input type="radio" name="extension" value="ext1" class="js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-opt-top"><span class="nv-code">ST</span><span class="nv-check round" aria-hidden="true"><i class="fa fa-check"></i></span></span>
+                                    <span class="nv-name">Standard</span>
+                                    <span class="nv-formula">$\mathcal{L}^* = \Diamond$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="radio" name="extension" value="ext2" class="js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-opt-top"><span class="nv-code">Gr</span><span class="nv-check round" aria-hidden="true"><i class="fa fa-check"></i></span></span>
+                                    <span class="nv-name">Graded</span>
+                                    <span class="nv-formula">$\mathcal{L}^* = \Diamond_{\geq k}$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="radio" name="extension" value="ext3" class="js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-opt-top"><span class="nv-code">I</span><span class="nv-check round" aria-hidden="true"><i class="fa fa-check"></i></span></span>
+                                    <span class="nv-name">Inverse</span>
+                                    <span class="nv-formula">$\mathcal{L}^* = \Diamond, \Diamond^{-1}$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="radio" name="extension" value="ext4" class="js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-opt-top"><span class="nv-code">IGr</span><span class="nv-check round" aria-hidden="true"><i class="fa fa-check"></i></span></span>
+                                    <span class="nv-name">Graded + inverse</span>
+                                    <span class="nv-formula">$\mathcal{L}^* = \Diamond_{\geq k}, \Diamond^{-1}$</span>
+                                </span>
+                            </label>
+                            <label class="nv-opt">
+                                <input type="radio" name="extension" value="ext5" class="js-logic">
+                                <span class="nv-opt-body">
+                                    <span class="nv-opt-top"><span class="nv-code">GrI</span><span class="nv-check round" aria-hidden="true"><i class="fa fa-check"></i></span></span>
+                                    <span class="nv-name">Graded + graded inverse</span>
+                                    <span class="nv-formula">$\mathcal{L}^* = \Diamond_{\geq k}, \Diamond^{-1}_{\geq k}$</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="nv-step">
+                        <div class="nv-step-head">
+                            <span class="nv-step-num">3</span>
+                            <h2>Complexity</h2>
+                        </div>
+                        <div class="nv-result is-empty" aria-live="polite">
+                            <div class="nv-result-head">
+                                <div>
+                                    <div class="nv-kicker">Selected logic</div>
+                                    <div class="logicName"></div>
+                                </div>
+                                <button type="button" class="nv-reset js-reset"><i class="fa fa-undo" aria-hidden="true"></i> Reset</button>
+                            </div>
+                            <p class="nv-hint">Choose a language above (and optionally some frame conditions) to see the results.</p>
+                            <div class="nv-problems">
+                                <div class="nv-problem">
+                                    <h3>Local satisfiability</h3>
+                                    <div class="nv-badge js-local-complex"></div>
+                                    <p class="nv-comment js-local-comment"></p>
+                                </div>
+                                <div class="nv-problem">
+                                    <h3>Global satisfiability</h3>
+                                    <div class="nv-badge js-global-complex"></div>
+                                    <p class="nv-comment js-global-comment"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <ul class="nv-legend" aria-label="Complexity classes">
+                            <li><span data-c="np">NP</span></li><li class="sep">&lt;</li>
+                            <li><span data-c="ps">PSpace</span></li><li class="sep">&lt;</li>
+                            <li><span data-c="exp">ExpTime</span></li><li class="sep">&lt;</li>
+                            <li><span data-c="nexp">NExpTime</span></li><li class="sep">&lt;</li>
+                            <li><span data-c="tower">Tower</span></li><li class="sep">&lt;</li>
+                            <li><span data-c="undec">undecidable</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="nv-section" aria-labelledby="refs-h">
+                <div class="nv-wrap">
+                    <div class="nv-refs-head">
+                        <h2 id="refs-h">References</h2>
+                        <p>Click a reference to show its abstract.</p>
+                    </div>
+                    <div id="pub-grid">
+                        <div class="pitems">
+                                <div class="item mix cpaper" data-year="1977">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://epubs.siam.org/doi/10.1137/0206033" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Ladner77">The computational complexity of provability in systems of modal propositional logic [Ladner77]</h4>
+                                        <div class="pubauthor">Richard E. Ladner</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> SIAM J. Comput. 6(3): 467-480 (1977)</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            The computational complexity of the provability problem in systems of modal propositional logic is investigated. Every problem computable in polynomial space is log space reducible to the provability problem in any modal system between K and S4. In particular, the provability problem in K, T, and S4 are log space complete in polynomial space. The nonprovability problem in S5 is log space complete in nondeterministic polynomial time.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2001">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://academic.oup.com/logcom/article/11/1/85/938137" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Tobies2001">PSPACE Reasoning for Graded Modal Logics [Tobies2001]</h4>
+                                        <div class="pubauthor">Stefan Tobies</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> J. Log. Comput. 11(1): 85-106 (2001)</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            We present a PSPACE algorithm that decides satisfiability of the graded modal logic Gr(KR)—a natural extension of propositional modal logic KR by counting expressions—which plays an important role in the area of knowledge representation. The algorithm employs a tableaux approach and is the first known algorithm which meets the lower bound for the complexity of the problem. Thus, we exactly fix the complexity of the problem and refute an EXPTIME—hardness conjecture. We extend the results to the logic Gr(K R—?1), which augments Gr(KR) with inverse relations and intersection of accessibility relations. This establishes a kind of ?theoretical benchmark? that all algorithmic approaches can be measured against.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2021">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1017/S1471068421000065" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                            <a href="https://arxiv.org/pdf/1812.04413.pdf" class="tooltips" title="Download" target="_blank">
+                                                <i class="fa fa-cloud-download"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="BednarczykKW21">Completing the Picture: Complexity of Graded Modal Logics with Converse [BednarczykKW21]</h4>
+                                        <div class="pubauthor">Bartosz Bednarczyk, Emanuel Kieroński, Piotr Witkowski</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> Theory Pract. Log. Program. 21(4): 493-520 (2021)</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            A complete classification of the complexity of the local and global satisfiability problems for graded modal language over traditional classes of frames have already been established. By “traditional” classes of frames, we mean those characterized by any positive combination of reflexivity, seriality, symmetry, transitivity, and the Euclidean property. In this paper, we fill the gaps remaining in an analogous classification of the graded modal language with graded converse modalities. In particular, we show its NExpTime-completeness over the class of Euclidean frames, demonstrating this way that over this class the considered language is harder than the language without graded modalities or without converse modalities. We also consider its variation disallowing graded converse modalities, but still admitting basic converse modalities. Our most important result for this variation is confirming an earlier conjecture that it is decidable over transitive frames. This contrasts with the undecidability of the language with graded converse modalities.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="1991">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://www.ijcai.org/Proceedings/91-1/Papers/072.pdf" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Schild91">A Correspondence Theory for Terminological Logics: Preliminary Report [Schild91]</h4>
+                                        <div class="pubauthor">Klaus Schild</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> IJCAI 1991: 466-471</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            We show that the terminological logic ACC comprising Boolean operations on concepts and value restrictions is a notational variant of the propositional modal logic K(m)- To demonstrate the utility of the correspondence, we give two of its immediate by-products, Namely, we axiomatize ACC and give a simple proof that subsumption in ACC is PSPACE-complete, replacing the original six-page one. Furthermore, we consider an extension of ACC additionally containing both the identity role and the composition, union, transitive-reflexive closure, range restriction, and inverse of roles. It turns out that this language, called TSL, is a notational variant of the propositional dynamic logic converse-PDL. Using this correspondence, we prove that it suffices to consider finite TSLmodels, show that TSL-subsumption is decidable, and obtain an axiomatization of TSL By discovering that features correspond to deterministic programs in dynamic logic, we show that adding them to TSC preserves decidability, although violates its finite model property. Additionally, we describe an algorithm for deciding the coherence of inverse-free TSCconcepts with features. Finally, we prove that universal implications can be expressed within TSC.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2015">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1007/978-3-319-22177-9_28" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="KupkePS15">Reasoning with Global Assumptions in Arithmetic Modal Logics [KupkePS15]</h4>
+                                        <div class="pubauthor">Clemens Kupke, Dirk Pattinson, Lutz Schröder</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> FCT 2015: 367-380</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            We establish a generic upper bound EXPTIME for reasoning with global assumptions in coalgebraic modal logics. Unlike earlier results of this kind, we do not require a tractable set of tableau rules for the instance logics, so that the result applies to wider classes of logics. Examples are Presburger modal logic, which extends graded modal logic with linear inequalities over numbers of successors, and probabilistic modal logic with polynomial inequalities over probabilities. We establish the theoretical upper bound using a type elimination algorithm. We also provide a global caching algorithm that offers potential for practical reasoning.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2002">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="http://www.aiml.net/volumes/volume4/Chagrov-Rybakov.ps" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="ChagrovR02">How Many Variables Does One Need to Prove PSPACE-hardness of Modal Logics [ChagrovR02]</h4>
+                                        <div class="pubauthor">Alexander V. Chagrov, Mikhail N. Rybakov</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> Advances in Modal Logic 2002: 71-82</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            The main result of the paper is that the decision problem for the variable-free fragments of both K and K4 is PSPACE-complete. It is also proved that the decision problem for one-variable fragments of S4, Grz, and GL is PSPACE-complete too. The questions about complexity of variable-free, one-variable, and two-variable fragments of some closed logics are dscussed.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2008">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1007/978-3-540-85845-4_40" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="SchroderP08">Shallow Models for Non-iterative Modal Logics [SchroderP08]</h4>
+                                        <div class="pubauthor">Lutz Schröder, Dirk Pattinson</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> KI 2008: 324-331</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            Modal logics see a wide variety of applications in artificial intelligence, e.g. in reasoning about knowledge, belief, uncertainty, agency, defaults, and relevance. From the perspective of applications, the attractivity of modal logics stems from a combination of expressive power and comparatively low computational complexity. Compared to the classical treatment of modal logics with relational semantics, the use of modal logics in AI has two characteristic traits: Firstly, a large and growing variety of logics is used, adapted to the concrete situation at hand, and secondly, these logics are often non-normal. Here, we present a shallow model construction that witnesses PSPACE bounds for a broad class of mostly non-normal modal logics. Our approach is uniform and generic: we present general criteria that uniformly apply to and are easily checked in large numbers of examples. Thus, we not only re-prove known complexity bounds for a wide variety of structurally different logics and obtain previously unknown PSPACE-bounds, e.g. for Elgesem’s logic of agency, but also lay the foundations upon which the complexity of newly emerging logics can be determined.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="1971">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1145/800157.805047" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Cook71">The Complexity of Theorem-Proving Procedures [Cook71]</h4>
+                                        <div class="pubauthor">Stephen A. Cook</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> STOC 1971: 151-158</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            It is shown that any recognition problem solved by a polynomial time-bounded nondeterministic Turing machine can be “reduced” to the problem of determining whether a given propositional formula is a tautology. Here “reduced” means, roughly speaking, that the first problem can be solved deterministically in polynomial time provided an oracle is available for solving the second. From this notion of reducible, polynomial degrees of difficulty are defined, and it is shown that the problem of determining tautologyhood has the same polynomial degree as the problem of determining whether the first of two given graphs is isomorphic to a subgraph of the second. Other examples are discussed. A method of measuring the complexity of proof procedures for the predicate calculus is introduced and discussed.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2009">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1109/LICS.2009.17" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="KazakovP09">A Note on the Complexity of the Satisfiability Problem for Graded Modal Logics [KazakovP09]</h4>
+                                        <div class="pubauthor">Yevgeny Kazakov, Ian Pratt-Hartmann</div>
+                                        <div class="pubcite"><span class="label label-warning">Conference Paper</span> LICS 2009: 407-416</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            Graded modal logic is the formal language obtained from ordinary (propositional) modal logic by endowing its modal operators with cardinality constraints. Under the familiar possible-worlds semantics, these augmented modal operators receive interpretations such as "It is true at no fewer than 15 accessible worlds that...", or "It is true at no more than 2 accessible worlds that...". We investigate the complexity of satisfiability for this language over some familiar classes of frames. This problem is more challenging than its ordinary modal logic counterpart--especially in the case of transitive frames, where graded modal logic lacks the tree-model property. We obtain tight complexity bounds for the problem of determining the satisfiability of a given graded modal logic formula over the classes of frames characterized by any combination of reflexivity, seriality, symmetry, transitivity and the Euclidean property.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2017">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1093/logcom/exw026" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Zolin17">Undecidability of the transitive graded modal logic with converse [Zolin17]</h4>
+                                        <div class="pubauthor">Evgeny Zolin</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> J. Log. Comput. 27(5): 1399-1420 (2017)</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            We extend the language of the modal logic K4 of transitive frames with two sorts of modalities. In addition to the usual possibility modality (which means that a formula holds in some successor of a given point), we consider graded modalities (a formula holds in at least n successors) and converse graded modalities (a formula holds in at least n predecessors). We show that the resulting logic, GrIK4⁠, is both locally and globally undecidable. The same result is obtained for all logics between GrIK4 and its reflexive companion GrIS4 and for some other modal logics. As a consequence, for the ‘unrestricted version’ of the description logic ⁠, the problem of concept satisfiability (even with respect to the empty terminology) is undecidable. We also give a survey of results on the local and global decidability, complexity, and the finite model property for fragments of GrIK4.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="2005">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://doi.org/10.1007/s10849-005-5788-9" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="DemriN05">Deciding Regular Grammar Logics with Converse Through First-Order Logic [DemriN05]</h4>
+                                        <div class="pubauthor">Stephane Demri, Hans de Nivelle</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> Journal of Logic, Language and Information 14(3): 289-329 (2005)</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            We provide a simple translation of the satisfiability problem for regular grammar logics with converse into GF2, which is the intersection of the guarded fragment and the 2-variable fragment of first-order logic. The translation is theoretically interesting because it translates modal logics with certain frame conditions into first-order logic, without explicitly expressing the frame conditions. It is practically relevant because it makes it possible to use a decision procedure for the guarded fragment in order to decide regular grammar logics with converse. The class of regular grammar logics includes numerous logics from various application domains. A consequence of the translation is that the general satisfiability problem for every regular grammar logics with converse is in EXPTIME. This extends a previous result of the first author for grammar logics without converse. Other logics that can be translated into GF2 include nominal tense logics and intuitionistic logic. In our view, the results in this paper show that the natural first-order fragment corresponding to regular grammar logics is simply GF2 without extra machinery such as fixed-point operators.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="item mix cpaper" data-year="1993">
+                                    <div class="pubmain">
+                                        <div class="pubassets">
+                                            <a href="#" class="pubcollapse">
+                                                <i class="fa fa-expand"></i>
+                                            </a>
+                                            <a href="https://link.springer.com/chapter/10.1007/978-94-015-8242-1_10" class="tooltips" title="External link" target="_blank">
+                                                <i class="fa fa-external-link"></i>
+                                            </a>
+                                        </div>
+                                        <h4 class="pubtitle" id="Spaan1993">The Complexity of Propositional Tense Logics [Spaan1993]</h4>
+                                        <div class="pubauthor">Edith Spaan</div>
+                                        <div class="pubcite"><span class="label label-warning">Journal Paper</span> Diamonds and Defaults: Studies in Pure and Applied Intensional Logic</div>
+                                    </div>
+                                    <div class="pubdetails">
+                                        <h4>Abstract</h4>
+                                        <p>
+                                            In [4], Ladner investigated the complexity of the provability problems for modal logics. In particular, he showed that provability in all modal logics between K and S4 is PSPACE-hard, and he constructed polynomial space bounded algorithms for deciding provability in K, T, and S4, which implies that the provability problems for these logics are PSPACE-complete. In this paper, we investigate to what extent these results go through for tense logics. Note that any lower bound for provability in a modal logic 8 carries over to the corresponding tense logic 8t . In particular, it follows that for any modal logic 8 between K and 84, the provability problem for the tense logic 8t is PSPACE-hard. [...]
+                                        </p>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+<script src="js/typography.js"></script>
+</body>
+</html>

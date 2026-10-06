@@ -1,49 +1,95 @@
 <!DOCTYPE html>
-<html lang="pl">
-<head> 
-    <title>BBednarczyk - Home Page</title>
+<html lang="en">
+<head>
+    <title>Bartosz Bednarczyk – Home Page</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="author" content="owwwlab.com">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
-    <link rel="shortcut icon" href="../favicon.ico">
+    <meta name="author" content="Bartosz Bednarczyk">
+    <meta name="description" content="Homepage of Bartosz Bednarczyk, logician at TU Wien and the University of Wrocław.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Bartosz Bednarczyk">
+    <meta property="og:title" content="Bartosz Bednarczyk – Home Page">
+    <meta property="og:description" content="Homepage of Bartosz Bednarczyk, logician at TU Wien and the University of Wrocław.">
+    <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/">
+    <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
+    <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+{
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "@id": "https://bartoszjanbednarczyk.github.io/#person",
+      "name": "Bartosz Jan Bednarczyk",
+      "givenName": "Bartosz",
+      "familyName": "Bednarczyk",
+      "url": "https://bartoszjanbednarczyk.github.io/",
+      "image": "https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg",
+      "jobTitle": "Senior Postdoc and Assistant Professor",
+      "affiliation": [
+        {
+          "@type": "CollegeOrUniversity",
+          "name": "TU Wien",
+          "url": "https://informatics.tuwien.ac.at/"
+        },
+        {
+          "@type": "CollegeOrUniversity",
+          "name": "University of Wrocław",
+          "url": "https://www.ii.uni.wroc.pl/"
+        }
+      ],
+      "alumniOf": [
+        {
+          "@type": "CollegeOrUniversity",
+          "name": "TU Dresden"
+        },
+        {
+          "@type": "CollegeOrUniversity",
+          "name": "ENS Paris-Saclay"
+        },
+        {
+          "@type": "CollegeOrUniversity",
+          "name": "University of Wrocław"
+        }
+      ],
+      "knowsAbout": [
+        "Logic in computer science",
+        "Finite model theory",
+        "Dynamic logics",
+        "Description logics",
+        "Decidable fragments of first-order logic",
+        "Computational complexity"
+      ],
+      "sameAs": [
+        "https://orcid.org/0000-0002-8267-7554",
+        "https://dblp.org/pers/hd/b/Bednarczyk:Bartosz",
+        "https://scholar.google.com/citations?user=j7plXYcAAAAJ",
+        "https://github.com/bartoszjanbednarczyk/"
+      ]
+    }
+    </script>
 
     <!--CSS styles-->
     <link rel="stylesheet" href="css/bootstrap.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
-    <link rel="stylesheet" href="css/perfect-scrollbar-0.4.5.min.css">
-    <link rel="stylesheet" href="css/magnific-popup.css">
     <link rel="stylesheet" href="css/style.css">
     <link id="theme-style" rel="stylesheet" href="css/styles/default.css">
-
-
     <!--/CSS styles-->
+
     <!--Javascript files-->
     <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
-    <script type="text/javascript" src="js/TweenMax.min.js"></script>
-    <script type="text/javascript" src="js/jquery.touchSwipe.min.js"></script>
-    <script type="text/javascript" src="js/jquery.carouFredSel-6.2.1-packed.js"></script>
-
-    <script type="text/javascript" src="js/modernizr.custom.63321.js"></script>
-    <script type="text/javascript" src="js/jquery.dropdownit.js"></script>
-
-    <script type="text/javascript" src="js/ScrollToPlugin.min.js"></script>
-
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-
-    <script type="text/javascript" src="js/jquery.mixitup.min.js"></script>
-
-    <script type="text/javascript" src="js/masonry.min.js"></script>
-
-    <script type="text/javascript" src="js/perfect-scrollbar-0.4.5.with-mousewheel.min.js"></script>
-    <script type="text/javascript" src="js/jquery.nicescroll.min.js"></script>
-
-
-    <script type="text/javascript" src="js/magnific-popup.js"></script>
     <script type="text/javascript" src="js/custom.js"></script>
-
     <!--/Javascript files-->
 
+
+    <!-- Lato over HTTPS (the http:// @font-face URLs in style.css are blocked on GitHub Pages) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/aboutme.css">
+    <link rel="stylesheet" href="css/home.css">
 </head>
 <body>
 
@@ -76,18 +122,23 @@
                         <li>
                             <a href="aboutme.html">
                                 <i class="fa fa-user"></i>
-                                <div class="text">About Me (Outdated)</div>
+                                <div class="text">About Me</div>
                             </a>
                         </li>
-
 
                         <li>
-                            <a href="http://bartoszjanbednarczyk.github.io/others/academic-cv.pdf">
-                                <i class="fa fa-barcode"></i>
-                                <div class="text">Academic CV (Outdated)</div>
+                            <a href="students.html">
+                                <i class="fa fa-graduation-cap"></i>
+                                <div class="text">Students</div>
                             </a>
                         </li>
 
+                        <li>
+                            <a href="cv/cv.pdf">
+                                <i class="fa fa-file-text-o"></i>
+                                <div class="text">Academic CV</div>
+                            </a>
+                        </li>
 
                         <li>
                             <a href="publications.html">
@@ -97,14 +148,29 @@
                         </li>
 
                         <li>
-                            <a href="teaching.html">
-                                <i class="fa fa-clock-o"></i>
-                                <div class="text">Teaching&Memes [PL]</div>
+                            <a href="mlnavigator.html">
+                                <i class="fa fa-compass"></i>
+                                <div class="text">GML Navigator</div>
                             </a>
                         </li>
+
+                        <li>
+                            <a href="teaching.html">
+                                <i class="fa fa-book"></i>
+                                <div class="text">Teaching &amp; Memes [PL]</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="esslli2026.html">
+                                <i class="fa fa-university"></i>
+                                <div class="text">ESSLLI 2026 Course</div>
+                            </a>
+                        </li>
+
                         <li>
                             <a href="contact.html">
-                                <i class="fa fa-calendar"></i>
+                                <i class="fa fa-socket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="2" y="2" width="20" height="20" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9.2" cy="12.6" r="1.3" fill="currentColor"/><circle cx="14.8" cy="12.6" r="1.3" fill="currentColor"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/></svg></i>
                                 <div class="text">Contact</div>
                             </a>
                         </li>
@@ -115,17 +181,17 @@
                 <div id="sidebar-footer">
                     <div class="social-icons">
                         <ul>
-                            <li><a href="https://www.facebook.com/bartoszjanbednarczyk/"><i class="fa fa-facebook"></i></a>
-                            </li>
-                            <li><a href="https://stackexchange.com/users/5638561/bartosz-bednarczyk"><i
-                                    class="fa fa-stack-exchange"></i></a></li>
-
+                            <li><a href="https://scholar.google.com/citations?user=j7plXYcAAAAJ" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="fa fa-graduation-cap"></i></a></li>
+                            <li><a href="https://dblp.org/pers/hd/b/Bednarczyk:Bartosz" target="_blank" rel="noopener" aria-label="DBLP" title="DBLP" class="si-text">dblp</a></li>
+                            <li><a href="https://orcid.org/0000-0002-8267-7554" target="_blank" rel="noopener" aria-label="ORCID" title="ORCID 0000-0002-8267-7554" class="si-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><text x="12" y="16.2" text-anchor="middle" font-family="Lato, Arial, sans-serif" font-weight="700" font-size="11.5" fill="#202020">iD</text></svg></a></li>
+                            <li><a href="https://github.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fa fa-github"></i></a></li>
+                            <li><a href="https://stackexchange.com/users/5638561/bartosz-bednarczyk" target="_blank" rel="noopener" aria-label="Stack Exchange" title="Stack Exchange"><i class="fa fa-stack-exchange"></i></a></li>
+                            <li><a href="https://www.facebook.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="fa fa-facebook"></i></a></li>
+                            <li><a href="https://steamcommunity.com/id/wiedzmac" target="_blank" rel="noopener" aria-label="Steam (wiedzmac)" title="Steam: wiedzmac"><i class="fa fa-steam"></i></a></li>
+                            <li><button type="button" class="si-svg si-discord" aria-label="Discord: bartoszjanbednarczyk (click to copy)" title="Discord: bartoszjanbednarczyk (click to copy)" data-copy="bartoszjanbednarczyk" onclick="var b=this;if(navigator.clipboard){navigator.clipboard.writeText(b.getAttribute('data-copy'));}b.classList.add('si-copied');setTimeout(function(){b.classList.remove('si-copied');},1600);"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span class="si-tip">Discord: bartoszjanbednarczyk</span></button></li>
                         </ul>
                     </div>
-
-
-                    <div id="copyright">Bartosz Bednarczyk © 2025</div>
-
+                    <div id="copyright">Bartosz Bednarczyk © 2026</div>
                 </div>
                 <!-- /Sidebar footer -->
             </div>
@@ -135,250 +201,149 @@
 
     <div id="main">
 
-        <div id="biography" class="page home" data-pos="home">
-            <div class="pageheader">
-                <div class="headercontent">
-                    <div class="section-container">
+        <div id="biography" class="page home am" data-pos="home">
 
-                        <div class="row">
-                            <div class="col-sm-2 visible-sm"></div>
-                            <div class="col-sm-8 col-md-5">
-                                <div class="biothumb">
-                                    <img alt="profile picture" src="img/personal/bendarczyk1.jpg"
-                                         class="img-responsive">
+            <header class="am-hero hm-hero">
+                <div class="am-wrap am-hero-grid">
+                    <div>
+                        <h1>Bartosz Jan Bednarczyk</h1>
+                        <p class="hm-role">Senior postdoc at <a href="https://informatics.tuwien.ac.at/">TU&nbsp;Wien</a> · Assistant professor at the <a href="https://www.ii.uni.wroc.pl/">University of&nbsp;Wrocław</a></p>
+                        <div class="hm-bio">
+                            <p>I lead the FWF project <a href="https://www.fwf.ac.at/en/research-radar/10.55776/ESP2407425">FINGO</a> at TU Wien and am an assistant professor at the University of Wrocław (currently on a 20% workload). Before taking up my full-time position in Wrocław, I defended my PhD thesis at TU Dresden under the main supervision of <a href="http://sebastian-rudolph.de/">Sebastian Rudolph</a>; before that, I studied in the Parisian Master of Research in Computer Science at ENS Paris-Saclay under the supervision of <a href="http://www.lsv.fr/~demri/">Stéphane&nbsp;Demri</a>.</p>
+                            <p>I am a logician working in applied dendrology. Most of my current research concerns the use of trees, cacti and flowers in finite-model reasoning for dynamic logics (extensions of PDL, the modal μ-calculus, and more). More broadly, I am interested in finite model theory and the theory of&nbsp;computation.</p>
+                        </div>
+                    </div>
+                    <div class="hm-side">
+                        <figure class="hm-photo">
+                            <img src="img/personal/bart-with-dog.jpg" alt="Bartosz Bednarczyk greeting a very fluffy white dog" width="1112" height="870">
+                        </figure>
+                        <nav class="am-actions" aria-label="Quick links">
+                            <a class="am-btn" href="publications.html"><i class="fa fa-file-text-o"></i> Publications</a>
+                            <a class="am-btn ghost" href="cv/cv.pdf"><i class="fa fa-file-pdf-o"></i> Academic CV</a>
+                            <a class="am-btn ghost" href="aboutme.html"><i class="fa fa-user"></i> About me</a>
+                        </nav>
+                    </div>
+                    <aside class="hm-students">
+                        <h2>Prospective students</h2>
+                        <p>I am actively looking for prospective Master’s and PhD students interested in joint research on the complexity and decidability of logics. Drop me a line if you are interested (some modest scholarships are available). <a href="students.html">Past theses&nbsp;→</a></p>
+                    </aside>
+                </div>
+            </header>
+
+            <section class="am-section" aria-label="News and contact">
+                <div class="am-wrap hm-grid">
+                    <div>
+                        <div class="am-head"><h2>Latest news</h2></div>
+                        <ul class="hm-news">
+                        <li><time datetime="2026-10-06">6 Oct 2026</time><p>The new version of this page is finally&nbsp;out.</p></li>
+                        <li><time datetime="2026-10-05">5 Oct 2026</time><p>Until the end of February 2027, I am declining all reviewing invitations. Sorry! Over the last two years I reviewed at least four times as many papers as I published, so it seems fair to spend the next few months on actual&nbsp;research.</p></li>
+                        <li><time datetime="2026-10-01">1 Oct 2026</time><p>Mikołaj Swoboda is now officially my PhD student. One of my biggest achievements so far&nbsp;:)</p></li>
+                        <li><time datetime="2025-12-11">11 Dec 2025</time><p>I am happy to announce that Ian Pratt-Hartmann and I will give a five-day course on decidable fragments of first-order logic at ESSLLI 2026, the 37th European Summer School in Logic, Language and&nbsp;Information. <a href="esslli2026.html">Course page and slides</a>.</p></li>
+                        <li><time datetime="2025-12-01">1 Dec 2025</time><p>I was awarded a three-year FWF ESPRIT grant in Vienna for my project <a href="https://www.fwf.ac.at/en/research-radar/10.55776/ESP2407425">FINGO: Finite Graph Operating Automata Meet Dynamic Logics</a>, expected to start on 1 April 2026. The project investigates the finite satisfiability problem for extensions of dynamic logics, such as PDL and the μ-calculus. A short project summary is available <a href="others/Esprit.pdf">here</a>. Feel free to contact me if you are interested in&nbsp;collaborating!</p></li>
+                        <li><time datetime="2025-09-11">11 Sep 2025</time><p>I successfully co-organized DL Workshop 2025 in Opole and was elected to the DL Workshop Steering&nbsp;Committee.</p></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="am-head"><h2>Contact</h2></div>
+                        <div class="hm-contact">
+                            <div class="hm-card">
+                                <h3><i class="fa fa-envelope-o"></i> E-mail</h3>
+                                <ul class="hm-mail">
+                                    <li>bartek at cs.uni.wroc.pl<span>work, preferred</span></li>
+                                    <li>bartosz.bednarczyk at tuwien.ac.at<span>work'</span></li>
+                                    <li>bartosz.jan.bednarczyk at gmail dot com<span>private</span></li>
+                                </ul>
+                            </div>
+                            <div class="hm-card">
+                                <h3><i class="fa fa-map-marker"></i> Visiting addresses</h3>
+                                <div class="hm-map">
+                                    <div class="hm-map-tabs" role="group" aria-label="Choose a country">
+                                        <button type="button" aria-pressed="true" data-addr="at" data-src="https://www.openstreetmap.org/export/embed.html?bbox=16.36090%2C48.19105%2C16.37890%2C48.19945&amp;layer=mapnik&amp;marker=48.19525%2C16.3699" data-link="https://www.openstreetmap.org/?mlat=48.19525&amp;mlon=16.3699#map=17/48.19525/16.3699">Austria</button>
+                                        <button type="button" aria-pressed="false" data-addr="pl" data-src="https://www.openstreetmap.org/export/embed.html?bbox=17.04405%2C51.10668%2C17.06205%2C51.11508&amp;layer=mapnik&amp;marker=51.11088%2C17.05305" data-link="https://www.openstreetmap.org/?mlat=51.11088&amp;mlon=17.05305#map=17/51.11088/17.05305">Poland</button>
+                                    </div>
+                                    <div class="hm-addr" data-addr="at">
+                                        <address><strong>TU Wien Informatics</strong><br>Room HE0340<br>Favoritenstraße 9–11, 1040 Vienna, Austria</address>
+                                    </div>
+                                    <div class="hm-addr" data-addr="pl">
+                                        <address><strong>Instytut Informatyki Uniwersytetu Wrocławskiego</strong><br>Room 324 (3rd floor)<br>Fryderyka Joliot-Curie 15, 50-383 Wrocław, Poland</address>
+                                    </div>
+                                    <iframe title="Map of the visiting address" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=16.36090%2C48.19105%2C16.37890%2C48.19945&amp;layer=mapnik&amp;marker=48.19525%2C16.3699"></iframe>
+                                    <a class="hm-map-link" href="https://www.openstreetmap.org/?mlat=48.19525&amp;mlon=16.3699#map=17/48.19525/16.3699" target="_blank" rel="noopener">Larger map <i class="fa fa-external-link"></i></a>
                                 </div>
                             </div>
-                            <div class="clearfix visible-sm visible-xs"></div>
-                            <div class="col-sm-12 col-md-7">
-                                <h3 class="title">Bartosz Jan Bednarczyk</h3>
-                                <p>I lead the FWF project Fingo at TU Wien and am an assistant professor at the University of Wrocław (currently on a 20% workload). Before taking up my full-time position in Wrocław, I defended my PhD thesis at TU Dresden under the main supervision of Sebastian Rudolph, and before that I studied for the Parisian Master of Research in Computer Science at ENS Paris-Saclay under the supervision of Stéphane Demri.</p>
-
-<p>I am a logician working in applied dendrology. Most of my current research concerns the use of trees, cacti and flowers in finite-model reasoning for dynamic logics (extensions of PDL, the modal μ-calculus, and more). More broadly, I am interested in finite model theory and the theory of computation.</p>
-
-<p>I am actively looking for prospective Master's and PhD students interested in joint research on the complexity and decidability of logics. Drop me a line if you are interested (some modest scholarships are available).</p>
-                            </div>
-
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="pagecontents">
-                <div class="section color-1 ">
-                    <div class="section-container">
-                        <div class="row">
-
-                            <div class="col-md-7 col-sm-12">
-                                <div class="title text-center">
-                                    <h3>Latest news</h3>
-                                </div>
-                                <ul class="ul-dates ng-scope" ng-controller="NewsCtrl">
-
-
-<li>
-    <div class="dates">
-        <span ng-bind="info.date" class="ng-binding">5 Oct 2026</span>
-    </div>
-    <div class="content ng-binding" ng-bind-html="info.note">
-        Until the end of February 2026, I refuse all reviewing invitations. Sorry. Over the last two years I reviewed at least four times as many papers as I published, so it seems fair to spend the next few months on actual research.
-    </div>
-</li>
-
-<li>
-    <div class="dates">
-        <span ng-bind="info.date" class="ng-binding">1 Oct 2026</span>
-    </div>
-    <div class="content ng-binding" ng-bind-html="info.note">
-        Mikołaj Swoboda is now officially my PhD student. One of my biggest achievements so far :)
-    </div>
-</li>
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">11 Dec 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I am happy to announce that together with Ian Pratt-Hartmann we will give a 5-day course on decidable fragments of first-order logic, hosted by ESSLLI (37th European Summer School in Logic, Language and Information).
-                                        </div>
-                                </li> 
-
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">1 Dec 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I was awarded a three-year FWF ESPRIT grant in Vienna for my project titled <a href="https://www.fwf.ac.at/en/research-radar/10.55776/ESP2407425">FINGO: Finite Graph Operating Automata Meet Dynamic Logics</a>, expected to start on the 1st of April 2026. The project investigates finite satisfiability problem for extensions of dynamic logics, such as PDL and the Mu-calculus. Feel free to contact me if you are interested in collaborating!
-                                            For a short project summary click <a href="http://bartoszjanbednarczyk.github.io/others/Esprit.pdf">here</a>.
-                                        </div>
-                                </li> 
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">11 Sep 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I sucessfully (co)organized DL Workshop 2025 in Opole and was elected to the DL Workshop Steering Committee. 
-                                        </div>
-                                </li> 
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">10 July 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            My joint work with Emanuel Kieroński titled "Guarded Fragments Meet Dynamic Logic: The Story of Regular Guards" has just been accepted to KR 2025. See you in Australia!
-                                        </div>
-                                </li> 
-
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">1 Mar 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I started a part-time job as a postdoctoral researcher at TU Wien, in a research project lead by Magdalena Ortiz. Looking forward to apply for my own project there!
-                                        </div>
-                                </li> 
-
-                                    <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">20 Feb 2025</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I am a local co-organizer of <a href="https://dl25.cs.uni.opole.pl/">Description Logic Workshop 2025</a> and <a href="https://vldb-sc25.cs.uni.wroc.pl/">VLDB Summer School 2025</a>. You are all encouraged to participate!
-                                        </div>
-                                </li> 
-
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">4 Dec 2024</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I am happy to announce that I was granted funding by Polish National Science Centre via a single-year Preludium Grant "Decision Problems for Logics with Weak Forms of Recursion". Surprisingly, my proposal was ranked first among all other computer science proposals. My research will be dedicated to solving some leftovers from my PhD thesis (complexity of some unsolved problems concerning extensions of Propositional Dynamic Logic). Drop me a line if you are interested in collaboration or in writing a thesis!
-                                        </div>
-                                </li> 
-
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">1 Oct 2024</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            Yesterday I finished my work at TU Dresden. Now I will work as an assistant professor (adiunkt) at University of Wrocław. 
-                                            From the beginning of the next year I will also be partially employed by Magdalena Ortiz at TU Wien.
-                                        </div>
-                                </li> 
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">25 Jun 2024</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            I successfully defended my PhD thesis (with distinction!). The thesis can be found <a href="https://iccl.inf.tu-dresden.de/w/images/e/e5/BBE-thesis-final.pdf">here</a> while the slides from my defence are available <a href="https://iccl.inf.tu-dresden.de/w/images/4/42/Bednarczyk-PhD-Defense-Slides.pdf">here</a>. PhD certificate is given <a href="http://bartoszjanbednarczyk.github.io/others/phd-certificate.pdf">(here)</a>.
-                                        </div>
-                                </li> 
-
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">16 Apr 2024</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            New sole-author paper "Data Complexity in Expressive Description Logics With Path Expressions" accepted to <a href="https://ijcai24.org/">IJCAI 2024</a>. 
-                                        </div>
-                                </li> 
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">10 Jul 2023</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            New sole-author paper "Beyond ALCreg: Exploring Non-Regular Extensions of PDL with Description Logics Features" accepted to <a href="https://jelia2023.inf.tu-dresden.de/">JELIA 2023</a>. It also received the best student paper award. The extended version of this paper will appear in LMCS.
-                                        </div>
-                                </li> 
-
-                                <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">21 Apr 2023</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            My new paper "On the of Limits of Decision: the Adjacent Fragment of First-Order Logic", written with Ian Pratt-Hartmann and Daumantas Kojelis will be presented at <a href="https://icalp2023.cs.upb.de/">ICALP 2023</a>.
-                                        </div>
-                                </li> 
-
-
-                                <!-- <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">26 Jun 2022</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            "<a href="https://link.springer.com/chapter/10.1007/978-3-031-15298-6_19">Presburger Büchi Tree Automata with Applications to Logics with Expressive Counting</a>", a BSc thesis of Oskar Fiuk written under my supervision is now accepted for publication at <a href="https://wollic2022.github.io/">WOLLIC 2022</a>.
-                                        </div>
-                                </li>  -->
-
-                                <!-- <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">21 Jun 2022</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            "Towards Model Theory of Ordered Logics: Expressivity and Interpolation" written together with <a href="https://reijojaakkola.github.io/">Reijo Jaakkola</a> got accepted to MFCS 2022!
-                                        </div>
-                                </li>     -->
-
-                                <!-- <li>
-                                        <div class="dates">
-                                            <span ng-bind="info.date" class="ng-binding">7 Dec 2021</span>
-                                        </div>
-                                        <div class="content ng-binding" ng-bind-html="info.note">
-                                            My two recent papers from the DL workshop are now accepted for the AAAI 2022 conference! See the previous post for more info.
-                                        </div>
-                                </li>     -->
-
-                                </ul>
-                            </div>
-
-                            <div class="col-md-5">
-                                <div class="title text-center">
-                                    <h3>Contact</h3>
-                                </div>
-
-                                <ul class="list-unstyled">
-                                    <li><i class="fa fa-envelope"></i>&nbsp; bartek at cs.uni.wroc.pl (work, preferred)</li>
-                                    <li><i class="fa fa-envelope"></i>&nbsp; bartosz.bednarczyk at tuwien.ac.at (work')</li>
-                                    <li><i class="fa fa-envelope"></i>&nbsp; bartosz.jan.bednarczyk at gmail dot com (private)
-                                    </li>
-                                    <li><br><i class="fa fa-globe"></i>&nbsp;Visiting address (PL)<br>
-                                        Instytut Informatyki Uniwersytetu Wrocławskiego <br>
-                                        Room 324 (3rd floor)<br>
-                                        Fryderyka Joliot-Curie 15, 50-383 Wrocław
-                                    </li>
-                                    <li><br><i class="fa fa-globe"></i>&nbsp;Visiting address (AT)<br>
-                                        TU Wien Informatics<br>
-                                        Room HE0340 <br>
-                                        Favoritenstraße 9-11, 1040 Vienna, Austria
-                                    </li>
-                                </ul>
-
-
-                            </div>
-                        </div>
-                        <p>
-
-                        </p>
+            <section class="am-section" aria-labelledby="hm-papers-h">
+                <div class="am-wrap">
+                    <div class="am-head">
+                        <h2 id="hm-papers-h">Recent papers</h2>
+                        <a class="hm-all" href="publications.html">All publications <i class="fa fa-angle-right"></i></a>
                     </div>
-
+                    <ul class="hm-papers">
+                        <li class="hm-paper am-reveal">
+                            <div class="hm-venue">DL 2026</div>
+                            <h3>Baby Steps Towards Finite Satisfiability for LoopPDL</h3>
+                            <p class="hm-authors"><strong>Bartosz Bednarczyk</strong>, Mikołaj Swoboda</p>
+                            <div class="hm-links"><a href="https://ceur-ws.org/Vol-4230/dl-paper30.pdf" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o"></i>PDF</a><a href="https://ceur-ws.org/Vol-4230/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i>Publisher</a></div>
+                        </li>
+                        <li class="hm-paper am-reveal">
+                            <div class="hm-venue">DL 2026</div>
+                            <h3>A Horn Extension of DL-Lite with NL Data Complexity</h3>
+                            <p class="hm-authors">Janos Arpasi, <strong>Bartosz Bednarczyk</strong>, Magdalena Ortiz</p>
+                            <div class="hm-links"><a href="https://ceur-ws.org/Vol-4230/dl-paper35.pdf" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o"></i>PDF</a><a href="https://ceur-ws.org/Vol-4230/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i>Publisher</a></div>
+                        </li>
+                        <li class="hm-paper am-reveal">
+                            <div class="hm-venue">KR 2025</div>
+                            <h3>Guarded Fragments Meet Dynamic Logic: The Story of Regular Guards</h3>
+                            <p class="hm-authors"><strong>Bartosz Bednarczyk</strong>, Emanuel Kieroński</p>
+                            <div class="hm-links"><a href="https://doi.org/10.48550/arXiv.2509.09218" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o"></i>PDF</a><a href="https://doi.org/10.24963/kr.2025/9" target="_blank" rel="noopener"><i class="fa fa-external-link"></i>DOI</a></div>
+                        </li>
+                        <li class="hm-paper am-reveal">
+                            <div class="hm-venue">JLC 2025</div>
+                            <h3>The Adjacent Fragment and Quine’s Limits of Decision</h3>
+                            <p class="hm-authors"><strong>Bartosz Bednarczyk</strong>, Daumantas Kojelis, Ian Pratt-Hartmann</p>
+                            <div class="hm-links"><a href="https://iccl.inf.tu-dresden.de/w/images/2/2c/Adjacent-fragment.pdf" target="_blank" rel="noopener"><i class="fa fa-file-pdf-o"></i>PDF</a><a href="https://doi.org/10.1093/logcom/exaf042" target="_blank" rel="noopener"><i class="fa fa-external-link"></i>DOI</a></div>
+                        </li>
+                    </ul>
+                    <p class="hm-papers-note"><i class="fa fa-info-circle"></i> For the past two years I held a teaching-heavy position and spent much of my time reviewing papers. Since FINGO started in April 2026, I have been fully active in research&nbsp;again.</p>
                 </div>
-
-            </div>
-
+            </section>
 
         </div>
     </div>
+</div>
 
-</div>
-</div>
+<script>
+(function () {
+    var page = document.getElementById('biography');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Visiting address: Austria / Poland switch (address + map)
+    Array.prototype.slice.call(document.querySelectorAll('.hm-map')).forEach(function (m) {
+        var frame = m.querySelector('iframe'), link = m.querySelector('.hm-map-link');
+        var btns = Array.prototype.slice.call(m.querySelectorAll('.hm-map-tabs button'));
+        var addrs = Array.prototype.slice.call(m.querySelectorAll('.hm-addr'));
+        function show(b) {
+            btns.forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+            addrs.forEach(function (a) { a.hidden = a.getAttribute('data-addr') !== b.getAttribute('data-addr'); });
+            if (frame.getAttribute('src') !== b.getAttribute('data-src')) frame.src = b.getAttribute('data-src');
+            link.href = b.getAttribute('data-link');
+        }
+        btns.forEach(function (b) { b.addEventListener('click', function () { show(b); }); });
+        show(btns[0]);
+    });
+
+    var els = Array.prototype.slice.call(document.querySelectorAll('.am-reveal'));
+    if (!('IntersectionObserver' in window) || reduce) return;
+    document.documentElement.classList.add('am-js');
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('am-in'); io.unobserve(e.target); } });
+    }, { root: page, rootMargin: '0px 0px -5% 0px', threshold: 0.05 });
+    els.forEach(function (el) { io.observe(el); });
+})();
+</script>
+<script src="js/typography.js"></script>
 </body>
 </html>
-

@@ -209,7 +209,7 @@ var results = {
 
     "K": {
         "local-complex": "PSpace",
-        "local-comment": "A classical results by Lander <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for variable-free fragment <a href='#ChagrovR02'>[ChagrovR02]</a>. The upper bound holds even for Arithmetic Modal Logics <a href='#SchroderP08'>[SchroderP08]</a>.",
+        "local-comment": "A classical results by Ladner <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for variable-free fragment <a href='#ChagrovR02'>[ChagrovR02]</a>. The upper bound holds even for Arithmetic Modal Logics <a href='#SchroderP08'>[SchroderP08]</a>.",
         "global-complex": "ExpTime",
         "global-comment": "Hardness comes from PDL by a careful analysis by Schild <a href='#Schild91'>[Schild91]</a>. The upper bound holds even for Arithmetic Modal Logics <a href='#KupkePS15'>[KupkePS15]</a>."
     },
@@ -235,7 +235,7 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from K, PSpace upper bound with a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from K, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from K, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic D
@@ -266,9 +266,9 @@ var results = {
     },
     "GrID": {
         "local-complex": "PSpace",
-        "local-comment": "Hardness comes from D, PSpace upper bound <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
+        "local-comment": "Hardness comes from D, PSpace upper bound <a href='#BednarczykKW21'>[BednarczykKW21]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from D, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from D, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic T
@@ -299,9 +299,9 @@ var results = {
     },
     "GrIT": {
         "local-complex": "PSpace",
-        "local-comment": "Hardness comes from T, PSpace upper bound <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
+        "local-comment": "Hardness comes from T, PSpace upper bound <a href='#BednarczykKW21'>[BednarczykKW21]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from T, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from T, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic KB
@@ -316,7 +316,7 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from KB, PSpace upper bound <a href='#KazakovP09'>[KazakovP09]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from KB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from KB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "IKB": {
         "local-complex": "PSpace",
@@ -349,7 +349,7 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from DB, PSpace upper bound <a href='#KazakovP09'>[KazakovP09]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from DB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from DB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "IDB": {
         "local-complex": "PSpace",
@@ -383,7 +383,7 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from TB, PSpace upper bound <a href='#KazakovP09'>[KazakovP09]</a> with a slight modification of a tableaux algorithm by Tobies <a href='#Tobies2001'>[Tobies2001]</a>.",
         "global-complex": "ExpTime",
-        "global-comment": "Hardness comes from TB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "Hardness comes from TB, the upper via a standard standard translation to GC2 <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "ITB": {
         "local-complex": "PSpace",
@@ -498,9 +498,9 @@ var results = {
     },
     "GrID45": {
         "local-complex": "NP",
-        "local-comment": "Hardness comes from KB45, the upper bound in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> via translation to C1",
+        "local-comment": "Hardness comes from KB45, the upper bound in <a href='#BednarczykKW21'>[BednarczykKW21]</a> via translation to C1",
         "global-complex": "NP",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic K45
@@ -531,9 +531,9 @@ var results = {
     },
     "GrIK45": {
         "local-complex": "NP",
-        "local-comment": "Hardness comes from K45, the upper bound in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> via translation to C1",
+        "local-comment": "Hardness comes from K45, the upper bound in <a href='#BednarczykKW21'>[BednarczykKW21]</a> via translation to C1",
         "global-complex": "NP",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic K5
@@ -552,21 +552,21 @@ var results = {
     },
     "IK5": {
         "local-complex": "ExpTime",
-        "local-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2",
+        "local-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2",
         "global-complex": "ExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "IGrK5": {
         "local-complex": "NExpTime",
-        "local-comment": "Hardness comes from  <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> via NExpTime-torus tilings, the upper bound holds for GrIK5",
+        "local-comment": "Hardness comes from  <a href='#BednarczykKW21'>[BednarczykKW21]</a> via NExpTime-torus tilings, the upper bound holds for GrIK5",
         "global-complex": "NExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "GrIK5": {
         "local-complex": "NExpTime",
-        "local-comment": "Hardness comes from IGrK5, the upper bound via translation to C2 in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>",
+        "local-comment": "Hardness comes from IGrK5, the upper bound via translation to C2 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
         "global-complex": "NExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic D5
@@ -585,28 +585,28 @@ var results = {
     },
     "ID5": {
         "local-complex": "ExpTime",
-        "local-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2",
+        "local-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2",
         "global-complex": "ExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "IGrD5": {
         "local-complex": "NExpTime",
-        "local-comment": "Hardness comes from  <a href='#BednarczykKW2018'>[BednarczykKW2018]</a> via NExpTime-torus tilings, the upper bound holds for GrID5",
+        "local-comment": "Hardness comes from  <a href='#BednarczykKW21'>[BednarczykKW21]</a> via NExpTime-torus tilings, the upper bound holds for GrID5",
         "global-complex": "NExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "GrID5": {
         "local-complex": "NExpTime",
-        "local-comment": "Hardness comes from IGrD5, the upper bound via translation to C2 in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>",
+        "local-comment": "Hardness comes from IGrD5, the upper bound via translation to C2 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
         "global-complex": "NExpTime",
-        "global-comment": "local sat = global sat <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "local sat = global sat <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
 
     // Modal logic K4
 
     "K4": {
         "local-complex": "PSpace",
-        "local-comment": "A classical results by Lander <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for variable-free fragment <a href='#ChagrovR02'>[ChagrovR02]</a>.",
+        "local-comment": "A classical results by Ladner <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for variable-free fragment <a href='#ChagrovR02'>[ChagrovR02]</a>.",
         "global-complex": "NP",
         "global-comment": "Hardness comes from SAT <a href='#Cook71'>[Cook71]</a>, the upper bound holds for GrK4"
     },
@@ -620,13 +620,13 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from K4, the upper bound in  <a href='#Spaan1993'>[Spaan1993]</a> ",
         "global-complex": "ExpTime",
-        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
+        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrK4": {
         "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrK4, upper bound in  <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>",
+        "local-comment": "hardness comes from GrK4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
         "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "GrIK4": {
         "local-complex": "undecidable",
@@ -639,7 +639,7 @@ var results = {
 
     "D4": {
         "local-complex": "PSpace",
-        "local-comment": "A classical results by Lander <a href='#Ladner77'>[Ladner77]</a>",
+        "local-comment": "A classical results by Ladner <a href='#Ladner77'>[Ladner77]</a>",
         "global-complex": "NP",
         "global-comment": "Hardness comes from SAT <a href='#Cook71'>[Cook71]</a>, the upper bound holds for GrD4"
     },
@@ -653,13 +653,13 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from D4, an easy adaptation of techniques for IK4 and IS4 from  <a href='#Spaan1993'>[Spaan1993]</a> ",
         "global-complex": "ExpTime",
-        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
+        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrD4": {
         "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrD4, upper bound in  <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>",
+        "local-comment": "hardness comes from GrD4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
         "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "GrID4": {
         "local-complex": "undecidable",
@@ -672,7 +672,7 @@ var results = {
 
     "S4": {
         "local-complex": "PSpace",
-        "local-comment": "A classical results by Lander <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for single-variable fragment <a href='#ChagrovR02'>[ChagrovR02]</a>.",
+        "local-comment": "A classical results by Ladner <a href='#Ladner77'>[Ladner77]</a>, the lower bound holds even for single-variable fragment <a href='#ChagrovR02'>[ChagrovR02]</a>.",
         "global-complex": "NP",
         "global-comment": "Hardness comes from SAT <a href='#Cook71'>[Cook71]</a>, the upper bound holds for GrS4"
     },
@@ -686,13 +686,13 @@ var results = {
         "local-complex": "PSpace",
         "local-comment": "Hardness comes from S4, the upper bound in  <a href='#Spaan1993'>[Spaan1993]</a> ",
         "global-complex": "ExpTime",
-        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
+        "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrS4": {
         "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrS4, upper bound in  <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>",
+        "local-comment": "hardness comes from GrS4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
         "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW2018'>[BednarczykKW2018]</a>"
+        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
     },
     "GrIS4": {
         "local-complex": "undecidable",

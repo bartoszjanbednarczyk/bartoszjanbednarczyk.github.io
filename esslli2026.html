@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ESSLLI 2026 course: Computational perspectives on the classical decision problem – Bartosz Bednarczyk</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="author" content="Bartosz Bednarczyk">
+    <meta name="description" content="ESSLLI 2026 course by Bartosz Bednarczyk and Ian Pratt-Hartmann on decidable fragments of first-order logic: abstract, programme and lecture slides.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/esslli2026.html">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bartosz Bednarczyk">
+    <meta property="og:title" content="ESSLLI 2026 course: Computational perspectives on the classical decision problem – Bartosz Bednarczyk">
+    <meta property="og:description" content="ESSLLI 2026 course by Bartosz Bednarczyk and Ian Pratt-Hartmann on decidable fragments of first-order logic: abstract, programme and lecture slides.">
+    <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/esslli2026.html">
+    <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
+    <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!--CSS styles-->
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link id="theme-style" rel="stylesheet" href="css/styles/default.css">
+    <!--/CSS styles-->
+
+    <!--Javascript files-->
+    <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="js/custom.js"></script>
+    <!--/Javascript files-->
+
+
+    <!-- Lato over HTTPS (the http:// @font-face URLs in style.css are blocked on GitHub Pages) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/aboutme.css">
+    <link rel="stylesheet" href="css/esslli.css">
+</head>
+<body>
+
+<div id="wrapper">
+    <a href="#sidebar" class="mobilemenu"><i class="fa fa-reorder"></i></a>
+    <div id="sidebar">
+        <div id="sidebar-wrapper">
+            <div id="sidebar-inner">
+                <!-- Profile/logo section-->
+                <div id="profile" class="clearfix">
+                    <div class="portrate hidden-xs"></div>
+                    <div class="title">
+                        <h2>Bartosz Bednarczyk</h2>
+                        <h3>TU Wien &</h3>
+                        <h3>University of Wrocław</h3>
+                    </div>
+                </div>
+                <!-- /Profile/logo section-->
+
+                <!-- Main navigation-->
+                <div id="main-nav">
+                    <ul id="navigation">
+                        <li>
+                            <a href="index.html">
+                                <i class="fa fa-home"></i>
+                                <div class="text">Home Page</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="aboutme.html">
+                                <i class="fa fa-user"></i>
+                                <div class="text">About Me</div>
+                            </a>
+                        </li>
+
+
+                        <li>
+                            <a href="students.html">
+                                <i class="fa fa-graduation-cap"></i>
+                                <div class="text">Students</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="cv/cv.pdf">
+                                <i class="fa fa-file-text-o"></i>
+                                <div class="text">Academic CV</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="publications.html">
+                                <i class="fa fa-edit"></i>
+                                <div class="text">Publications</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="mlnavigator.html">
+                                <i class="fa fa-compass"></i>
+                                <div class="text">GML Navigator</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="teaching.html">
+                                <i class="fa fa-book"></i>
+                                <div class="text">Teaching &amp; Memes [PL]</div>
+                            </a>
+                        </li>
+
+                        <li class="currentmenu">
+                            <a href="esslli2026.html">
+                                <i class="fa fa-university"></i>
+                                <div class="text">ESSLLI 2026 Course</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="contact.html">
+                                <i class="fa fa-socket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="2" y="2" width="20" height="20" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9.2" cy="12.6" r="1.3" fill="currentColor"/><circle cx="14.8" cy="12.6" r="1.3" fill="currentColor"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/></svg></i>
+                                <div class="text">Contact</div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /Main navigation-->
+                <!-- Sidebar footer -->
+                <div id="sidebar-footer">
+                    <div class="social-icons">
+                        <ul>
+                            <li><a href="https://scholar.google.com/citations?user=j7plXYcAAAAJ" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="fa fa-graduation-cap"></i></a></li>
+                            <li><a href="https://dblp.org/pers/hd/b/Bednarczyk:Bartosz" target="_blank" rel="noopener" aria-label="DBLP" title="DBLP" class="si-text">dblp</a></li>
+                            <li><a href="https://orcid.org/0000-0002-8267-7554" target="_blank" rel="noopener" aria-label="ORCID" title="ORCID 0000-0002-8267-7554" class="si-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><text x="12" y="16.2" text-anchor="middle" font-family="Lato, Arial, sans-serif" font-weight="700" font-size="11.5" fill="#202020">iD</text></svg></a></li>
+                            <li><a href="https://github.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fa fa-github"></i></a></li>
+                            <li><a href="https://stackexchange.com/users/5638561/bartosz-bednarczyk" target="_blank" rel="noopener" aria-label="Stack Exchange" title="Stack Exchange"><i class="fa fa-stack-exchange"></i></a></li>
+                            <li><a href="https://www.facebook.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="fa fa-facebook"></i></a></li>
+                            <li><a href="https://steamcommunity.com/id/wiedzmac" target="_blank" rel="noopener" aria-label="Steam (wiedzmac)" title="Steam: wiedzmac"><i class="fa fa-steam"></i></a></li>
+                            <li><button type="button" class="si-svg si-discord" aria-label="Discord: bartoszjanbednarczyk (click to copy)" title="Discord: bartoszjanbednarczyk (click to copy)" data-copy="bartoszjanbednarczyk" onclick="var b=this;if(navigator.clipboard){navigator.clipboard.writeText(b.getAttribute('data-copy'));}b.classList.add('si-copied');setTimeout(function(){b.classList.remove('si-copied');},1600);"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span class="si-tip">Discord: bartoszjanbednarczyk</span></button></li>
+                        </ul>
+                    </div>
+                    <div id="copyright">Bartosz Bednarczyk © 2026</div>
+                </div>
+                <!-- /Sidebar footer -->
+            </div>
+
+        </div>
+    </div>
+
+    <div id="main">
+
+        <div id="esslli" class="page home am">
+
+            <header class="am-hero es-hero">
+                <div class="am-wrap es-hero-grid">
+                    <div>
+                        <p class="am-eyebrow">ESSLLI 2026 course &middot; Prague &middot; 10&ndash;14 August 2026</p>
+                        <h1>Computational perspectives on the classical decision problem<span class="es-sub">a vade mecum</span></h1>
+                        <p class="es-lecturers"><a href="index.html">Bartosz Bednarczyk</a> <span>TU Wien &amp; University of Wrocław</span><br>
+                            <a href="https://www.cs.man.ac.uk/~ipratt/" target="_blank" rel="noopener">Ian Pratt-Hartmann</a> <span>University of Manchester &amp; University of Opole</span></p>
+                        <nav class="am-actions" aria-label="Course links">
+                            <a class="am-btn" href="#es-programme"><i class="fa fa-file-pdf-o"></i> Lecture slides</a>
+                            <a class="am-btn ghost" href="#es-abstract"><i class="fa fa-align-left"></i> Abstract</a>
+                            <a class="am-btn ghost" href="https://2026.esslli.eu/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i> ESSLLI 2026</a>
+                        </nav>
+                    </div>
+                    <div class="es-hero-photos">
+                        <figure class="es-ph es-ph-main">
+                            <img src="img/esslli2026/bart-lecture2.jpg" alt="Bartosz Bednarczyk lecturing on the monadic fragment at ESSLLI 2026" width="1600" height="1066">
+                            <figcaption>Bart, Lecture&nbsp;2</figcaption>
+                        </figure>
+                        <figure class="es-ph es-ph-second">
+                            <img src="img/esslli2026/ian-lecture1.jpg" alt="Ian Pratt-Hartmann lecturing on the first-order decision problem at ESSLLI 2026" width="1600" height="1200">
+                            <figcaption>Ian, Lecture&nbsp;1</figcaption>
+                        </figure>
+                    </div>
+                </div>
+            </header>
+
+            <section class="am-section" id="es-abstract" aria-labelledby="es-abstract-h">
+                <div class="am-wrap es-abstract">
+                    <div class="am-head"><h2 id="es-abstract-h">Abstract</h2></div>
+                    <div class="es-abstract-grid">
+                        <div class="es-abstract-text">
+                            <p>The classical decision problem for first-order logic asks whether a given sentence of first-order logic is satisfiable, i.e. whether it is true in some structure. While this problem is undecidable for first-order logic as a whole, its restrictions to certain fragments of first-order logic are known to admit of an effective solution. One of the central goals of research in mathematical logic in recent decades has been to determine the decidability and complexity of this problem for different fragments of first-order logic.</p>
+                            <p>This course surveys major decidable fragments of first-order logic, including the two-variable, guarded, and fluted fragments, along with their extensions with counting quantifiers. These logics present different challenges, often requiring specialized techniques such as reduction to integer programming, small model constructions, tree decompositions, variable elimination, and reduction to tiling problems. We provide a comprehensive treatment of these techniques and briefly survey some open problems.</p>
+                        </div>
+                        <aside class="es-facts">
+                            <div><h3>Fragments</h3><ul class="am-tags"><li>monadic</li><li>two-variable</li><li>guarded</li><li>Gödel</li><li>fluted</li><li>counting quantifiers</li></ul></div>
+                            <div><h3>Techniques</h3><ul class="am-tags"><li>integer programming</li><li>small models</li><li>tree decompositions</li><li>variable elimination</li><li>tiling</li></ul></div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <section class="am-section es-programme-sec" id="es-programme" aria-labelledby="es-programme-h">
+                <div class="am-wrap">
+                    <div class="am-head">
+                        <h2 id="es-programme-h">Programme and slides</h2>
+                        <p class="es-legend"><span class="es-dot es-dot-ian"></span>Ian Pratt-Hartmann <span class="es-dot es-dot-bart"></span>Bartosz Bednarczyk</p>
+                    </div>
+                    <div class="es-days es-timeline">
+                        <div class="es-day">
+                            <div class="es-day-node" aria-hidden="true"><b>10</b><span>Aug</span></div>
+                            <div class="es-day-main">
+                                <h3 class="es-day-title">Day&nbsp;1 <span>Monday, 10&nbsp;August 2026</span></h3>
+                                <div class="es-day-lectures">
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">1</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 1: Introduction</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">The classical decision problem for first-order logic and a map of the course.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture01.pdf" target="_blank" rel="noopener" title="Slides of lecture 1 (PDF, 0.7 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                    <article class="es-lecture es-bart">
+                                        <div class="es-num" aria-hidden="true">2</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 2: The monadic fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Bartosz Bednarczyk</p>
+                                            <p class="es-desc">Monadic first-order logic with equality and constants: one-types, small models and NExpTime upper bounds.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture02.pdf" target="_blank" rel="noopener" title="Slides of lecture 2 (PDF, 1.0 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="es-day">
+                            <div class="es-day-node" aria-hidden="true"><b>11</b><span>Aug</span></div>
+                            <div class="es-day-main">
+                                <h3 class="es-day-title">Day&nbsp;2 <span>Tuesday, 11&nbsp;August 2026</span></h3>
+                                <div class="es-day-lectures">
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">3</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 3: The two-variable fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">FO², the fragment of first-order logic with at most two variables.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture03.pdf" target="_blank" rel="noopener" title="Slides of lecture 3 (PDF, 0.6 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                    <article class="es-lecture es-bart">
+                                        <div class="es-num" aria-hidden="true">4</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 4: The guarded two-variable fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Bartosz Bednarczyk</p>
+                                            <p class="es-desc">Guards turn global search into local search: satisfiability and finite satisfiability of GF² are ExpTime-complete.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture04.pdf" target="_blank" rel="noopener" title="Slides of lecture 4 (PDF, 8.0 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="es-day">
+                            <div class="es-day-node" aria-hidden="true"><b>12</b><span>Aug</span></div>
+                            <div class="es-day-main">
+                                <h3 class="es-day-title">Day&nbsp;3 <span>Wednesday, 12&nbsp;August 2026</span></h3>
+                                <div class="es-day-lectures">
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">5</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 5: The Gödel fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">Prenex formulas and the Gödel fragment.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture05.pdf" target="_blank" rel="noopener" title="Slides of lecture 5 (PDF, 0.7 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                    <article class="es-lecture es-bart">
+                                        <div class="es-num" aria-hidden="true">6</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 6: Counting and the linear-equation method</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Bartosz Bednarczyk</p>
+                                            <p class="es-desc">One-variable logic with counting quantifiers: satisfiability of C¹ is NP-complete via integer programming.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture06.pdf" target="_blank" rel="noopener" title="Slides of lecture 6 (PDF, 0.8 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="es-day">
+                            <div class="es-day-node" aria-hidden="true"><b>13</b><span>Aug</span></div>
+                            <div class="es-day-main">
+                                <h3 class="es-day-title">Day&nbsp;4 <span>Thursday, 13&nbsp;August 2026</span></h3>
+                                <div class="es-day-lectures">
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">7</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 7: The two-variable fragment with counting</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">C², two variables with counting quantifiers ∃<sup>≤M</sup>, ∃<sup>≥M</sup> and ∃<sup>=M</sup>.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture07.pdf" target="_blank" rel="noopener" title="Slides of lecture 7 (PDF, 0.4 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                    <article class="es-lecture es-bart">
+                                        <div class="es-num" aria-hidden="true">8</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 8: Finite models for the guarded fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Bartosz Bednarczyk</p>
+                                            <p class="es-desc">A probabilistic proof of the finite model property for the guarded fragment.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture08.pdf" target="_blank" rel="noopener" title="Slides of lecture 8 (PDF, 1.6 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="es-day">
+                            <div class="es-day-node" aria-hidden="true"><b>14</b><span>Aug</span></div>
+                            <div class="es-day-main">
+                                <h3 class="es-day-title">Day&nbsp;5 <span>Friday, 14&nbsp;August 2026</span></h3>
+                                <div class="es-day-lectures">
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">9</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 9: The fluted fragment</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">The order of quantification follows the order in which variables appear as arguments of predicates.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture09.pdf" target="_blank" rel="noopener" title="Slides of lecture 9 (PDF, 0.6 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                    <article class="es-lecture es-ian">
+                                        <div class="es-num" aria-hidden="true">10</div>
+                                        <div class="es-body">
+                                            <h4>Lecture 10: A glimpse beyond</h4>
+                                            <p class="es-who"><i class="fa fa-user"></i> Ian Pratt-Hartmann</p>
+                                            <p class="es-desc">Exogenous constraints, super-counting and the adjacent fragment.</p>
+                                        </div>
+                                        <a class="es-pdf" href="slides/esslli2026/lecture10.pdf" target="_blank" rel="noopener" title="Slides of lecture 10 (PDF, 0.9 MB)"><i class="fa fa-file-pdf-o"></i><span>Slides</span></a>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+        </div>
+    </div>
+</div>
+
+<script src="js/typography.js"></script>
+</body>
+</html>

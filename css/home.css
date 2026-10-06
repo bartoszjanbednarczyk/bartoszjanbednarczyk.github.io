@@ -1,0 +1,97 @@
+/* Home page
+ * Builds on css/aboutme.css (tokens, buttons, section heads; page has class "am").
+ * Page-specific classes are prefixed hm-.
+ **************************************************/
+
+/* ---------- hero ---------- */
+.hm-hero { padding: 60px 0 52px; }
+.hm-hero .am-hero-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; }
+.hm-hero h1 { font-size: 46px; margin-bottom: 10px; }
+.hm-role { font-size: 16px; color: var(--am-muted); margin: 0 0 24px; }
+.hm-role a { font-weight: 700; }
+.hm-bio p { font-size: 17px; line-height: 1.7; color: var(--am-ink-2); margin: 0 0 14px; max-width: 64ch; }
+.hm-hero .am-actions { margin-top: 24px; }
+.hm-side .am-actions { margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.hm-side .am-btn { justify-content: center; padding: 10px 12px; font-size: 14.5px; white-space: nowrap; }
+
+.hm-photo { margin: 6px 0 0; }
+.hm-photo img {
+	display: block; width: 100%; height: auto; border-radius: 16px;
+	box-shadow: 0 22px 44px -22px rgba(0, 0, 0, .4), 0 0 0 6px #fff;
+}
+.hm-photo figcaption { font-size: 13px; color: var(--am-muted); margin-top: 14px; text-align: right; }
+
+.hm-students {
+	grid-column: 1 / -1; justify-self: stretch; width: 100%; text-align: center;
+	margin-top: 4px; padding: 20px 28px; background: #fff; border: 1px solid var(--am-line);
+	border-top: 3px solid var(--am-accent); border-radius: 12px;
+}
+.hm-students h2 { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--am-accent-ink); margin: 0 0 6px; }
+.hm-students p { font-size: 16.5px; line-height: 1.6; color: var(--am-ink-2); margin: 0 auto; max-width: 980px; text-wrap: balance; }
+.hm-students a { font-weight: 700; white-space: nowrap; }
+
+/* ---------- news + contact ---------- */
+.hm-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 48px; }
+.hm-news { list-style: none; margin: 0; padding: 0; }
+.hm-news li { display: grid; grid-template-columns: 112px 1fr; gap: 20px; padding: 18px 0; border-top: 1px solid var(--am-line); }
+.hm-news li:first-child { border-top: 0; padding-top: 4px; }
+.hm-news time { font-size: 14px; font-weight: 700; color: var(--am-accent-ink); line-height: 1.6; white-space: nowrap; }
+.hm-news p { font-size: 16px; line-height: 1.65; color: var(--am-ink-2); margin: 0; }
+
+.hm-contact { display: flex; flex-direction: column; gap: 16px; }
+.hm-card { background: #fff; border: 1px solid var(--am-line); border-radius: 12px; padding: 20px 22px; }
+.hm-card h3 { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--am-muted); margin: 0 0 12px; }
+.hm-card h3 .fa { color: var(--am-accent); margin-right: 6px; }
+.hm-mail { list-style: none; margin: 0; padding: 0; }
+.hm-mail li { padding: 7px 0; border-top: 1px dashed var(--am-line); font-size: 15px; color: var(--am-ink); }
+.hm-mail li:first-child { border-top: 0; padding-top: 0; }
+.hm-mail li span { display: block; font-size: 12.5px; color: var(--am-muted); }
+.hm-card address { font-style: normal; font-size: 15px; line-height: 1.6; color: var(--am-ink-2); margin: 0; }
+.hm-card address strong { color: var(--am-ink); }
+.hm-addr { margin-bottom: 14px; }
+.hm-addr[hidden] { display: none; }
+.hm-addr-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--am-accent-ink); background: #e9f9f2; border-radius: 4px; padding: 2px 6px; margin-bottom: 6px; }
+
+.hm-map { margin-top: 2px; }
+.hm-map-tabs { display: inline-flex; border: 1px solid var(--am-line); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+.hm-map-tabs button { border: 0; background: #fff; color: var(--am-ink-2); font-size: 13px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
+.hm-map-tabs button + button { border-left: 1px solid var(--am-line); }
+.hm-map-tabs button[aria-pressed="true"] { background: var(--am-accent); color: #fff; }
+.hm-map iframe { display: block; width: 100%; height: 220px; border: 0; border-radius: 10px; background: #eef1f0; }
+.hm-map-link { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700; }
+.hm-map-link .fa { font-size: 11px; margin-left: 2px; }
+
+/* ---------- recent papers ---------- */
+.hm-papers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.hm-paper { background: #fff; border: 1px solid var(--am-line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; transition: box-shadow .25s, transform .25s; }
+.hm-paper:hover { box-shadow: 0 12px 28px -16px rgba(0, 0, 0, .25); transform: translateY(-2px); }
+.hm-venue { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--am-accent-ink); margin-bottom: 6px; }
+.hm-paper h3 { font-size: 18px; font-weight: 400; line-height: 1.35; margin: 0 0 6px; color: var(--am-ink); }
+.hm-paper .hm-authors { font-size: 14px; color: var(--am-muted); margin: 0 0 12px; flex: 1; }
+.hm-paper .hm-authors strong { color: var(--am-ink-2); }
+.hm-links { display: flex; gap: 14px; font-size: 13.5px; font-weight: 700; }
+.hm-links .fa { margin-right: 4px; }
+.hm-papers-note { margin: 18px 0 0; max-width: 78ch; font-size: 15px; line-height: 1.6; color: var(--am-muted); text-wrap: pretty; }
+.hm-papers-note .fa { color: var(--am-accent); margin-right: 4px; }
+.hm-all { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; }
+
+/* ---------- typography ---------- */
+.hm-bio p, .hm-news p { text-wrap: pretty; }
+.hm-paper h3 { text-wrap: balance; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+	.hm-grid { grid-template-columns: 1fr; gap: 36px; }
+}
+@media (max-width: 991px) {
+	.hm-hero { padding-top: 76px; }
+	.hm-hero .am-hero-grid { grid-template-columns: 1fr; gap: 28px; }
+	.hm-photo { max-width: 520px; }
+	.hm-photo figcaption { text-align: left; }
+}
+@media (max-width: 640px) {
+	.hm-hero h1 { font-size: 34px; }
+	.hm-bio p { font-size: 16px; }
+	.hm-news li { grid-template-columns: 1fr; gap: 4px; }
+	.hm-papers { grid-template-columns: 1fr; }
+}

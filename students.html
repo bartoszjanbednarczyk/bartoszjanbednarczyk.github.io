@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Bartosz Bednarczyk – Students</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="author" content="Bartosz Bednarczyk">
+    <meta name="description" content="Bachelor, engineering and master theses supervised by Bartosz Bednarczyk.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/students.html">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bartosz Bednarczyk">
+    <meta property="og:title" content="Bartosz Bednarczyk – Students">
+    <meta property="og:description" content="Bachelor, engineering and master theses supervised by Bartosz Bednarczyk.">
+    <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/students.html">
+    <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
+    <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!--CSS styles-->
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link id="theme-style" rel="stylesheet" href="css/styles/default.css">
+    <!--/CSS styles-->
+
+    <!--Javascript files-->
+    <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="js/custom.js"></script>
+    <!--/Javascript files-->
+
+
+    <!-- Lato over HTTPS (the http:// @font-face URLs in style.css are blocked on GitHub Pages) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/publications.css">
+    <style>
+        .pl-msc { --c: var(--pl-journal); }
+        .pl-bsc { --c: var(--pl-conf); }
+        .pl-beng { --c: var(--pl-workshop); }
+        .pl-other { --c: var(--pl-thesis); }
+        .pl-chip[data-f="msc"] { --c: var(--pl-journal); }
+        .pl-chip[data-f="bsc"] { --c: var(--pl-conf); }
+        .pl-chip[data-f="beng"] { --c: var(--pl-workshop); }
+        .pl-chip[data-f="other"] { --c: var(--pl-thesis); }
+        .pl-student { color: var(--pl-ink); font-weight: 700; }
+        .pl-supnote { max-width: 760px; margin: 10px 0 0; padding-top: 18px; border-top: 1px solid #e2e2e2; font-size: 14.5px; line-height: 1.6; color: #888; text-wrap: pretty; }
+        .pl-supnote .fa { color: var(--pl-accent); margin-right: 4px; }
+        .pl-page .pl-intro { margin-bottom: 16px; }
+        .st-published { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 26px; }
+        .st-published-label { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #999; margin-right: 4px; }
+        .st-published a {
+            font-size: 14px; font-weight: 700; color: var(--pl-accent-ink); background: #fff; border: 1px solid #e3e3e3;
+            border-radius: 999px; padding: 6px 13px; transition: border-color .2s, background .2s, color .2s;
+        }
+        .st-published a:hover { border-color: var(--pl-accent); background: #f0fbf6; color: var(--pl-accent-ink); }
+        .st-cards { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; max-width: 1080px; }
+        .st-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 2px rgba(0, 0, 0, .04); }
+        .st-card h3 { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--pl-accent-ink); margin: 0 0 12px; }
+        .st-card h3 .fa { margin-right: 6px; }
+        .st-join { background: linear-gradient(135deg, #f1fbf6 0%, #ffffff 70%); border-color: #d7efe4; }
+        .st-join p { font-size: 16px; line-height: 1.65; color: #444; margin: 0 0 16px; text-wrap: pretty; }
+        .st-topics {
+            display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; background: #fff;
+            border: 1px solid #d7efe4; color: var(--pl-ink); font-size: 15px; font-weight: 700; transition: border-color .2s, box-shadow .2s;
+        }
+        .st-topics span { flex: 1; }
+        .st-topics .fa-lightbulb-o { color: var(--pl-accent); font-size: 17px; }
+        .st-topics .fa-angle-right { color: var(--pl-accent-ink); font-size: 18px; transition: transform .2s; }
+        .st-topics:hover { border-color: var(--pl-accent); box-shadow: 0 6px 16px -10px rgba(3, 150, 100, .6); color: var(--pl-ink); }
+        .st-topics:hover .fa-angle-right { transform: translateX(3px); }
+        .st-now { display: flex; flex-direction: column; }
+        .st-now .st-person { flex: 1; }
+        .st-person { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+        .st-avatar {
+            flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+            background: linear-gradient(135deg, #03cc85, #02a46b); color: #fff; font-size: 18px; font-weight: 700; letter-spacing: .04em;
+            box-shadow: 0 6px 14px -6px rgba(3, 150, 100, .7);
+        }
+        .st-person > div strong { display: block; font-size: 18px; font-weight: 700; color: var(--pl-ink); }
+        .st-person > div span { display: block; font-size: 14.5px; color: #888; margin-top: 2px; }
+        @media (max-width: 900px) { .st-cards { grid-template-columns: 1fr; } }
+        .pl-student .fa { color: #bbb; margin-right: 4px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div id="wrapper">
+    <a href="#sidebar" class="mobilemenu"><i class="fa fa-reorder"></i></a>
+    <div id="sidebar">
+        <div id="sidebar-wrapper">
+            <div id="sidebar-inner">
+                <!-- Profile/logo section-->
+                <div id="profile" class="clearfix">
+                    <div class="portrate hidden-xs"></div>
+                    <div class="title">
+                        <h2>Bartosz Bednarczyk</h2>
+                        <h3>TU Wien &</h3>
+                        <h3>University of Wrocław</h3>
+                    </div>
+                </div>
+                <!-- /Profile/logo section-->
+
+                <!-- Main navigation-->
+                <div id="main-nav">
+                    <ul id="navigation">
+                        <li>
+                            <a href="index.html">
+                                <i class="fa fa-home"></i>
+                                <div class="text">Home Page</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="aboutme.html">
+                                <i class="fa fa-user"></i>
+                                <div class="text">About Me</div>
+                            </a>
+                        </li>
+
+
+                        <li class="currentmenu">
+                            <a href="students.html">
+                                <i class="fa fa-graduation-cap"></i>
+                                <div class="text">Students</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="cv/cv.pdf">
+                                <i class="fa fa-file-text-o"></i>
+                                <div class="text">Academic CV</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="publications.html">
+                                <i class="fa fa-edit"></i>
+                                <div class="text">Publications</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="mlnavigator.html">
+                                <i class="fa fa-compass"></i>
+                                <div class="text">GML Navigator</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="teaching.html">
+                                <i class="fa fa-book"></i>
+                                <div class="text">Teaching &amp; Memes [PL]</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="esslli2026.html">
+                                <i class="fa fa-university"></i>
+                                <div class="text">ESSLLI 2026 Course</div>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="contact.html">
+                                <i class="fa fa-socket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="2" y="2" width="20" height="20" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9.2" cy="12.6" r="1.3" fill="currentColor"/><circle cx="14.8" cy="12.6" r="1.3" fill="currentColor"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/></svg></i>
+                                <div class="text">Contact</div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /Main navigation-->
+                <!-- Sidebar footer -->
+                <div id="sidebar-footer">
+                    <div class="social-icons">
+                        <ul>
+                            <li><a href="https://scholar.google.com/citations?user=j7plXYcAAAAJ" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="fa fa-graduation-cap"></i></a></li>
+                            <li><a href="https://dblp.org/pers/hd/b/Bednarczyk:Bartosz" target="_blank" rel="noopener" aria-label="DBLP" title="DBLP" class="si-text">dblp</a></li>
+                            <li><a href="https://orcid.org/0000-0002-8267-7554" target="_blank" rel="noopener" aria-label="ORCID" title="ORCID 0000-0002-8267-7554" class="si-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><text x="12" y="16.2" text-anchor="middle" font-family="Lato, Arial, sans-serif" font-weight="700" font-size="11.5" fill="#202020">iD</text></svg></a></li>
+                            <li><a href="https://github.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fa fa-github"></i></a></li>
+                            <li><a href="https://stackexchange.com/users/5638561/bartosz-bednarczyk" target="_blank" rel="noopener" aria-label="Stack Exchange" title="Stack Exchange"><i class="fa fa-stack-exchange"></i></a></li>
+                            <li><a href="https://www.facebook.com/bartoszjanbednarczyk/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="fa fa-facebook"></i></a></li>
+                            <li><a href="https://steamcommunity.com/id/wiedzmac" target="_blank" rel="noopener" aria-label="Steam (wiedzmac)" title="Steam: wiedzmac"><i class="fa fa-steam"></i></a></li>
+                            <li><button type="button" class="si-svg si-discord" aria-label="Discord: bartoszjanbednarczyk (click to copy)" title="Discord: bartoszjanbednarczyk (click to copy)" data-copy="bartoszjanbednarczyk" onclick="var b=this;if(navigator.clipboard){navigator.clipboard.writeText(b.getAttribute('data-copy'));}b.classList.add('si-copied');setTimeout(function(){b.classList.remove('si-copied');},1600);"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg><span class="si-tip">Discord: bartoszjanbednarczyk</span></button></li>
+                        </ul>
+                    </div>
+                    <div id="copyright">Bartosz Bednarczyk © 2026</div>
+                </div>
+                <!-- /Sidebar footer -->
+            </div>
+
+        </div>
+    </div>
+
+    <div id="main">
+
+        <div id="students" class="page pl-page">
+            <div class="page-container">
+                <div class="pageheader">
+                    <div class="headercontent">
+                        <div class="section-container">
+
+                            <h2 class="title">Students</h2>
+                            <p class="pl-intro">I actively supervise ambitious students, teaching them how to do research and often writing joint papers with them.</p>
+                            <div class="st-published">
+                                <span class="st-published-label">Student theses published at</span>
+                                <a href="https://ceur-ws.org/Vol-4230/dl-paper30.pdf" target="_blank" rel="noopener">DL Workshop 2026</a>
+                                <a href="https://doi.org/10.1007/978-3-031-15298-6_19" target="_blank" rel="noopener">WoLLIC 2022</a>
+                                <a href="https://dai.fmph.uniba.sk/events/dl2022/" target="_blank" rel="noopener">DL Workshop 2022</a>
+                                <a href="https://doi.org/10.4230/LIPIcs.FSTTCS.2021.36" target="_blank" rel="noopener">FSTTCS 2021</a>
+                            </div>
+                            <div class="st-cards">
+                                <section class="st-card st-join">
+                                    <h3><i class="fa fa-search"></i> Looking for students</h3>
+                                    <p>I am actively looking for prospective Master’s and PhD students interested in joint research on the complexity and decidability of logics. Drop me a line if you are interested (some modest scholarships are available).</p>
+                                    <a class="st-topics" href="https://zapisy.ii.uni.wroc.pl/theses/" target="_blank" rel="noopener"><i class="fa fa-lightbulb-o"></i><span>Thesis topics for students of the University of Wrocław</span><i class="fa fa-angle-right"></i></a>
+                                </section>
+                                <section class="st-card st-now">
+                                    <h3><i class="fa fa-flask"></i> Currently supervising</h3>
+                                    <div class="st-person">
+                                        <span class="st-avatar" aria-hidden="true">MS</span>
+                                        <div>
+                                            <strong>Mikołaj Swoboda</strong>
+                                            <span>PhD student since October 2026</span>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pagecontents">
+
+                    <div class="pl-sentinel" id="pl-sentinel"></div>
+                    <div class="section color-1" id="pl-toolbar">
+                        <div class="section-container">
+                            <div class="pl-toolbar-row">
+                                <div class="pl-filters" role="group" aria-label="Filter by degree">
+                                    <button class="pl-chip" type="button" data-f="all" aria-pressed="true">All <span class="pl-n">17</span></button>
+                                    <button class="pl-chip" type="button" data-f="msc" aria-pressed="false"><span class="pl-dot"></span>MSc <span class="pl-n">6</span></button>
+                                    <button class="pl-chip" type="button" data-f="bsc" aria-pressed="false"><span class="pl-dot"></span>BSc <span class="pl-n">8</span></button>
+                                    <button class="pl-chip" type="button" data-f="beng" aria-pressed="false"><span class="pl-dot"></span>BEng <span class="pl-n">2</span></button>
+                                    <button class="pl-chip" type="button" data-f="other" aria-pressed="false"><span class="pl-dot"></span>Other <span class="pl-n">1</span></button>
+                                </div>
+                                <label class="pl-search">
+                                    <i class="fa fa-search"></i>
+                                    <input id="pl-q" type="search" placeholder="Search title, student, topic…" autocomplete="off" aria-label="Search theses">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section color-2" id="pl-list">
+                        <div class="section-container" id="pl-years">
+                  <section class="pl-year" data-year="2026">
+                    <div class="pl-year-head"><span class="pl-year-badge">2026</span><span class="pl-year-count"><span class="pl-yc">6</span> theses</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="finite satisfiability problem for two-variable logic with one successor and one linear order krzysztof szymanski bsc thesis 2026 we study the finite satisfiability problem for the two-variable fragment of first-order logic over two-dimensional structures. beyond the standard vocabulary, we allow one predicate interpreted as a linear order and another predicate interpreted as a successor relation, not necessarily from the same linear order. we prove that the problem is nexptime-complete, resolving a question left open by manuel and zeume. the upper bound relies on the exponential-size model property of the logic, established via the circular witnessing scheme of gradel, kolaitis, and vardi. we also establish the computational complexity of deciding both order-invariance and order-successor-invariance for the two-variable fragment. the first result significantly simplifies the recent work of bednarczyk and grange, while the second one answers a question left open by zeume and harwath.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2026-09-03">Defended 3 September 2026</time></span></div>
+                        <h4 class="pl-title">Finite Satisfiability Problem for Two-Variable Logic with One Successor and One Linear Order</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Krzysztof Szymański</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/86023/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-0"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-0"><h4>Abstract</h4><p>We study the finite satisfiability problem for the two-variable fragment of first-order logic over two-dimensional structures. Beyond the standard vocabulary, we allow one predicate interpreted as a linear order and another predicate interpreted as a successor relation, not necessarily from the same linear order.</p><p>We prove that the problem is NExpTime-complete, resolving a question left open by Manuel and Zeume. The upper bound relies on the exponential-size model property of the logic, established via the circular witnessing scheme of Grädel, Kolaitis, and Vardi.</p><p>We also establish the computational complexity of deciding both order-invariance and order-successor-invariance for the two-variable fragment. The first result significantly simplifies the recent work of Bednarczyk and Grange, while the second one answers a question left open by Zeume and Harwath.</p></div>
+                    </article>
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="on the complexity of forward guarded fragment with constants michal madrala bsc thesis 2026 we define and investigate the fgfc, fragment of first-order logic. we prove that its satisfiability problem is nexptime-complete by establishing lower and upper bounds. for the first bound, we perform a polynomial reduction from the torus tiling problem by constructing a way to interpret grids and tilings in a first-order structure using fgfc,-sentences. to achieve an upper bound, we define the notion of fgfc,-types and modify bednarczyk and jaakkola&#x27;s construction of unravelling. we bound the number of fgf- and gf-types. we provide a sketch of the proof that we can bound the number of types in general. then we use a theorem by fiuk to find an exponentially big model of any given fgfc,-sentence.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2026-09-03">Defended 3 September 2026</time></span></div>
+                        <h4 class="pl-title">On the Complexity of Forward Guarded Fragment with Constants</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Michał Mądrala</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/86005/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-1"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-1"><h4>Abstract</h4><p>We define and investigate the FGF<sub>c,≈</sub> fragment of first-order logic. We prove that its satisfiability problem is NExpTime-complete by establishing lower and upper bounds. For the first bound, we perform a polynomial reduction from the Torus Tiling Problem by constructing a way to interpret grids and tilings in a first-order structure using FGF<sub>c,≈</sub>-sentences. To achieve an upper bound, we define the notion of FGF<sub>c,≈</sub>-types and modify Bednarczyk and Jaakkola's construction of unravelling. We bound the number of FGF- and GF-types. We provide a sketch of the proof that we can bound the number of types in general. Then we use a theorem by Fiuk to find an exponentially big model of any given FGF<sub>c,≈</sub>-sentence.</p></div>
+                    </article>
+                    <article class="pl-card pl-beng" data-type="beng" data-search="an application for visualizing games on finite graphs, with particular emphasis on ehrenfeuchtfraisse games mikolaj drozd beng thesis 2026 the goal of this thesis was to analyze and understand the ehrenfeuchtfraisse game and its variation, the pebble game. to achieve this goal, a web application was implemented. it allows users to visualize and play the aforementioned games. it is possible to choose the game and the opponent: a human or a simple ai. three methods of data input are supported: graphs used in the games can be generated randomly, given in json format, or drawn manually.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BEng thesis</span><span class="pl-venue-short"><time datetime="2026-09-01">Defended 1 September 2026</time></span></div>
+                        <h4 class="pl-title">An application for visualizing games on finite graphs, with particular emphasis on Ehrenfeucht–Fraïssé games</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Mikołaj Drozd</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/81587/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-2"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-2"><h4>Abstract</h4><p>The goal of this thesis was to analyze and understand the Ehrenfeucht–Fraïssé game and its variation, the Pebble game. To achieve this goal, a web application was implemented. It allows users to visualize and play the aforementioned games. It is possible to choose the game and the opponent: a human or a simple AI. Three methods of data input are supported: graphs used in the games can be generated randomly, given in JSON format, or drawn manually.</p></div>
+                    </article>
+                    <article class="pl-card pl-msc" data-type="msc" data-search="finite satisfiability problem for looping-pdl mikolaj swoboda msc thesis 2026 propositional dynamic logic (pdl), known in the description logic community as alcreg, is a well-established modal logic of programs. to increase its expressive power, several extensions have been proposed. one such extension is the loop operator, which expresses that an element can reach itself via a path defined by a regular expression. although the satisfiability problem for looppdl is well understood, the decidability of its finite satisfiability problem has remained open for over 40 years. we present a solution for a simple fragment with loops restricted to atomic roles and their transitive closures.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2026-06-30">Defended 30 June 2026</time></span></div>
+                        <h4 class="pl-title">Finite Satisfiability Problem for Looping-PDL</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Mikołaj Swoboda</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/79486/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-3"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-3"><h4>Abstract</h4><p>Propositional Dynamic Logic (PDL), known in the Description Logic community as ALCreg, is a well-established modal logic of programs. To increase its expressive power, several extensions have been proposed. One such extension is the loop operator, which expresses that an element can reach itself via a path defined by a regular expression. Although the satisfiability problem for LoopPDL is well understood, the decidability of its finite satisfiability problem has remained open for over 40 years. We present a solution for a simple fragment with loops restricted to atomic roles and their transitive closures.</p></div>
+                    </article>
+                    <article class="pl-card pl-msc" data-type="msc" data-search="decidability of satisfiability for non-regular extensions of pdl jadwiga swierczynska msc thesis 2026 propositional dynamic logic (pdl) is an expressive logic for reasoning about program behaviour. it was first introduced by fischer and ladner [fl79]. extensions of pdl were studied for example by loding et al. [lls07], who added modalities indexed by languages recognizable by visibly pushdown automata (vpa) moving the expressivity of logic beyond regular languages. we provide a deep analysis of their automata-based approach to satisfiability problem and apply it to multi-pushdown languages (i.e. recognizable via automata equipped with finitely many stacks) by extracting sufficient characteristics of a subclass of multi-pushdown languages that imply decidability of the resulting logic. we then prove that the class of n-ordered visibly pushdown languages (n-ovpl) possesses some of these characteristics, and discuss the others.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2026-05-26">Defended 26 May 2026</time></span></div>
+                        <h4 class="pl-title">Decidability of satisfiability for non-regular extensions of PDL</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Jadwiga Świerczyńska</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/83781/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-4"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-4"><h4>Abstract</h4><p>Propositional dynamic logic (PDL) is an expressive logic for reasoning about program behaviour. It was first introduced by Fischer and Ladner [FL79]. Extensions of PDL were studied for example by Löding et al. [LLS07], who added modalities indexed by languages recognizable by visibly pushdown automata (Vpa) moving the expressivity of logic beyond regular languages. We provide a deep analysis of their automata-based approach to satisfiability problem and apply it to multi-pushdown languages (i.e. recognizable via automata equipped with finitely many stacks) by extracting sufficient characteristics of a subclass of multi-pushdown languages that imply decidability of the resulting logic. We then prove that the class of n-ordered visibly pushdown languages (n-OVPL) possesses some of these characteristics, and discuss the others.</p></div>
+                    </article>
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="temporal reasoning through the lens of conjunctive grammars joanna suwaj bsc thesis 2026 this thesis describes the implementation of an algorithm for parsing conjunctive grammars over a one-letter alphabet. this algorithm was presented in 2012 by a. okhotin and c. reitwiener. it has one major restriction: it only works for grammars in binary normal form. this approach is compared with an alternative general-purpose parsing algorithm that works for grammars in arbitrary form. the primary motivation for implementing the algorithm and exploring the structure of conjunctive grammars is the recent result of c. bourgaux, a. gnatenko and m. thomazo from 2025, which shows the reduction from temporal atomic query answering in tel future logic to parsing unary conjunctive grammars. this work was partially supported by the austrian science fund through the fwf project ontegra [10.55776/pin8884924].">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2026-02-09">Defended 9 February 2026</time></span></div>
+                        <h4 class="pl-title">Temporal Reasoning Through the Lens of Conjunctive Grammars</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Joanna Suwaj</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/84840/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-5"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-5"><h4>Abstract</h4><p>This thesis describes the implementation of an algorithm for parsing conjunctive grammars over a one-letter alphabet. This algorithm was presented in 2012 by A. Okhotin and C. Reitwießner. It has one major restriction: it only works for grammars in Binary Normal Form. This approach is compared with an alternative general-purpose parsing algorithm that works for grammars in arbitrary form. The primary motivation for implementing the algorithm and exploring the structure of conjunctive grammars is the recent result of C. Bourgaux, A. Gnatenko and M. Thomazo from 2025, which shows the reduction from temporal atomic query answering in TEL future logic to parsing unary conjunctive grammars. This work was partially supported by the Austrian Science Fund through the FWF Project Ontegra [10.55776/PIN8884924].</p></div>
+                    </article>
+                    </div>
+                  </section>
+                  <section class="pl-year" data-year="2025">
+                    <div class="pl-year-head"><span class="pl-year-badge">2025</span><span class="pl-year-count"><span class="pl-yc">1</span> thesis</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-msc" data-type="msc" data-search="towards finite controllability of forward sets of existential rules sebastian zieciak msc thesis 2025 this thesis introduces a new class of existential rules, called forward tgds, defined by the requirement that variables in the rules can be ordered so that every atom uses a contiguous subsequence of that order. we then prove that every knowledge-base consisting of forward tgds over a binary schema is finitely controllable. this means that if some possibly infinite model of such knowledge-base does not satisfy a query, then there is a finite model which does not satisfy this query as well.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2025-09-02">Defended 2 September 2025</time></span></div>
+                        <h4 class="pl-title">Towards Finite Controllability of Forward Sets of Existential Rules</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Sebastian Zięciak</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/73813/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-6"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-6"><h4>Abstract</h4><p>This thesis introduces a new class of existential rules, called forward TGDs, defined by the requirement that variables in the rules can be ordered so that every atom uses a contiguous subsequence of that order. We then prove that every knowledge-base consisting of forward TGDs over a binary schema is finitely controllable. This means that if some possibly infinite model of such knowledge-base does not satisfy a query, then there is a finite model which does not satisfy this query as well.</p></div>
+                    </article>
+                    </div>
+                  </section>
+                  <section class="pl-year" data-year="2024">
+                    <div class="pl-year-head"><span class="pl-year-badge">2024</span><span class="pl-year-count"><span class="pl-yc">2</span> theses</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="finite model property for hybrid graded mu-calculus mikolaj swoboda bsc thesis 2024 mu-calculus is a robust modal logic used in computer science for expressing and analyzing properties of transition systems. it extends basic modal logic by introducing fixed point operators, which allow for the expression of complex recursive properties in a compact and rigorous manner. the goal of this thesis is to explore the model-theoretic properties of mu-calculus extended with nominals (constants) and graded modalities (counting)features commonly found in expressive ontology languages like owl2 by w3c. we demonstrate that the resulting logic, known as hybrid graded mu-calculus, possesses the finite model property (fmp), meaning that every satisfiable formula in this logic can be satisfied in a finite kripke structure. our proof is based on a detailed examination of the existing fmp proof for hybrid mu-calculus by tamura, highlighting how his construction can be adapted to accommodate graded modalities. additionally, we provide a complete proof of the correspondence between (hybrid) graded mu-calculus and parity games, a result initially announced by kupferman, vardi, and sattler in 2002 but never proven in full detail.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2024-09-09">Defended 9 September 2024</time></span></div>
+                        <h4 class="pl-title">Finite Model Property for Hybrid Graded Mu-calculus</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Mikołaj Swoboda</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/75101/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-7"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-7"><h4>Abstract</h4><p>Mu-calculus is a robust modal logic used in computer science for expressing and analyzing properties of transition systems. It extends basic modal logic by introducing fixed point operators, which allow for the expression of complex recursive properties in a compact and rigorous manner. The goal of this thesis is to explore the model-theoretic properties of mu-calculus extended with nominals (constants) and graded modalities (counting)—features commonly found in expressive ontology languages like OWL2 by W3C. We demonstrate that the resulting logic, known as hybrid graded mu-calculus, possesses the finite model property (FMP), meaning that every satisfiable formula in this logic can be satisfied in a finite Kripke structure. Our proof is based on a detailed examination of the existing FMP proof for hybrid mu-calculus by Tamura, highlighting how his construction can be adapted to accommodate graded modalities. Additionally, we provide a complete proof of the correspondence between (hybrid) graded mu-calculus and parity games, a result initially announced by Kupferman, Vardi, and Sattler in 2002 but never proven in full detail.</p></div>
+                    </article>
+                    <article class="pl-card pl-msc" data-type="msc" data-search="a constructive proof of a van benthem theorem for the forward guarded fragment of first-order logic benno funfstuck msc thesis 2024 the forward guarded fragment (fgf) is a recently introduced decidable fragment of first-order logic (fo) whose satisfiability problem is only exptime-complete. fgf derives from the guarded fragment (gf) by adding a restriction on the order in which variables may appear in formulae, similar to the fluted fragment by purdy. fgf is a higher-arity generalization of multi-modal logic with global modalities, but in contrast to gf, it does not capture logics with inverse modalities. in total analogy to the classic van benthem characterization of modal logic, we show that fgf is exactly the fragment of fo which consists of formulae that are invariant under a suitable notion of bisimulation for fgf. crucially, we employ techniques by martin otto originally designed for modal logic which also work if we restrict the class of models under consideration to finite models only. in the process, we develop a new notion of unraveling for fgf, which produces tree-like models that satisfy the same fgf formulae as the original model. the new notion of unraveling is closely linked to a notion of unraveling for gf and is interesting on its own. as an application for our van benthem style characterization, we show that whether a given gf formula has an equivalent formula in fgf is decidable.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2024-06-24">Defended 24 June 2024</time></span></div>
+                        <h4 class="pl-title">A Constructive Proof of a Van Benthem Theorem for the Forward Guarded Fragment of First-Order Logic</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Benno Fünfstück</div>
+                      </div>
+                      <div class="pl-assets"><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-8"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-8"><h4>Abstract</h4><p>The forward guarded fragment (FGF) is a recently introduced decidable fragment of first-order logic (FO) whose satisfiability problem is only ExpTime-complete. FGF derives from the guarded fragment (GF) by adding a restriction on the order in which variables may appear in formulae, similar to the fluted fragment by Purdy. FGF is a higher-arity generalization of multi-modal logic with global modalities, but in contrast to GF, it does not capture logics with inverse modalities. In total analogy to the classic van Benthem characterization of modal logic, we show that FGF is exactly the fragment of FO which consists of formulae that are invariant under a suitable notion of bisimulation for FGF. Crucially, we employ techniques by Martin Otto originally designed for modal logic which also work if we restrict the class of models under consideration to finite models only. In the process, we develop a new notion of unraveling for FGF, which produces tree-like models that satisfy the same FGF formulae as the original model. The new notion of unraveling is closely linked to a notion of unraveling for GF and is interesting on its own. As an application for our van Benthem style characterization, we show that whether a given GF formula has an equivalent formula in FGF is decidable.</p></div>
+                    </article>
+                    </div>
+                  </section>
+                  <section class="pl-year" data-year="2023">
+                    <div class="pl-year-head"><span class="pl-year-badge">2023</span><span class="pl-year-count"><span class="pl-yc">2</span> theses</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="resolution for forward guarded fragment karol ochman-milarski bsc thesis 2023 the guarded fragment is a decidable fragment of first-order logic. we are concerned with a further restriction of the guarded fragment, called the forward guarded fragment, in which variables appear in atoms only in the order of quantification. the guarded fragment can be decided with the resolution method in doubly exponential time. we show that the resolution method for the guarded fragment can be used to decide forward guarded fragment in single exponential time and we provide the implementation.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2023-02-10">Defended 10 February 2023</time></span></div>
+                        <h4 class="pl-title">Resolution for Forward Guarded Fragment</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Karol Ochman-Milarski</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/68685/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-9"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-9"><h4>Abstract</h4><p>The Guarded Fragment is a decidable fragment of first-order logic. We are concerned with a further restriction of the Guarded Fragment, called the Forward Guarded Fragment, in which variables appear in atoms only in the order of quantification. The Guarded Fragment can be decided with the resolution method in doubly exponential time. We show that the resolution method for the Guarded Fragment can be used to decide Forward Guarded Fragment in single exponential time and we provide the implementation.</p></div>
+                    </article>
+                    <article class="pl-card pl-beng" data-type="beng" data-search="e-learning platform supporting studying for the matura exam in computer science julita osman aleksandra stepniewska nikola wrona beng thesis 2023 in this paper, we describe the concept and implementation of an online educational platform that offers materials designed to prepare for the matura exam in information technology at an extended level. we observed a shortage of similar sources of knowledge, which is confirmed by the statistics provided by the central examination commission every year. these statistics show that not only still a very small percentage of high school graduates decide to take the extended matura exam in computer science, but also their results are not very high. it is our ambition to contribute to change in this state of affairs. the platforms course is divided into four parts: theory, excel, access and python-based programming. sound knowledge in each of these sections is crucial to get a high score in the high school graduation exam. for this reason, special emphasis was placed on a thorough study of each topic that may appear in the matura exam. the main goal was to build a platform that would help both students who are starting from scratch and those who have had the opportunity to study at school in preparation for the matura exam, regardless of the teaching level. all sections&#x27; topics are covered in detail and enriched by graphics to make learning more interesting and easier. in addition, each part has a section devoted to solving matura exam tasks and exercises for students to do on their own. this will allow the student to check whether he or she has already mastered a given range of material and will help to consolidate the acquired knowledge. each topic in the programming part includes a list of tasks and their model solution. additionally, the learning of this material is supported by a programming environment and a checker based on it, which is available on the site. the entire platform is written in react, one of the most popular and efficient frameworks for developing front-end applications. its flexibility is a fast and efficient means for interactive and modern user experience. in addition, react is supported by a large community of developers, so as to provide access to a wide range of tools and libraries, which facilitate the development of functional and attractive websites.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BEng thesis</span><span class="pl-venue-short"><time datetime="2023-02-10">Defended 10 February 2023</time></span></div>
+                        <h4 class="pl-title">E-learning platform supporting studying for the Matura exam in Computer Science</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Julita Osman, Aleksandra Stępniewska &amp; Nikola Wrona</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uwr.edu.pl/diplomas/68560/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-10"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-10"><h4>Abstract</h4><p>In this paper, we describe the concept and implementation of an online educational platform that offers materials designed to prepare for the matura exam in information technology at an extended level. We observed a shortage of similar sources of knowledge, which is confirmed by the statistics provided by the Central Examination Commission every year. These statistics show that not only still a very small percentage of high school graduates decide to take the extended matura exam in computer science, but also their results are not very high. It is our ambition to contribute to change in this state of affairs. The platform’s course is divided into four parts: theory, Excel, Access and Python-based programming. Sound knowledge in each of these sections is crucial to get a high score in the high school graduation exam. For this reason, special emphasis was placed on a thorough study of each topic that may appear in the matura exam. The main goal was to build a platform that would help both students who are starting from scratch and those who have had the opportunity to study at school in preparation for the matura exam, regardless of the teaching level. All sections' topics are covered in detail and enriched by graphics to make learning more interesting and easier. In addition, each part has a section devoted to solving matura exam tasks and exercises for students to do on their own. This will allow the student to check whether he or she has already mastered a given range of material and will help to consolidate the acquired knowledge. Each topic in the programming part includes a list of tasks and their model solution. Additionally, the learning of this material is supported by a programming environment and a checker based on it, which is available on the site. The entire platform is written in React, one of the most popular and efficient frameworks for developing front-end applications. Its flexibility is a fast and efficient means for interactive and modern user experience. In addition, React is supported by a large community of developers, so as to provide access to a wide range of tools and libraries, which facilitate the development of functional and attractive websites.</p></div>
+                    </article>
+                    </div>
+                  </section>
+                  <section class="pl-year" data-year="2022">
+                    <div class="pl-year-head"><span class="pl-year-badge">2022</span><span class="pl-year-count"><span class="pl-yc">4</span> theses</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-msc" data-type="msc" data-search="categorical semantics for model comparison games for description logics mateusz urbanczyk msc thesis 2022 a categorical approach to study model comparison games in terms of comonads was recently initiated by abramsky et al. in this work, we analyse games that appear naturally in the context of description logics and supplement them with suitable game comonads. more precisely, we consider expressive sublogics of alc self ibo, namely, the logics that extend alc with any combination of inverses, nominals, safe boolean roles combinations, and self operator. our construction augments and modifies the so-called modal comonad by abramsky and shah. the approach that we took heavily relies on the use of relative comonads, which we leverage to encapsulate additional capabilities within the bisimulation games in a compositional manner.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2022-10-26">Defended 26 October 2022</time></span></div>
+                        <h4 class="pl-title">Categorical semantics for model comparison games for description logics</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Mateusz Urbańczyk</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uni.wroc.pl/diplomas/56724/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><a class="pl-btn" href="https://arxiv.org/abs/2211.09655" target="_blank" rel="noopener"><i class="fa fa-file-text-o"></i><span>arXiv</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-11"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-11"><h4>Abstract</h4><p>A categorical approach to study model comparison games in terms of comonads was recently initiated by Abramsky et al. In this work, we analyse games that appear naturally in the context of description logics and supplement them with suitable game comonads. More precisely, we consider expressive sublogics of ALC Self IbO, namely, the logics that extend ALC with any combination of inverses, nominals, safe boolean roles combinations, and Self operator. Our construction augments and modifies the so-called modal comonad by Abramsky and Shah. The approach that we took heavily relies on the use of relative comonads, which we leverage to encapsulate additional capabilities within the bisimulation games in a compositional manner.</p></div>
+                    </article>
+                    <article class="pl-card pl-other" data-type="other" data-search="interpolation for the two-variable guarded fragment with counting johannes tantow groer beleg 2022 the main theorem of the project is the proof that the two-variable guarded fragment with counting quantifiers enjoys the craig interpolation property.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">Großer Beleg</span><span class="pl-venue-short"><time datetime="2022-10-19">Defended 19 October 2022</time></span></div>
+                        <h4 class="pl-title">Interpolation for the Two-Variable Guarded Fragment with Counting</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Johannes Tantow</div>
+                      </div>
+                      <div class="pl-assets"><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-12"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-12"><h4>Abstract</h4><p>The main theorem of the project is the proof that the two-variable guarded fragment with counting quantifiers enjoys the Craig Interpolation Property.</p></div>
+                    </article>
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="presburger tree automata with applications to logics with expressive counting oskar fiuk bsc thesis 2022 we introduce two versions of presburger automata with the buchi acceptance condition, working over infinite, finite-branching trees. these automata, in addition to the classical ones, allow nodes for checking linear inequalities over labels of their children. we establish tight np and exptime bounds on the complexity of the non-emptiness problem for the presented machines. we demonstrate the usefulness of our automata models by polynomially encoding the two-variable guarded fragment extended with presburger constraints, improving the existing triply-exponential upper bound to a single exponential. this bachelor&#x27;s thesis is based on joint work with bartosz bednarczyk, published at wollic 2022.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2022-09-09">Defended 9 September 2022</time></span></div>
+                        <h4 class="pl-title">Presburger Tree Automata With Applications to Logics With Expressive Counting</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Oskar Fiuk</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uni.wroc.pl/diplomas/67455/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-13"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-13"><h4>Abstract</h4><p>We introduce two versions of Presburger Automata with the Büchi acceptance condition, working over infinite, finite-branching trees. These automata, in addition to the classical ones, allow nodes for checking linear inequalities over labels of their children. We establish tight NP and ExpTime bounds on the complexity of the non-emptiness problem for the presented machines. We demonstrate the usefulness of our automata models by polynomially encoding the two-variable guarded fragment extended with Presburger constraints, improving the existing triply-exponential upper bound to a single exponential. This bachelor's thesis is based on joint work with Bartosz Bednarczyk, published at WOLLIC 2022.</p></div>
+                    </article>
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="on several equivalent characterisations of the variety r sebastian zieciak bsc thesis 2022 one of the celebrated results in automata theory is that the notion of regularity in formal languages is robust in a very strong sense. more precisely, several equivalent characterisations of regular languages were given. it turns out that regular languages are precisely the languages recognisable by finite automata, finite monoids, regular expressions, and definable in the monadic second order logic. similar characterisations are also known for the first-order definable languages, e.g. these are the languages recognisable by finite aperiodic monoids. inspired by the algebraic approach to formal languages, we aim at describing the connection between languages recognizable by finite monoids from the variety r, and the suitable restrictions of first-order logic, regular expressions, finite automata, temporal logics and more.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2022-02-11">Defended 11 February 2022</time></span></div>
+                        <h4 class="pl-title">On Several Equivalent Characterisations of the Variety R</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Sebastian Zięciak</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uni.wroc.pl/diplomas/62821/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-14"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-14"><h4>Abstract</h4><p>One of the celebrated results in automata theory is that the notion of regularity in formal languages is robust in a very strong sense. More precisely, several equivalent characterisations of regular languages were given. It turns out that regular languages are precisely the languages recognisable by finite automata, finite monoids, regular expressions, and definable in the monadic second order logic. Similar characterisations are also known for the first-order definable languages, e.g. these are the languages recognisable by finite aperiodic monoids. Inspired by the algebraic approach to formal languages, we aim at describing the connection between languages recognizable by finite monoids from the variety R, and the suitable restrictions of first-order logic, regular expressions, finite automata, temporal logics and more.</p></div>
+                    </article>
+                    </div>
+                  </section>
+                  <section class="pl-year" data-year="2021">
+                    <div class="pl-year-head"><span class="pl-year-badge">2021</span><span class="pl-year-count"><span class="pl-yc">2</span> theses</span></div>
+                    <div class="pl-year-items">
+                    <article class="pl-card pl-bsc" data-type="bsc" data-search="statistical constructions in decidable fragments of first-order logic maja orlowska anna pacanowska bsc thesis 2021 in this thesis we consider first order logic extended with percentage quantifiers, allowing us to express statistical properties. such quantifiers are defined under two different semantics: global and local. we show undecidability of the satisfiability problem for the extended two-variable fragment fo2 under both semantics, two-variable guarded fragment gf2 under the global semantics, as well as the three-variable guarded fragment gf3 (and hence the full gf) under the local semantics of percentage counting. we supplement our results with decidability status of the two-variable guarded fragment gf2 with local percentage counting and monadic fragment with global percentage counting.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">BSc thesis</span><span class="pl-venue-short"><time datetime="2021-06-28">Defended 28 June 2021</time></span></div>
+                        <h4 class="pl-title">Statistical constructions in decidable fragments of First-Order Logic</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Maja Orłowska &amp; Anna Pacanowska</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uni.wroc.pl/diplomas/56749/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-15"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-15"><h4>Abstract</h4><p>In this thesis we consider first order logic extended with percentage quantifiers, allowing us to express statistical properties. Such quantifiers are defined under two different semantics: global and local. We show undecidability of the satisfiability problem for the extended two-variable fragment FO2 under both semantics, two-variable guarded fragment GF2 under the global semantics, as well as the three-variable guarded fragment GF3 (and hence the full GF) under the local semantics of percentage counting. We supplement our results with decidability status of the two-variable guarded fragment GF2 with local percentage counting and monadic fragment with global percentage counting.</p></div>
+                    </article>
+                    <article class="pl-card pl-msc" data-type="msc" data-search="the complexity of the satisfiability problem for modal logics with data over heaps martyna siejba msc thesis 2021 modal logic with data has been introduced by d. baelde, s. lunel and s. schmitz for reasoning on simplified representation of xml trees. in this thesis we propose a variant of this logic interpreted over heaps with data, which we call modal logic with data over heaps. our logic is more expansive than the logic from modal logic with data: it allows for unbounded number of data values, inverse modalities and their transitive closures. we investigate the complexity of two selected fragments of the logic. the first fragment is a fragment with standard modalities and their inverses, but without their transitive closures. we prove it to be pspace-complete. the pspace-hardness goes by a reduction from standard modal logic. the pspace upper bound is shown by a reduction to graded modal logic with inverse. in the second fragment under consideration the structures are accessed by the transitive closures of the inverse modalities but the basic modalities are not employed. the crux of the proof is showing the polynomial-depth model property of the logic. we first prove that every satisfiable formula has a model being a single tree and a loop. we then polynomially bound the size of the loop and the depth of the tree. finally, we exponentially bound the branching factor of the tree. this leads to an npspace = pspace algorithm for satisfiability testing. the pspace-hardness is inherited from standard modal logic. we therefore obtain pspace-completeness of the satisfiability problem.">
+                      <div class="pl-body">
+                        <div class="pl-meta"><span class="pl-type">MSc thesis</span><span class="pl-venue-short"><time datetime="2021-03-17">Defended 17 March 2021</time></span></div>
+                        <h4 class="pl-title">The complexity of the satisfiability problem for Modal Logics with Data over Heaps</h4>
+                        <div class="pl-authors pl-student"><i class="fa fa-user"></i> Martyna Siejba</div>
+                      </div>
+                      <div class="pl-assets"><a class="pl-btn" href="https://apd.uni.wroc.pl/diplomas/50668/" target="_blank" rel="noopener"><i class="fa fa-external-link"></i><span>Thesis record</span></a><button class="pl-btn pl-abs-btn" type="button" aria-expanded="false" aria-controls="sabs-16"><span>Abstract</span><i class="fa fa-angle-down"></i></button></div>
+                      <div class="pl-abstract" id="sabs-16"><h4>Abstract</h4><p>Modal Logic with Data has been introduced by D. Baelde, S. Lunel and S. Schmitz for reasoning on simplified representation of XML trees. In this thesis we propose a variant of this logic interpreted over heaps with data, which we call Modal Logic with Data over Heaps. Our logic is more expansive than the logic from Modal Logic with Data: it allows for unbounded number of data values, inverse modalities and their transitive closures. We investigate the complexity of two selected fragments of the logic. The first fragment is a fragment with standard modalities and their inverses, but without their transitive closures. We prove it to be PSpace-complete. The PSpace-hardness goes by a reduction from standard modal logic. The PSpace upper bound is shown by a reduction to graded modal logic with inverse. In the second fragment under consideration the structures are accessed by the transitive closures of the inverse modalities but the basic modalities are not employed. The crux of the proof is showing the polynomial-depth model property of the logic. We first prove that every satisfiable formula has a model being a single tree and a loop. We then polynomially bound the size of the loop and the depth of the tree. Finally, we exponentially bound the branching factor of the tree. This leads to an NPSpace = PSpace algorithm for satisfiability testing. The PSpace-hardness is inherited from standard modal logic. We therefore obtain PSpace-completeness of the satisfiability problem.</p></div>
+                    </article>
+                    </div>
+                  </section>
+                            <p class="pl-supnote"><i class="fa fa-info-circle"></i> Theses defended at the University of Wrocław between 2021 and 2023 officially list another supervisor, as I was not yet formally eligible to act as one at the time. In practice, I supervised these theses in&nbsp;full.</p>
+                            <div class="pl-empty" id="pl-empty">No theses match your search. <button type="button" id="pl-reset">Clear filters</button></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+(function () {
+    var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+    var page = document.getElementById('students');
+    var cards = $$('.pl-card'), years = $$('.pl-year'), chips = $$('.pl-chip');
+    var q = document.getElementById('pl-q'), empty = document.getElementById('pl-empty');
+    var filter = 'all';
+    var h = location.hash.replace('#', '');
+    if (['msc', 'bsc', 'beng', 'other'].indexOf(h) > -1) filter = h;
+    function fold(s) { return s.replace(/ł/g, 'l').replace(/Ł/g, 'L').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+    function apply() {
+        var terms = fold(q.value.trim()).split(/\s+/).filter(Boolean), shown = 0;
+        cards.forEach(function (c) {
+            var ok = (filter === 'all' || c.getAttribute('data-type') === filter) &&
+                terms.every(function (t) { return c.getAttribute('data-search').indexOf(t) > -1; });
+            c.classList.toggle('pl-hide', !ok);
+            if (ok) shown++;
+        });
+        years.forEach(function (y) {
+            var n = y.querySelectorAll('.pl-card:not(.pl-hide)').length;
+            y.classList.toggle('pl-hide', !n);
+            y.querySelector('.pl-yc').textContent = n;
+            y.querySelector('.pl-year-count').lastChild.textContent = n === 1 ? ' thesis' : ' theses';
+        });
+        empty.style.display = shown ? 'none' : 'block';
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-f') === filter); });
+    }
+    chips.forEach(function (c) {
+        c.addEventListener('click', function () {
+            filter = c.getAttribute('data-f'); apply();
+            if (history.replaceState) history.replaceState(null, '', filter === 'all' ? location.pathname : '#' + filter);
+        });
+    });
+    q.addEventListener('input', apply);
+    document.getElementById('pl-reset').addEventListener('click', function () { q.value = ''; filter = 'all'; apply(); });
+    document.addEventListener('keydown', function (e) {
+        var t = document.activeElement && document.activeElement.tagName;
+        if (e.key === '/' && !/INPUT|TEXTAREA/.test(t)) { e.preventDefault(); q.focus(); }
+        if (e.key === 'Escape' && document.activeElement === q) { q.value = ''; apply(); q.blur(); }
+    });
+    function toggle(card) {
+        var btn = card.querySelector('.pl-abs-btn');
+        if (!btn) return;
+        var open = btn.getAttribute('aria-expanded') !== 'true';
+        btn.setAttribute('aria-expanded', open);
+        btn.querySelector('span').textContent = open ? 'Hide' : 'Abstract';
+        document.getElementById(btn.getAttribute('aria-controls')).classList.toggle('pl-open', open);
+    }
+    $$('.pl-abs-btn').forEach(function (b) { b.addEventListener('click', function () { toggle(b.closest('.pl-card')); }); });
+    $$('.pl-body').forEach(function (body) {
+        if (body.parentNode.querySelector('.pl-abs-btn')) body.style.cursor = 'pointer';
+        body.addEventListener('click', function () {
+            if (window.getSelection && String(window.getSelection())) return;
+            toggle(body.parentNode);
+        });
+    });
+    var bar = document.getElementById('pl-toolbar');
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (e) { bar.classList.toggle('pl-stuck', !e[0].isIntersecting); },
+            { root: page, threshold: 0 }).observe(document.getElementById('pl-sentinel'));
+    }
+    apply();
+})();
+</script>
+<script src="js/typography.js"></script>
+</body>
+</html>
