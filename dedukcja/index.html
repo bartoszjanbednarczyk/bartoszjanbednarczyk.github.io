@@ -477,7 +477,8 @@ document.querySelectorAll('i[data-ic]').forEach(el => { el.outerHTML = icon(el.d
 /* =====================================================================
    1. FORMUŁY
    ===================================================================== */
-const VARS = ['p','q','r','s','t'];
+const VARS = ['p','q','r','s','t'];          // paleta kreatora
+const ALLVARS = [...VARS, 'a','b','c','d'];  // parser (a, b występują w zadaniach egzaminacyjnych)
 const TOP = {t:'T'}, BOT = {t:'F'};
 const V = n => ({t:'v', n});
 const NOT = a => ({t:'not', a});
@@ -521,10 +522,10 @@ function tokenize(s){
     let hit = null;
     for(const [lit,t] of table) if(s.startsWith(lit, i)){ hit = [lit,t]; break; }
     if(hit){ out.push({t:hit[1]}); i += hit[0].length; continue; }
-    if(VARS.includes(c)){ out.push({t:'v', n:c}); i++; continue; }
+    if(ALLVARS.includes(c)){ out.push({t:'v', n:c}); i++; continue; }
     if(c === 'T' || c === '1'){ out.push({t:'T'}); i++; continue; }
     if(c === 'F' || c === '0'){ out.push({t:'F'}); i++; continue; }
-    throw {msg:`Niedozwolony znak „${c}” — dostępne zmienne to ${VARS.join(', ')}`};
+    throw {msg:`Niedozwolony znak „${c}” — dostępne zmienne to ${ALLVARS.join(', ')}`};
   }
   return out;
 }
@@ -1259,20 +1260,20 @@ const EXAMPLES = [
   ['Zadanie 143', '((p->q)->p)->p', null, 'prawo Peirce’a', 's29'],
   ['Zadanie 144', '(~q -> ~p) -> (p -> q)', null, 'kontrapozycja', 's29'],
   ['Zadanie 145', '(p->q) & (q->r) & ~r & (p|s) & (s->t) -> t', null, 'okulary pana Hilarego', 's29'],
-  ['Zadanie 146 (1)', 'p | (q & r) -> (p | q) & (p | r)', null, 'rozdzielność', 's29'],
+  ['Zadanie 146 (1)', 'p | (q & r) -> (p | q) & (p | r)', null, 'rozdzielność · też kol. 2023', 's29'],
   ['Zadanie 146 (2)', '(p | q) & (p | r) -> p | (q & r)', null, 'rozdzielność', 's29'],
   ['Str. 52', 'p -> (p -> q) -> q', null, 'przykład w notacji sekwentowej', 's29'],
   ['41.1', '(p -> q) & p -> q', null, 'modus ponens', 'z41'],
   ['41.2', '(p -> q) & ~q -> ~p', null, 'modus tollens', 'z41'],
-  ['41.3', '(p | q -> r) -> p -> r', null, 'prawo kompozycji', 'z41'],
+  ['41.3', '(p | q -> r) -> p -> r', null, 'prawo kompozycji · też egz. połówkowy 2011 i poprawka 2013', 'z41'],
   ['41.4', '(p | q -> r) -> q -> r', null, 'prawo kompozycji', 'z41'],
   ['41.5', 'p & q -> p', null, 'prawo symplifikacji', 'z41'],
   ['41.6', 'q -> p | q', null, 'prawo symplifikacji', 'z41'],
   ['41.7', 'p -> q -> p', null, 'prawo symplifikacji', 'z41'],
   ['41.8', '~p -> p -> q', null, 'prawo Dunsa Szkota', 'z41'],
   ['41.9', '(p -> r) & (q -> r) & (p | q) -> r', null, 'prawo dylematu konstrukcyjnego', 'z41'],
-  ['41.10', '(p & q -> r) -> p -> q -> r', null, 'prawo eksportacji', 'z41'],
-  ['41.11', '(p -> q -> r) -> p & q -> r', null, 'prawo importacji', 'z41'],
+  ['41.10', '(p & q -> r) -> p -> q -> r', null, 'prawo eksportacji · też kol. 2012 i 2022', 'z41'],
+  ['41.11', '(p -> q -> r) -> p & q -> r', null, 'prawo importacji · też kol. 2022', 'z41'],
   ['41.12', '(p -> ~p) -> ~p', null, 'prawo redukcji do absurdu', 'z41'],
   ['41.13', '~(p & ~p)', null, 'prawo sprzeczności', 'z41'],
   ['41.14', 'p | ~p', null, 'prawo wyłączonego środka', 'z41'],
@@ -1280,10 +1281,31 @@ const EXAMPLES = [
   ['41.16', '((p -> q) -> p) -> p', null, 'prawo Peirce’a', 'z41'],
   ['41.17', '(~p -> p) -> p', null, 'prawo Claviusa', 'z41'],
   ['41.18', '(p -> p) & (p -> p)', null, 'prawo tożsamości: p ⇔ p jako skrót', 'z41'],
+  ['Kolokwium 1, 2011 (A)', '(p -> q) -> (~q -> ~p)', null, 'zad. 2 · kontrapozycja', 'kol'],
+  ['Kolokwium 1, 2011 (C)', '(~p -> F) -> p', null, 'zad. 2 · reguła dowodu nie wprost', 'kol'],
+  ['Kolokwium 1, 2013 (A)', 'p & ~q -> ~(p -> q)', null, 'zad. 4', 'kol'],
+  ['Kolokwium 1, 2013 (D)', '(p -> q & r) -> (p -> q) & (p -> r)', null, 'zad. 3 · też egzamin 2014, zad. 4', 'kol'],
+  ['Kolokwium 1, 2014 (A)', '(p -> r) & (q -> r) -> (p | q -> r)', null, 'zad. 4', 'kol'],
+  ['Kolokwium 1, 2014 (C)', '(p -> q) & (p -> r) -> (p -> q & r)', null, 'zad. 4', 'kol'],
+  ['Kolokwium 1, 2016 (A)', '~p & ~q -> ~(p | q)', null, 'zad. 5 · prawo De Morgana', 'kol'],
+  ['Kolokwium 1, 2016 (D)', '~p | ~q -> ~(p & q)', null, 'zad. 4 · prawo De Morgana', 'kol'],
+  ['Kolokwium 1, 2023 (D)', 'p & (q | r) -> (p & q) | (p & r)', null, 'zad. 2 · rozdzielność', 'kol'],
+  ['Kolokwium 1, 2024 (A)', '((p -> q) | r) & ~r -> (p -> q)', null, 'zad. 2', 'kol'],
+  ['Kolokwium 1, 2024 (D)', '((p -> q) -> (q -> p)) -> (q -> p)', null, 'zad. 1', 'kol'],
+  ['Poprawka 2015', '(p -> q) | (p -> r) -> (p -> q | r)', null, 'zad. 3', 'egz'],
+  ['Egzamin 2016', '(a & b) | (~a & ~b) -> (a -> b)', null, 'zad. 6 · też poprawka 2023, zad. 5', 'egz'],
+  ['Poprawka 2016', '(p -> q) & (p -> r) -> (p -> q | r)', null, 'zad. 3', 'egz'],
+  ['Egzamin 2017', '~a & (b -> a) -> ~b', null, 'zad. 6 · modus tollens', 'egz'],
+  ['Poprawka 2017', '(p -> q) & (q -> r) -> (p | q -> r)', null, 'zad. 3', 'egz'],
+  ['Egzamin 2018', 'p -> (q & r) | p', null, 'zad. 6', 'egz'],
+  ['Poprawka 2018', 'p & q -> (~p -> q)', null, 'zad. 5', 'egz'],
+  ['Egzamin 2020', '(p -> ~q) -> (q -> ~p)', null, 'zad. 6', 'egz'],
+  ['Poprawka 2022', 'p & (q -> r) -> (p & q -> p & r)', null, 'zad. 3', 'egz'],
+  ['Egzamin 2023', '(a -> b) & (b -> a) -> (a & b) | (~a & ~b)', null, 'zad. 3 · wskazówka: a ∨ ¬a', 'egz'],
   ['Przykład 48', '~(p|q) -> ~p & ~q', 'demo48', 'gotowy dowód', 'demo'],
   ['Przykład 49', 'p | ~p', 'demo49', 'gotowy dowód', 'demo'],
 ];
-const EX_GROUPS = [['s29', 'Rozdział 2.9'], ['z41', 'Zadanie 41 — tautologie'], ['demo', 'Gotowe dowody ze skryptu']];
+const EX_GROUPS = [['s29', 'Rozdział 2.9'], ['z41', 'Zadanie 41 — tautologie'], ['kol', 'Kolokwia (sprawdzian nr 1)'], ['egz', 'Egzaminy'], ['demo', 'Gotowe dowody ze skryptu']];
 (function buildExamples(){
   const L = $('exList');
   const item = (e, i) => `<button data-ex="${i}"><span class="t">${e[0]}<small>${e[3]}</small></span><span class="f">${html(parse(e[1]))}</span></button>`;
