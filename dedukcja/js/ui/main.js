@@ -13,19 +13,15 @@
 
   /* ---------- motyw ---------- */
 
+  /** Białe tło domyślnie (niezależnie od ustawień systemu); czarne tylko z wyboru użytkownika. */
   function initTheme() {
     const root = document.documentElement;
-    const system = window.matchMedia('(prefers-color-scheme: dark)');
-    const chosen = () => { const t = storage.get(THEME_KEY); return t === 'light' || t === 'dark' ? t : null; };
     const sync = () => markChoice('themeSeg', 'themeChoice', root.getAttribute('data-theme'));
     document.querySelectorAll('#themeSeg button').forEach(b => b.addEventListener('click', () => {
       root.setAttribute('data-theme', b.dataset.themeChoice);
       storage.set(THEME_KEY, b.dataset.themeChoice);
       sync();
     }));
-    if (system.addEventListener) {
-      system.addEventListener('change', () => { if (!chosen()) { root.setAttribute('data-theme', system.matches ? 'dark' : 'light'); sync(); } });
-    }
     sync();
   }
 
