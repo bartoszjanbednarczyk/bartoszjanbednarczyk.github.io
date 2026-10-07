@@ -92,7 +92,7 @@
      Dowód w języku naturalnym — semantyczny, jak w rozdz. 2 skryptu.
      Pokazujemy, że dla dowolnego wartościowania σ zachodzi σ̂(φ) = T, idąc
      za strukturą dowodu formalnego:
-       • okno reguły (⇒i) to przypadki σ̂(α) = F (oczywisty) i σ̂(α) = T,
+       • okno reguły (⇒i) to przypadki σ̂(α) = F (trywialny: poprzednik fałszywy) i σ̂(α) = T,
        • okno reguły (¬i) to przypuszczenie σ̂(α) = T prowadzące do sprzeczności,
        • okna reguły (∨e) to przypadki σ̂(α) = T i σ̂(β) = T,
        • pozostałe kroki uzasadnia definicja σ̂ dla danego spójnika,
@@ -416,7 +416,7 @@
     implication(n) {
       const box = n.prem[0], a = box.a;
       const intro = this.announced.has(key(n.f)) ? [] : T`Pokażemy, że ${this.is(n.f)}. `;
-      this.say(T`${intro}Rozważmy dwa przypadki. Jeśli ${this.isNot(a)}, to z definicji implikacji ${this.is(n.f)}.`, { event: 'note' });
+      this.say(T`${intro}Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny: jeśli ${this.isNot(a)}, to z definicji implikacji ${this.is(n.f)}.`, { event: 'note' });
       const contra = this.within(n, 0, T`Załóżmy teraz, że ${this.is(a)}${this.subgoal(box.body)}.`);
       return this.say(contra
         ? T`Przypadek ${this.is(a)} jest więc niemożliwy, zatem ${this.is(n.f)}${rule('impI')}.`
@@ -482,8 +482,8 @@
       this.scopes.push(new Map());
       const single = chain.length === 1;
       this.say(single
-        ? T`Rozważmy dwa przypadki. Jeśli ${this.isNot(assumptions[0])}, to z definicji implikacji ${this.is(root.f)}.`
-        : T`Z definicji implikacji, jeśli ${list(assumptions.map(a => this.isNot(a)), ' lub ')}, to ${this.is(root.f)}.`, { event: 'note' });
+        ? T`Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny: jeśli ${this.isNot(assumptions[0])}, to z definicji implikacji ${this.is(root.f)}.`
+        : T`Przypadek, gdy któryś z poprzedników jest fałszywy, jest trywialny: jeśli ${list(assumptions.map(a => this.isNot(a)), ' lub ')}, to z definicji implikacji ${this.is(root.f)}.`, { event: 'note' });
       chain.forEach((c, i) => {
         const a = c.prem[0].a, last = i === chain.length - 1;
         const opening = i > 0 ? T`Załóżmy ponadto, że ${this.is(a)}` : single ? T`Załóżmy teraz, że ${this.is(a)}` : T`Załóżmy więc, że ${this.is(a)}`;

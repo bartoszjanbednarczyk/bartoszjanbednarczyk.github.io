@@ -280,8 +280,6 @@
     ['⊤⊥', ['topI'], ['botE']],
   ];
 
-  /** Reguły, których wniosek ma spójnik główny celu — „naturalny” wybór dla tego celu. */
-  const naturalFor = f => ALL.filter(r => r.back.goal === f.t).map(r => r.id);
 
   /* ---------- stosowanie „od celu” ---------- */
 
@@ -346,7 +344,7 @@
   }
 
   ND.Rules = Object.freeze({
-    ALL, ORDER, GROUPS, get, isRule, naturalFor,
+    ALL, ORDER, GROUPS, get, isRule,
     backBlocked, materialize, fwdBlocked, fwdArrange, enclose,
     paramOf, checkNode, verify,
   });

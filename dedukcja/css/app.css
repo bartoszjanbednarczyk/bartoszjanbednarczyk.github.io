@@ -128,7 +128,6 @@ main, aside { min-width: 0; }
 }
 .rcard:hover { border-color: var(--accent); background: var(--accent-soft); }
 .rcard.ok { border-color: var(--accent); }
-.rcard.best { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent) inset; }
 .rcard.off { opacity: .3; }
 .rcard.off:hover { border-color: var(--line); background: var(--panel); }
 .rcard.hypc { width: 100%; min-height: 54px; }
@@ -253,8 +252,6 @@ main, aside { min-width: 0; }
 .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line2); background: var(--panel); border-radius: 999px; padding: 5px 13px; cursor: pointer; font-size: .88rem; transition: background .12s, border-color .12s; }
 .chip .math { font-size: 1.02rem; }
 .chip:hover { border-color: var(--accent); background: var(--accent-soft); }
-.chip.best { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
-.chip.best:hover { background: var(--accent-strong); }
 .chip.op { border-style: dashed; }
 .chip.op .ic { width: 15px; height: 15px; }
 .btn.hintb { border-color: color-mix(in srgb, var(--hint) 55%, var(--line2)); color: var(--hint-ink); }

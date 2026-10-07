@@ -173,7 +173,6 @@
       const ok = !why && (anySelected || id === 'topI');
       if (ok) usable++;
       c.classList.toggle('ok', ok);
-      c.classList.toggle('best', ok && av.natural.has(id));
       c.classList.toggle('hinted', hinted === id);
       c.classList.toggle('off', !!why && anySelected);
       c.setAttribute('aria-disabled', String(!!why && anySelected));
@@ -181,15 +180,15 @@
       c.title = `(${r.label.text}) ${r.name}` + (why && anySelected ? ` — ${why}` : '');
     });
     $('rulesSub').textContent = anySelected
-      ? (usable ? (st.mode === 'back' && av.natural.size ? 'Wypełniona karta to naturalny wybór dla tego celu; obramowane też pasują.' : `Pasujące reguły (${usable}) są obramowane.`)
+      ? (usable ? `Reguły, które da się tu zastosować (${usable}), są obramowane — którą wybrać, zdecyduj sam.`
         : 'Żadna reguła nie pasuje do tego zaznaczenia.')
       : (st.mode === 'back' ? 'Zaznacz otwarty cel, a podświetlą się reguły, które można do niego zastosować.' : 'Zaznacz formuły na dole fragmentów, a podświetlą się pasujące reguły.');
   }
 
-  function chipHTML(id, natural, hinted) {
+  function chipHTML(id, hinted) {
     const r = Rules.get(id);
     const label = id === 'hyp' ? 'założenie' : `<span class="math">(${r.label.html})</span>`;
-    return `<button type="button" class="chip${natural ? ' best' : ''}${hinted ? ' hinted' : ''}" data-rule="${id}" title="${Render.esc(r.name)}">${label}</button>`;
+    return `<button type="button" class="chip${hinted ? ' hinted' : ''}" data-rule="${id}" title="${Render.esc(r.name)}">${label}</button>`;
   }
 
   function dockMessage(infos) {
@@ -215,7 +214,7 @@
     const hinted = UI.hints.hintedRule();
     let rules;
     if (av.available.length) {
-      rules = '<span class="grp">Reguły</span>' + av.available.map(id => chipHTML(id, av.natural.has(id), id === hinted)).join('');
+      rules = '<span class="grp">Reguły</span>' + av.available.map(id => chipHTML(id, id === hinted)).join('');
       if (st.mode === 'back' && n && Proof.isOpen(n) && !st.hint && UI.hints.allowedFor(infos[0])) {
         rules += `<button type="button" class="chip hintc" data-hintgo="start" title="Podpowiedź (H)">${icon('bulb')}Podpowiedź</button>`;
       }
@@ -262,7 +261,7 @@
     if (infos.length === 1 && Proof.isOpen(infos[0].n)) {
       return Proof.inScope(infos[0].scope, infos[0].n.f)
         ? 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.'
-        : 'Wybierz regułę z paska na dole ekranu albo z tabeli. Reguła wprowadzania pasująca do spójnika głównego jest wyróżniona.';
+        : 'Wybierz regułę z paska na dole ekranu albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.';
     }
     const ops = new Set(A.offeredOps().map(op => op.name));
     const undo = [ops.has('step') && '<b>Cofnij krok</b> (<span class="kbd">Delete</span>)', ops.has('clear') && '<b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>)'].filter(Boolean);

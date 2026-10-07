@@ -215,6 +215,17 @@ test('reguła już uzasadnionej formuły: komunikat wskazuje cofnięcie kroku', 
   assert.match(A.availability().reasons.get('andI'), /cofnij ten krok/);
 });
 
+test('żadna pasująca reguła nie jest wyróżniana jako „naturalny wybór”', () => {
+  for (const mode of ['back', 'fwd']) {
+    load([{ f: 'p&q->q&p' }], { mode });
+    S.select([st.frags[0].id]);
+    const av = A.availability();
+    assert.deepEqual(Object.keys(av).sort(), ['available', 'reasons']);
+    assert.ok(av.available.length > 1, 'dostępnych reguł jest kilka');
+  }
+  assert.equal(Rules.naturalFor, undefined);
+});
+
 if (failures.length) {
   console.error(failures.join('\n\n'));
   console.error(`\n${failures.length} z ${passed + failures.length} testów nie przeszło`);

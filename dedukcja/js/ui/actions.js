@@ -52,17 +52,14 @@
 
   /**
    * Dostępność wszystkich reguł dla bieżącego zaznaczenia (liczona raz na przerysowanie):
-   * { reasons: Map id → powód|null, available: [id], natural: Set id }.
+   * { reasons: Map id → powód|null, available: [id] }. Żadna z pasujących reguł nie jest
+   * wyróżniana jako „właściwa” — wybór należy do studenta (wskazuje ją tylko podpowiedź).
    */
   function availability() {
     const infos = selection();
     const reasons = new Map(Rules.ORDER.map(id => [id, blocked(id, infos)]));
     const available = Rules.ORDER.filter(id => !reasons.get(id));
-    let natural;
-    if (available.includes('hyp')) natural = new Set(['hyp']);
-    else if (st.mode === 'fwd') natural = new Set(available);
-    else natural = new Set(infos.length === 1 ? Rules.naturalFor(infos[0].n.f).filter(id => available.includes(id)) : []);
-    return { reasons, available, natural };
+    return { reasons, available };
   }
 
   /* ---------- parametry reguł (kreator formuł) ---------- */
