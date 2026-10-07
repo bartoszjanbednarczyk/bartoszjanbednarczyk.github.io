@@ -1,6 +1,6 @@
 /* =====================================================================
    Tekst z formułami: lista segmentów niezależna od formatu wyjściowego.
-     segment: string | formuła | { rule: id } | { sym: '∧' } | { strong: string } | { qed: true }
+     segment: string | formuła | { rule: id } | { sym: '∧' } | { val: formuła, value } | { strong: string } | { qed: true }
    Renderery (HTML, zwykły tekst, LaTeX) są w render.js.
    ===================================================================== */
 (function (ND) {
@@ -33,8 +33,10 @@
   const rule = id => ({ rule: id });
   /** Symbol spójnika w tekście (pisany jak w formułach). */
   const sym = s => ({ sym: s });
+  /** Wartość logiczna formuły przy wartościowaniu σ: val(φ) → „σ̂(φ) = T”, val(φ, false) → „σ̂(φ) = F”. */
+  const val = (f, value = true) => ({ val: f, value });
   const strong = s => ({ strong: s });
   const QED = Object.freeze({ qed: true });
 
-  ND.Seg = Object.freeze({ T, list, rule, sym, strong, QED });
+  ND.Seg = Object.freeze({ T, list, rule, sym, val, strong, QED });
 })(globalThis.ND ||= {});

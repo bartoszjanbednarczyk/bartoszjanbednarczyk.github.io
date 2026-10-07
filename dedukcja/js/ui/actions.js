@@ -43,7 +43,7 @@
     const r = Rules.get(id);
     if (st.mode === 'back') {
       if (infos.length !== 1) return 'Zaznacz jeden otwarty cel (przerywana ramka)';
-      if (!Proof.isOpen(infos[0].n)) return 'Ta formuła ma już uzasadnienie — usuń je, aby wybrać inną regułę';
+      if (!Proof.isOpen(infos[0].n)) return 'Ta formuła ma już uzasadnienie — cofnij ten krok (Delete), aby wybrać inną regułę';
       return Rules.backBlocked(r, infos[0].n.f);
     }
     if (infos.some(i => !isRoot(i))) return 'W trybie „od przesłanek” zaznaczaj formuły na samym dole fragmentów';
@@ -160,17 +160,84 @@
 
   /* ---------- operacje na drzewie ---------- */
 
+  /** Czy krok uzasadniający formułę można cofnąć (użycie założenia zamknęłoby się z powrotem samo). */
+  const undoable = info => !Proof.isOpen(info.n) && !(info.n.rule === 'hyp' && S.autoCloses(st.frags[info.fi]));
+  /** Czy nad formułą jest więcej niż jeden krok (któraś przesłanka ma własny dowód). */
+  const workAbove = n => Proof.children(n).some(c => !Proof.isBareLeaf(c));
   /**
-   * Operacje edycji: parts(infos) → dane operacji albo null (gdy nie pasuje do zaznaczenia).
-   * Kolejność zaznaczenia nie ma znaczenia.
+   * Przesłanki, które po cofnięciu kroku zostają jako osobne fragmenty: „od przesłanek” wszystkie
+   * (wracają fragmenty, z których krok powstał), „od celu” tylko te z gotowym (choćby częściowym) dowodem.
+   */
+  const keptAfterUndo = n => (st.mode === 'fwd' ? Proof.children(n) : Proof.children(n).filter(c => !Proof.isBareLeaf(c)));
+  const ruleText = n => `(${Render.label(n.rule).text})`;
+
+  /**
+   * Krok cofany przy zaznaczeniu jednej formuły: { info, own } — krok uzasadniający tę formułę (own),
+   * a dla otwartego celu (i założenia zamkniętego automatycznie) krok pod nią, z którego powstała.
+   */
+  function undoTarget(infos) {
+    if (infos.length !== 1) return null;
+    const [info] = infos;
+    if (undoable(info)) return { info, own: true };
+    const below = info.up === null ? null : st.idx.get(info.up);
+    return below ? { info: below, own: false } : null;
+  }
+
+  /**
+   * „Cofnij krok”: usuwa jedną regułę — formuła znów jest otwarta, a dowody przesłanek
+   * (z treścią okien, także niedokończone) zostają jako osobne fragmenty, więc nic poza tym krokiem nie ginie.
+   * Krok na dole fragmentu „od przesłanek” znika całkiem: fragment rozpada się na przesłanki,
+   * z których powstał (odwrotność zastosowania reguły).
+   */
+  function undoStep(info) {
+    const n = info.n, label = ruleText(n), kept = keptAfterUndo(n);
+    const split = st.mode === 'fwd' && isRoot(info);
+    const done = S.commit(() => {
+      if (split) st.frags.splice(info.fi, 1, ...kept);
+      else {
+        n.rule = null;
+        n.prem = [];
+        st.frags.splice(info.fi + 1, 0, ...kept);
+      }
+      return true;
+    }, { select: () => (split ? kept.map(k => k.id) : [n.id]) });
+    if (!done) return;
+    if (split) toast(kept.length ? `Cofnięto krok ${label} — jego przesłanki są znów osobnymi fragmentami` : `Cofnięto krok ${label}`);
+    else if (!kept.length) toast(`Cofnięto krok ${label}`);
+    else if (st.mode === 'fwd') toast(`Cofnięto krok ${label} — wniosek jest teraz hipotezą, a przesłanki osobnymi fragmentami`, { important: true });
+    else {
+      toast(`Cofnięto krok ${label}. ${kept.length === 1
+        ? 'Dowód przesłanki został zachowany jako osobny fragment — możesz go wstawić z powrotem albo usunąć.'
+        : 'Dowody przesłanek zostały zachowane jako osobne fragmenty — możesz je wstawić z powrotem albo usunąć.'}`, { important: true });
+    }
+  }
+
+  /** „Cofnij całe poddrzewo”: usuwa wszystko nad formułą — znów jest otwarta. */
+  function undoSubtree(info) {
+    const n = info.n;
+    if (S.commit(() => { n.rule = null; n.prem = []; return true; }, { select: () => [n.id] })) {
+      toast('Usunięto całe poddrzewo — możesz to cofnąć');
+    }
+  }
+
+  /**
+   * Operacje edycji: parts(infos) → dane operacji albo null (gdy nie pasuje do zaznaczenia);
+   * label/title — tekst albo funkcja tych danych. Kolejność zaznaczenia nie ma znaczenia.
    */
   const OPS = {
     merge: {
-      label: 'Wstaw fragment w cel',
+      label: ({ fragment, single }) => (single ? `Wstaw fragment ${fragment.fi + 1}` : 'Wstaw fragment w cel'),
+      title: ({ fragment }) => `Wstawia w ten cel fragment ${fragment.fi + 1}, który dowodzi tej samej formuły`,
       parts(infos) {
-        if (infos.length !== 2) return null;
         const fits = (goal, frag) => Proof.isOpen(goal.n) && isRoot(frag) && !Proof.isOpen(frag.n)
           && goal.fi !== frag.fi && F.eq(goal.n.f, frag.n.f);
+        if (infos.length === 1) {
+          // sam otwarty cel: pierwszy fragment dowodzący tej samej formuły (np. zachowany po cofnięciu kroku)
+          const [goal] = infos;
+          const root = Proof.isOpen(goal.n) ? st.frags.find(r => fits(goal, st.idx.get(r.id))) : null;
+          return root ? { goal, fragment: st.idx.get(root.id), single: true } : null;
+        }
+        if (infos.length !== 2) return null;
         const [x, y] = infos;
         return fits(x, y) ? { goal: x, fragment: y } : fits(y, x) ? { goal: y, fragment: x } : null;
       },
@@ -183,16 +250,27 @@
         }, { celebrate: true, select: () => [] });
       },
     },
-    clear: {
-      label: 'Usuń uzasadnienie', title: 'Delete',
-      // użycia założenia nie da się „otworzyć”, gdy cele są zamykane automatycznie
-      parts: infos => (infos.length === 1 && !Proof.isOpen(infos[0].n) && !(infos[0].n.rule === 'hyp' && S.prefs.autoHyp) ? { info: infos[0] } : null),
-      run({ info }) {
-        S.commit(() => { info.n.rule = null; info.n.prem = []; return true; }, { select: () => [info.n.id] });
+    step: {
+      parts: undoTarget, icon: 'undo', preview: 'step',
+      label: ({ info }) => `Cofnij krok <span class="math">(${Render.label(info.n.rule).html})</span>`,
+      title({ info, own }) {
+        const which = own ? 'zastosowaną do tej formuły' : `zastosowaną do ${F.text(info.n.f)} — z niej powstała ta formuła`;
+        const rest = st.mode === 'fwd'
+          ? (isRoot(info) ? ' — przesłanki wrócą jako osobne fragmenty' : ' — wniosek stanie się hipotezą, a przesłanki osobnymi fragmentami')
+          : workAbove(info.n) ? ' — dowody przesłanek zostaną zachowane jako osobne fragmenty' : '';
+        return `Cofa regułę ${ruleText(info.n)} ${which}${rest} (Delete)`;
       },
+      run: ({ info }) => undoStep(info),
+    },
+    clear: {
+      parts: infos => { const t = undoTarget(infos); return t && workAbove(t.info.n) ? t : null; },
+      preview: 'tree', label: 'Cofnij całe poddrzewo',
+      title: ({ info }) => `Usuwa cały dowód nad formułą ${F.text(info.n.f)} — znów będzie otwarta (Shift+Delete)`,
+      run: ({ info }) => undoSubtree(info),
     },
     detach: {
       label: 'Odłącz poddrzewo',
+      title: 'Przenosi dowód tej formuły do osobnego fragmentu, a na jej miejscu zostawia otwarty cel',
       parts: infos => (infos.length === 1 && !isRoot(infos[0]) && !Proof.isBareLeaf(infos[0].n) ? { info: infos[0] } : null),
       run({ info }) {
         S.commit(() => {
@@ -204,8 +282,22 @@
     },
   };
 
-  /** Operacje pasujące do bieżącego zaznaczenia: [[nazwa, operacja]]. */
-  const offeredOps = () => { const infos = selection(); return Object.entries(OPS).filter(([, op]) => op.parts(infos)); };
+  const resolve = (x, parts) => (typeof x === 'function' ? x(parts) : x);
+
+  /**
+   * Operacje pasujące do bieżącego zaznaczenia (do paska akcji):
+   * [{ name, label (HTML), title, icon, preview, target — id formuły, której krok zmieni operacja }].
+   */
+  function offeredOps() {
+    const infos = selection();
+    return Object.entries(OPS).map(([name, op]) => {
+      const parts = op.parts(infos);
+      return parts && {
+        name, label: resolve(op.label, parts), title: resolve(op.title, parts) || '', icon: op.icon || null,
+        preview: op.preview || null, target: parts.info ? parts.info.n.id : null,
+      };
+    }).filter(Boolean);
+  }
 
   /** Wykonuje operację, jeśli pasuje do zaznaczenia; zwraca, czy ją wykonano. */
   function runOp(name) {
@@ -239,10 +331,11 @@
   function loadExample(i) {
     const ex = Examples.LIST[i];
     if (!ex) return;
-    if (ex.proof) addFragment(ex.proof());
-    else {
+    if (ex.proof) { addFragment(ex.proof()); return; }
+    // zadanie to cel do udowodnienia — tryb „od celu” włączamy dopiero, gdy cel się zmieścił
+    if (addFragment(Proof.node(F.parse(ex.formula)), { select: true }) && st.mode !== 'back') {
       S.setMode('back');
-      addFragment(Proof.node(F.parse(ex.formula)), { select: true });
+      S.refresh();
     }
   }
 

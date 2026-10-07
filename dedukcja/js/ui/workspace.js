@@ -7,7 +7,7 @@
   'use strict';
   const { F, Proof, Rules, Render, Explain, Examples } = ND;
   const UI = (ND.UI ||= {});
-  const { $, icon, scrollToView, markChoice } = UI.kit;
+  const { $, icon, plural, scrollToView, markChoice } = UI.kit;
   const S = UI.store, st = S.state;
   const A = UI.actions;
 
@@ -15,7 +15,7 @@
   const ACTS = { new: () => A.newFormula(), tutorial: () => UI.tutorial.start(), next: () => A.gotoNextOpen() };
   const runAct = el => { const fn = ACTS[el.dataset.act]; if (fn) fn(); };
 
-  const goalsText = n => `${n} ${n === 1 ? 'otwarty cel' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'otwarte cele' : 'otwartych celów'}`;
+  const goalsText = n => `${n} ${plural(n, 'otwarty cel', 'otwarte cele', 'otwartych celów')}`;
 
   /* ---------- przewijanie ---------- */
 
@@ -24,6 +24,14 @@
     requestAnimationFrame(() => {
       const el = document.querySelector(`.ws .fm[data-id="${id}"]`);
       if (el) scrollToView(el);
+    });
+  }
+
+  /** Kliknięta formuła nie może zniknąć pod paskiem akcji, który właśnie się pojawił (przewija tylko tyle, ile trzeba). */
+  function keepAboveDock(id) {
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`.ws .fm[data-id="${id}"]`), dock = $('dock');
+      if (el && !dock.hidden && el.getBoundingClientRect().bottom > dock.getBoundingClientRect().top - 8) scrollToView(el, 'nearest');
     });
   }
 
@@ -91,7 +99,7 @@
       `<button type="button" class="btn ghost" data-export="${i}" title="Eksport: obrazek PNG/SVG albo LaTeX">${icon('download')}<span class="hide-sm">Eksport</span></button>`,
       `<button type="button" class="btn icon danger" data-delfrag="${i}" title="Usuń ten fragment" aria-label="Usuń fragment">${icon('trash')}</button>`,
     ].join('');
-    return `<section class="frag card${selectedFragments.has(i) ? ' has-sel' : ''}${s.complete ? ' done' : ''}" data-fi="${i}">
+    return `<section class="frag card${selectedFragments.has(i) ? ' has-sel' : ''}${s.complete ? ' done' : ''}" data-fi="${i}" data-root="${root.id}">
       <div class="fhead"><span class="num">${st.frags.length > 1 ? 'Fragment ' + (i + 1) : 'Dowód'}</span><span class="seq">${sequentHTML(root, s)}</span>${pill}<span class="sp"></span><div class="acts">${actions}</div></div>
       <div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: nodeDecorator(root), interactive: true })}</div></div>
       ${s.complete ? proseHTML(root) : ''}
@@ -117,29 +125,41 @@
     </div>`;
   }
 
-  /** Selektor elementu z fokusem (do przywrócenia fokusu po przerysowaniu). */
-  function focusSelector(el) {
-    if (!el || !$('ws').contains(el)) return null;
-    for (const attr of ['id', 'present', 'export', 'delfrag', 'nlcopy', 'nlrules', 'act', 'ex']) {
-      if (el.dataset[attr] === undefined) continue;
-      const frag = el.closest('[data-fi]');
-      return `${frag ? `[data-fi="${frag.dataset.fi}"] ` : ''}[data-${attr}="${el.dataset[attr]}"]`;
-    }
-    return null;
+  /* ---------- fokus klawiatury przy przerysowaniu ---------- */
+
+  const DATA_KEYS = ['id', 'present', 'export', 'delfrag', 'nlcopy', 'nlrules', 'act', 'ex', 'rule', 'op', 'hintgo'];
+  let lastSelection = '';
+
+  /** Gdzie był fokus przed przerysowaniem: kontener i selektor elementu (po atrybutach data-…). */
+  function focusTarget(el) {
+    const container = el && ['ws', 'dock'].map($).find(c => c.contains(el));
+    if (!container) return null;
+    const attr = DATA_KEYS.find(a => el.dataset[a] !== undefined);
+    const frag = el.closest('[data-root]');
+    const selector = attr && `${frag ? `[data-root="${frag.dataset.root}"] ` : ''}[data-${attr}="${el.dataset[attr]}"]`;
+    return { container, selector, inDock: container.id === 'dock' };
   }
 
-  /** Przerysowuje fragmenty, zachowując przewinięcie szerokich dowodów i fokus klawiatury. */
+  /**
+   * Przywraca fokus po przerysowaniu (innerHTML usuwa element z fokusem). Po kroku dowodu
+   * wykonanym z paska akcji fokus trafia na nowo zaznaczony cel, a nie „w próżnię”.
+   */
+  function restoreFocus(target, selectionChanged) {
+    const active = document.activeElement;
+    if (!target || (active && active !== document.body && document.contains(active))) return;
+    const same = target.selector && !(target.inDock && selectionChanged) ? target.container.querySelector(target.selector) : null;
+    const el = same || document.querySelector('.ws .fm.sel') || (target.inDock && !$('dock').hidden ? $('dock').querySelector('button') : null);
+    if (el) el.focus({ preventScroll: true });
+  }
+
+  /** Przerysowuje fragmenty, zachowując przewinięcie szerokich dowodów (po korzeniu fragmentu). */
   function renderFragments() {
     const ws = $('ws');
-    const scroll = new Map([...ws.querySelectorAll('.frag')].map(el => [el.dataset.fi, el.querySelector('.fbody').scrollLeft]));
-    const focus = focusSelector(document.activeElement);
-    if (!st.frags.length) ws.innerHTML = emptyHTML();
-    else {
-      const selectedFragments = new Set(A.selection().map(i => i.fi));
-      ws.innerHTML = st.frags.map((root, i) => fragmentHTML(root, i, selectedFragments)).join('');
-      ws.querySelectorAll('.frag').forEach(el => { const x = scroll.get(el.dataset.fi); if (x) el.querySelector('.fbody').scrollLeft = x; });
-    }
-    if (focus) { const el = ws.querySelector(focus); if (el) el.focus({ preventScroll: true }); }
+    const scroll = new Map([...ws.querySelectorAll('.frag')].map(el => [el.dataset.root, el.querySelector('.fbody').scrollLeft]));
+    if (!st.frags.length) { ws.innerHTML = emptyHTML(); return; }
+    const selectedFragments = new Set(A.selection().map(i => i.fi));
+    ws.innerHTML = st.frags.map((root, i) => fragmentHTML(root, i, selectedFragments)).join('');
+    ws.querySelectorAll('.frag').forEach(el => { const x = scroll.get(el.dataset.root); if (x) el.querySelector('.fbody').scrollLeft = x; });
   }
 
   /* ---------- tabela reguł i pasek akcji ---------- */
@@ -175,7 +195,7 @@
   function dockMessage(infos) {
     const n = infos.length === 1 ? infos[0].n : null;
     if (n && n.rule === 'hyp') return 'To użycie założenia otaczającego okna.';
-    if (st.mode === 'back' && n && !Proof.isOpen(n)) return 'Ta formuła jest już uzasadniona.';
+    if (st.mode === 'back' && n && !Proof.isOpen(n)) return 'Ta formuła jest już uzasadniona — aby wybrać inną regułę, cofnij ten krok.';
     if (st.mode === 'back' && infos.length > 1) return 'W trybie „od celu” reguły stosuje się do jednego celu naraz.';
     if (st.mode === 'fwd' && infos.some(i => !A.isRoot(i))) return 'W trybie „od przesłanek” zaznaczaj formuły na dole fragmentów.';
     return 'Żadna reguła nie pasuje do tego zaznaczenia.';
@@ -202,7 +222,9 @@
     } else rules = `<span class="note">${dockMessage(infos)}</span>`;
     $('dockRules').innerHTML = rules;
 
-    const ops = A.offeredOps().map(([name, op]) => `<button type="button" class="chip op" data-op="${name}"${op.title ? ` title="${op.title}"` : ''}>${op.label}</button>`);
+    const ops = A.offeredOps().map(op => `<button type="button" class="chip op" data-op="${op.name}"`
+      + (op.preview ? ` data-preview="${op.preview}" data-target="${op.target}"` : '')
+      + (op.title ? ` title="${Render.esc(op.title)}"` : '') + `>${op.icon ? icon(op.icon) : ''}${op.label}</button>`);
     $('dockOps').innerHTML = ops.length ? '<span class="grp">Edycja</span>' + ops.join('') : '';
     $('dockOps').hidden = !ops.length;
 
@@ -225,7 +247,7 @@
 
   function infoText() {
     const infos = A.selection();
-    if (st.errors.size) return 'Część reguł jest zastosowana błędnie (formuły w czerwonej ramce) — usuń ich uzasadnienie i spróbuj ponownie.';
+    if (st.errors.size) return 'Część reguł jest zastosowana błędnie (formuły w czerwonej ramce) — zaznacz taką formułę, cofnij krok (<span class="kbd">Delete</span>) i spróbuj ponownie.';
     if (st.mode === 'fwd') {
       return infos.length ? 'Możesz zaznaczyć kolejne formuły albo wybrać regułę z paska na dole ekranu.'
         : 'Zaznacz <b>formuły na dole fragmentów</b> (kolejność kliknięć ma znaczenie) i wybierz regułę — pod spodem pojawi się wniosek. Przesłanki dodasz przyciskiem <b>Nowa przesłanka</b>.';
@@ -239,7 +261,9 @@
         ? 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.'
         : 'Wybierz regułę z paska na dole ekranu albo z tabeli. Reguła wprowadzania pasująca do spójnika głównego jest wyróżniona.';
     }
-    return 'Kliknij <b>otwarty cel</b>, aby kontynuować. Uzasadnioną formułę możesz edytować z paska na dole.';
+    const ops = new Set(A.offeredOps().map(op => op.name));
+    const undo = [ops.has('step') && '<b>Cofnij krok</b> (<span class="kbd">Delete</span>)', ops.has('clear') && '<b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>)'].filter(Boolean);
+    return 'Kliknij <b>otwarty cel</b>, aby kontynuować.' + (undo.length ? ` Krok przy zaznaczonej formule cofniesz z paska na dole: ${undo.join(' albo ')}.` : '');
   }
 
   function renderInfo() {
@@ -249,6 +273,9 @@
   }
 
   function render() {
+    const focus = focusTarget(document.activeElement);
+    const selection = st.sel.join(','), selectionChanged = selection !== lastSelection;
+    lastSelection = selection;
     UI.hints.validate();
     markChoice('modeSeg', 'mode', st.mode);
     $('newGoalLabel').textContent = st.mode === 'back' ? 'Nowy cel' : 'Nowa przesłanka';
@@ -261,6 +288,7 @@
     $('undo').disabled = !S.canUndo();
     $('redo').disabled = !S.canRedo();
     $('reset').disabled = !st.frags.length;
+    restoreFocus(focus, selectionChanged);
   }
 
   /* ---------- budowa i zdarzenia ---------- */
@@ -274,10 +302,13 @@
     html += `<div class="rowsep"></div><div class="cell wide">${card('hyp')}</div>`;
     const table = $('rtable');
     table.innerHTML = html;
-    table.addEventListener('click', e => { const c = e.target.closest('.rcard'); if (c) A.apply(c.dataset.rule); });
+    // drugie kliknięcie podwójnego kliknięcia i przytrzymany klawisz nie stosują reguły ponownie
+    table.addEventListener('click', e => { const c = e.target.closest('.rcard'); if (c && e.detail <= 1) A.apply(c.dataset.rule); });
     table.addEventListener('keydown', e => {
       const c = e.target.closest('.rcard');
-      if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); A.apply(c.dataset.rule); }
+      if (!c || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      if (!e.repeat) A.apply(c.dataset.rule);
     });
   }
 
@@ -293,8 +324,13 @@
     document.addEventListener('click', e => { if (!e.target.closest('#exMenu')) menu.open = false; });
   }
 
-  /** Kliknięcia w obszarze roboczym (delegacja): akcje fragmentów, przykłady, zaznaczanie formuł. */
+  /**
+   * Kliknięcia w obszarze roboczym (delegacja): akcje fragmentów, przykłady, zaznaczanie formuł.
+   * Drugie kliknięcie podwójnego kliknięcia jest pomijane — po przerysowaniu pod kursorem
+   * bywa już inny element (np. przycisk usuwania kolejnego fragmentu).
+   */
   function onWorkspaceClick(e) {
+    if (e.detail > 1) return;
     const t = e.target;
     const action = t.closest('[data-act]');
     if (action) { runAct(action); return; }
@@ -309,17 +345,32 @@
       return;
     }
     if (t.closest('.nl')) return;
-    const formula = t.closest('[data-id]');
-    if (formula) A.toggleSelect(+formula.dataset.id, e.shiftKey || e.ctrlKey || e.metaKey);
+    // formuła albo nazwa reguły przy kresce (zaznacza wniosek tego kroku)
+    const formula = t.closest('[data-id], .lbl[data-of]');
+    if (formula) select(+(formula.dataset.id || formula.dataset.of), e.shiftKey || e.ctrlKey || e.metaKey);
     else if (t.closest('.fbody') && st.sel.length) S.select([]);
   }
+
+  function select(id, additive) {
+    A.toggleSelect(id, additive);
+    if (st.sel.includes(id)) keepAboveDock(id);
+  }
+
+  /** Podgląd na rysunku, co zmieni przycisk cofania pod kursorem albo z fokusem (krok albo całe poddrzewo). */
+  function previewOp(button) {
+    document.querySelectorAll('.ws .inf.undo-step, .ws .inf.undo-tree').forEach(el => el.classList.remove('undo-step', 'undo-tree'));
+    const d = button ? button.dataset : null;
+    const bar = d && d.preview ? document.querySelector(`.ws .bar[data-of="${d.target}"]`) : null;
+    if (bar) bar.parentElement.classList.add(d.preview === 'tree' ? 'undo-tree' : 'undo-step');
+  }
+  const previewFrom = e => previewOp(e.type === 'pointerout' || e.type === 'focusout' ? null : e.target.closest('[data-preview]'));
 
   /** Formuły są przyciskami: Enter/spacja działa jak kliknięcie. */
   function onWorkspaceKey(e) {
     const formula = e.target.closest && e.target.closest('.fm[data-id]');
     if (!formula || (e.key !== 'Enter' && e.key !== ' ')) return;
     e.preventDefault();
-    A.toggleSelect(+formula.dataset.id, e.shiftKey || e.ctrlKey || e.metaKey);
+    if (!e.repeat) select(+formula.dataset.id, e.shiftKey || e.ctrlKey || e.metaKey);
   }
 
   function init() {
@@ -335,6 +386,7 @@
     ws.addEventListener('toggle', e => { if (e.target.matches('details.nl')) S.setPref('nlOpen', e.target.open); }, true);
     $('status').addEventListener('click', e => { const action = e.target.closest('[data-act]'); if (action) runAct(action); });
     $('dock').addEventListener('click', e => {
+      if (e.detail > 1) return;   // pasek przerysowuje się pod kursorem — drugie kliknięcie trafiłoby w inną regułę
       const h = e.target.closest('[data-hintgo]');
       if (h) { UI.hints.act(h.dataset.hintgo); return; }
       const r = e.target.closest('[data-rule]');
@@ -342,6 +394,7 @@
       const o = e.target.closest('[data-op]');
       if (o) A.runOp(o.dataset.op);
     });
+    ['pointerover', 'pointerout', 'focusin', 'focusout'].forEach(type => $('dockOps').addEventListener(type, previewFrom));
     $('dockClose').addEventListener('click', () => S.select([]));
     document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => { S.setMode(b.dataset.mode); S.refresh(); }));
     $('newGoal').addEventListener('click', () => A.newFormula());

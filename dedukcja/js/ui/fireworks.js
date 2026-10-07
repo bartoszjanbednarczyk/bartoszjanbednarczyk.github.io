@@ -30,7 +30,8 @@
     const colors = PALETTES[theme()];
     canvas.className = 'fireworks';
     canvas.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(canvas);
+    // w trybie pełnoekranowym widać tylko element pełnoekranowy (np. prezentację)
+    (document.fullscreenElement || document.body).appendChild(canvas);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const size = () => { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; };
     size();

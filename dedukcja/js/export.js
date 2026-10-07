@@ -6,7 +6,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const F = ND.F, Proof = ND.Proof, Render = ND.Render;
+  const F = ND.F, Proof = ND.Proof, Rules = ND.Rules, Render = ND.Render;
 
   /* =====================================================================
      LaTeX
@@ -30,10 +30,25 @@
     return `${pad}\\infer[(${Render.label(n.rule).tex})]{${F.tex(n.f)}}{%\n${prem}${n.prem.length ? '%\n' : ''}${pad}}`;
   }
 
+  /** Od tej głębokości proof.sty wyczerpuje limit zagnieżdżeń grup TeX-a (ok. 255). */
+  const TEX_SAFE_DEPTH = 55;
+
+  /** Ostrzeżenia o dowodzie (komentarze w kodzie LaTeX, uwagi w oknie eksportu). */
+  function warnings(root) {
+    const open = Proof.openLeaves(root).length, errors = Rules.verify([root]).size;
+    return {
+      open, errors, deep: Proof.stats([root]).depth > TEX_SAFE_DEPTH,
+    };
+  }
+
   /** Kod LaTeX dowodu: pełny dokument standalone albo fragment do wklejenia (z preambułą w komentarzu). */
   function latex(root, { standalone = true } = {}) {
-    const open = Proof.openLeaves(root).length;
-    const warn = open ? `% UWAGA: dowód niekompletny (otwarte cele: ${open})\n` : '';
+    const w = warnings(root);
+    const warn = [
+      w.open ? `% UWAGA: dowód niekompletny (otwarte cele: ${w.open})` : '',
+      w.errors ? `% UWAGA: dowód zawiera błędnie zastosowane reguły (${w.errors})` : '',
+      w.deep ? '% UWAGA: bardzo głęboki dowód — TeX może przekroczyć limit zagnieżdżeń' : '',
+    ].filter(Boolean).map(l => l + '\n').join('');
     if (!standalone) {
       const pre = TEX_PREAMBLE.split('\n').map(l => '%   ' + l).join('\n');
       return `% w preambule:\n${pre}\n\n${warn}\\[\n${texTree(root, 1)}\n\\]\n`;
@@ -215,8 +230,9 @@
     c.height = Math.ceil(L.h * scale);
     const g = c.getContext('2d');
     if (!g) throw new Error('Brak obsługi płótna (canvas)');
+    // tło na wszystkich pikselach płótna (wymiary w skali bywają ułamkowe — bez półprzezroczystej krawędzi)
+    if (colors.bg) { g.fillStyle = colors.bg; g.fillRect(0, 0, c.width, c.height); }
     g.scale(scale, scale);
-    if (colors.bg) { g.fillStyle = colors.bg; g.fillRect(0, 0, L.w, L.h); }
     g.strokeStyle = colors.ink;
     g.lineWidth = L.stroke;
     g.textBaseline = 'alphabetic';
@@ -237,6 +253,6 @@
   }
 
   ND.Export = Object.freeze({
-    latex, TEX_PREAMBLE, MATH_FONT, STYLE, THEMES, layout, toSVG, toCanvas, canvasMeasurer, approxMeasurer, fitScale,
+    latex, warnings, TEX_PREAMBLE, MATH_FONT, STYLE, THEMES, layout, toSVG, toCanvas, canvasMeasurer, approxMeasurer, fitScale,
   });
 })(globalThis.ND ||= {});

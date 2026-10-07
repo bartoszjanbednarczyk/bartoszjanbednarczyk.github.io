@@ -7,7 +7,7 @@
   'use strict';
   const { F, Proof, Rules } = ND;
   const UI = (ND.UI ||= {});
-  const { toast, storage } = UI.kit;
+  const { toast, storage, plural } = UI.kit;
 
   const KEYS = Object.freeze({
     proof: 'nd-proof', backup: 'nd-proof-backup', mode: 'nd-mode', prefs: 'nd-prefs',
@@ -15,6 +15,7 @@
   });
   const MAX_LINK = 300000;          // maks. długość danych w linku (#d=…)
   const HISTORY_LIMIT = 100;
+  const UNSAVED = 'Ta przeglądarka nie pozwala zapisać pracy — po zamknięciu karty zniknie; zachowaj ją linkiem (przycisk z łańcuchem)';
 
   const state = {
     frags: [],          // korzenie fragmentów
@@ -92,11 +93,32 @@
   /** Węzły, których cały poddowód jest uzasadniony i poprawny (kolorowanie na zielono). */
   const completeNodes = root => Proof.completeSubtrees(root, n => n.rule !== null && !state.errors.has(n.id));
 
-  const completeCount = () => state.frags.filter(r => status(r).complete).length;
+  const plainKey = root => JSON.stringify(Proof.toPlain(root));
+  /** Kompletne fragmenty (jako klucze) — zmiana, po której pojawia się nowy, zasługuje na fajerwerki. */
+  const completeKeys = () => new Set(state.frags.filter(r => status(r).complete).map(plainKey));
 
   /* ---------- odczyt, porządki, limity ---------- */
 
   const snapshot = () => Proof.serialize(state.frags);
+
+  /** Dodatkowe automatyczne zamykanie celów w wybranych fragmentach (samouczek), niezależne od ustawień. */
+  let autoCloseAlso = null;
+  const setAutoCloseFor = pred => { autoCloseAlso = pred; };
+  /** Czy cele-założenia w tym fragmencie zamykają się same (ustawienie albo samouczek). */
+  const autoCloses = root => prefs.autoHyp || !!(autoCloseAlso && autoCloseAlso(root));
+
+  /** Porządki we fragmentach: założenia poza oknem otwarte, automatyczne zamykanie celów. */
+  function normalizeRoots(roots) {
+    Proof.reopenStrayHyps(roots);
+    if (prefs.autoHyp) Proof.closeByScope(roots);
+    else if (autoCloseAlso) Proof.closeByScope(roots.filter(autoCloseAlso));
+  }
+
+  /** Porządki po każdej zmianie i aktualny indeks. */
+  function normalize() {
+    normalizeRoots(state.frags);
+    reindex();
+  }
 
   /**
    * Odtwarza fragmenty z zapisu. Kopie z historii są zaufane (bez limitów rozmiaru);
@@ -110,13 +132,6 @@
     markSeen();
   }
 
-  /** Porządki po każdej zmianie: założenia poza oknem otwarte, automatyczne zamykanie, indeks. */
-  function normalize() {
-    Proof.reopenStrayHyps(state.frags);
-    if (prefs.autoHyp) Proof.closeByScope(state.frags);
-    reindex();
-  }
-
   function limitViolation() {
     if (state.frags.length > Proof.LIMITS.fragments) return `Za dużo fragmentów (maks. ${Proof.LIMITS.fragments}) — usuń niepotrzebne`;
     const s = Proof.stats(state.frags);
@@ -128,9 +143,20 @@
 
   /* ---------- zapis i powiadamianie ---------- */
 
+  let persistent = true, warned = false;
+
+  /** Zapisuje pracę; zwraca, czy się udało (tryb prywatny, brak miejsca…). */
   function save(json = snapshot()) {
-    storage.set(KEYS.proof, json);
-    storage.set(KEYS.mode, state.mode);
+    persistent = storage.set(KEYS.proof, json) && storage.set(KEYS.mode, state.mode);
+    return persistent;
+  }
+
+  /** Zapis po zmianie — z jednorazowym ostrzeżeniem, gdy przeglądarka nie pozwala zapisywać. */
+  function persist(json) {
+    if (!save(json) && !warned) {
+      warned = true;
+      toast(UNSAVED, { important: true });
+    }
   }
 
   /** Powiadamia widoki (indeks musi być aktualny). */
@@ -145,6 +171,34 @@
     notify();
   }
 
+  /* ---------- historia ---------- */
+
+  /** Wpis historii: dowód i ustawienie automatycznego zamykania celów (jego zmiana też jest krokiem). */
+  const history = { undo: [], redo: [] };
+  const entry = (proof = snapshot()) => ({ proof, autoHyp: prefs.autoHyp });
+
+  function record(before) {
+    history.undo.push(before);
+    if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+    history.redo = [];
+  }
+
+  function travel(from, to) {
+    if (!from.length) return;
+    const target = from.pop();
+    to.push(entry());
+    const prefChanged = target.autoHyp !== prefs.autoHyp;
+    if (prefChanged) setPref('autoHyp', target.autoHyp);
+    restore(target.proof);
+    persist();
+    notify();
+    if (prefChanged) emit('prefs');
+  }
+  const undo = () => travel(history.undo, history.redo);
+  const redo = () => travel(history.redo, history.undo);
+  const canUndo = () => history.undo.length > 0;
+  const canRedo = () => history.redo.length > 0;
+
   /* ---------- zmiany ---------- */
 
   /**
@@ -154,7 +208,7 @@
    */
   function commit(fn, { celebrate = false, select = null } = {}) {
     const before = snapshot();
-    const completeBefore = celebrate ? completeCount() : 0;
+    const doneBefore = celebrate ? completeKeys() : null;
     let result;
     try {
       result = fn();
@@ -175,14 +229,25 @@
     if (select) state.sel = select().filter(id => state.idx.has(id));
     const after = snapshot(), changed = after !== before;
     if (changed) {
-      history.undo.push(before);
-      if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
-      history.redo = [];
-      save(after);
+      record(entry(before));
+      persist(after);
     }
     notify();
-    if (celebrate && completeCount() > completeBefore) emit('complete');
+    if (doneBefore && [...completeKeys()].some(k => !doneBefore.has(k))) emit('complete');
     return changed;
+  }
+
+  /** Włącza/wyłącza automatyczne zamykanie celów — jako krok historii (cofnięcie przywraca też ustawienie). */
+  function setAutoHyp(on) {
+    if (typeof on !== 'boolean' || on === prefs.autoHyp) return;
+    const before = entry(), doneBefore = completeKeys();
+    setPref('autoHyp', on);
+    normalize();
+    record(before);
+    persist();
+    notify();
+    emit('prefs');
+    if ([...completeKeys()].some(k => !doneBefore.has(k))) emit('complete');
   }
 
   function select(ids) {
@@ -196,22 +261,6 @@
     if (mode === 'back' && state.sel.length > 1) state.sel = state.sel.slice(-1);
     storage.set(KEYS.mode, mode);
   }
-
-  /* ---------- historia ---------- */
-
-  const history = { undo: [], redo: [] };
-  function travel(from, to) {
-    if (!from.length) return;
-    const target = from.pop(), current = snapshot();
-    restore(target);
-    to.push(current);
-    save();
-    notify();
-  }
-  const undo = () => travel(history.undo, history.redo);
-  const redo = () => travel(history.redo, history.undo);
-  const canUndo = () => history.undo.length > 0;
-  const canRedo = () => history.redo.length > 0;
 
   /* ---------- linki ---------- */
 
@@ -230,7 +279,9 @@
     return data.length > MAX_LINK ? null : '#d=' + data;
   }
 
-  const plainKey = root => JSON.stringify(Proof.toPlain(root));
+  /** Czy fragment adresu zawiera dowód (#d=…). Znaki doklejone na końcu (np. kropka z czatu) są pomijane. */
+  const isLinkHash = hash => /^#d=/.test(hash);
+  const LINK_DATA = /^#d=([\w-]+)/;
 
   /**
    * Dołącza fragmenty z linku do obszaru roboczego (nie nadpisuje pracy użytkownika).
@@ -239,6 +290,7 @@
   function importLink(encoded) {
     if (encoded.length > MAX_LINK) throw new Proof.FormatError('link');
     const incoming = Proof.deserialize(unbase64url(encoded), Rules.isRule, { trusted: false });
+    normalizeRoots(incoming);   // porównujemy z fragmentami po tych samych porządkach
     const have = new Set(state.frags.map(plainKey));
     const result = { added: 0, duplicates: 0, skipped: 0, total: incoming.length };
     for (const root of incoming) {
@@ -259,8 +311,59 @@
     const parts = [];
     if (added) parts.push('Wczytano dowód z linku');
     else if (duplicates) parts.push('Dowód z linku jest już w obszarze roboczym');
-    if (skipped) parts.push(`${skipped} ${skipped === 1 ? 'fragment się nie zmieścił' : 'fragmenty się nie zmieściły'} — usuń niepotrzebne i otwórz link ponownie`);
+    if (skipped) {
+      parts.push(`${skipped} ${plural(skipped, 'fragment się nie zmieścił', 'fragmenty się nie zmieściły', 'fragmentów się nie zmieściło')}`
+        + ' — usuń niepotrzebne i otwórz link ponownie');
+    }
     return parts.join(' · ');
+  }
+
+  /** Wczytuje dowód z fragmentu adresu: { ok, message } albo null, gdy adres nie zawiera dowodu. */
+  function importHash(hash) {
+    if (!isLinkHash(hash)) return null;
+    try {
+      const m = hash.match(LINK_DATA);
+      if (!m) throw new Proof.FormatError('link');
+      return { ok: true, message: linkMessage(importLink(m[1])) };
+    } catch (e) {
+      const tooBig = e instanceof Proof.FormatError && ['link', 'rozmiar', 'fragmenty'].includes(e.message);
+      return { ok: false, message: tooBig ? 'Dowód z linku jest za duży dla tej aplikacji' : 'Nie udało się odczytać dowodu z linku' };
+    }
+  }
+
+  /** Link otwarty w działającej aplikacji (zmiana #d=… w adresie) — jako krok historii. */
+  function openLink(hash) {
+    const before = entry();
+    const result = importHash(hash);
+    if (!result) return null;
+    if (snapshot() !== before.proof) {
+      record(before);
+      persist();
+    }
+    notify();
+    return result;
+  }
+
+  /* ---------- inne karty ---------- */
+
+  /**
+   * Zapis zmieniony w innej karcie z tą aplikacją (np. otwartej „na pełnym ekranie”):
+   * przejmujemy jej stan, zamiast nadpisać go przy najbliższej zmianie.
+   */
+  function onStorageEvent(e) {
+    if (e.key === KEYS.prefs) { loadPrefs(); emit('prefs'); notify(); return; }
+    if (e.key === KEYS.mode && (e.newValue === 'back' || e.newValue === 'fwd')) { state.mode = e.newValue; refresh(); return; }
+    if (e.key !== KEYS.proof || typeof e.newValue !== 'string' || e.newValue === snapshot()) return;
+    try {
+      restore(e.newValue, { trusted: false });
+    } catch (err) {
+      return;
+    }
+    history.undo = [];
+    history.redo = [];
+    notify();
+    emit('external');
+    toast('Wczytano zmiany z innej karty z tą aplikacją', { important: true });
   }
 
   /* ---------- start ---------- */
@@ -288,25 +391,21 @@
         messages.push('Nie udało się odczytać zapisanej pracy — jej kopia została zachowana');
       }
     }
-    const m = location.hash.match(/^#d=([\w-]+)$/);
-    if (m) {
-      try {
-        messages.push(linkMessage(importLink(m[1])));
-        source = 'link';
-      } catch (e) {
-        messages.push('Nie udało się odczytać dowodu z linku');
-      }
+    const link = importHash(location.hash);
+    if (link) {
+      messages.push(link.message);
+      if (link.ok) source = 'link';
     }
-    save();
-    if (messages.length) toast(messages.join(' · '));
+    if (!save()) { warned = true; messages.push(UNSAVED); }
+    if (messages.length) toast(messages.join(' · '), { important: true });
     return source;
   }
 
   UI.store = Object.freeze({
-    state, prefs, setPref, on, emit,
+    state, prefs, setPref, setAutoHyp, setAutoCloseFor, autoCloses, on, emit,
     status, completeNodes, isFresh,
     commit, refresh, select, setMode,
     undo, redo, canUndo, canRedo,
-    load, save, shareHash,
+    load, save, persistent: () => persistent, shareHash, isLinkHash, openLink, onStorageEvent,
   });
 })(globalThis.ND ||= {});

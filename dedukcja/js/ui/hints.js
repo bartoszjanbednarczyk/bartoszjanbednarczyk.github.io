@@ -13,10 +13,50 @@
   const S = UI.store, st = S.state;
   const { T, rule } = Seg;
 
+  /* ---------- plany: dowody, z których pochodzą kolejne podpowiedzi ---------- */
+
+  /**
+   * id celu → dowód zaplanowany dla tego celu (z dowodzącego). Gdy do celu zastosowano
+   * regułę zgodną z planem, cele-przesłanki dziedziczą jego poddowody — kolejne podpowiedzi
+   * prowadzą więc jednym dowodem do końca. (Liczenie dowodu od nowa dla każdego celu potrafi
+   * się zapętlić, np. ⇒e i ⇒i na przemian dla ((p ⇒ q) ⇒ (q ⇒ p)) ⇒ (q ⇒ p).)
+   */
+  const plans = new Map();
+  const MAX_PLANS = 5000;
+
+  function remember(id, plan) {
+    if (plans.size >= MAX_PLANS) plans.clear();
+    plans.set(id, plan);
+  }
+
+  /** Czy węzeł ma regułę i przesłanki (formuły, okna) takie jak w planie. */
+  const followsPlan = (n, plan) => n.rule === plan.rule && n.prem.length === plan.prem.length
+    && n.prem.every((p, i) => {
+      const q = plan.prem[i];
+      return p.box ? !!q.box && F.eq(p.a, q.a) && F.eq(p.body.f, q.body.f) : !q.box && F.eq(p.f, q.f);
+    });
+
+  /** Czy plan jest poprawny w danym zasięgu założeń (np. po odłączeniu poddrzewa może nie być). */
+  const fitsScope = (plan, scope) => (plan.rule === 'hyp' ? Proof.inScope(scope, plan.f)
+    : plan.prem.every(p => (p.box ? fitsScope(p.body, [...scope, p.a]) : fitsScope(p, scope))));
+
+  /** Poddowód odziedziczony po planie rodzica — o ile rodzic został uzasadniony zgodnie z planem. */
+  function inheritedPlan(info) {
+    if (info.up === null) return null;
+    const parent = st.idx.get(info.up), plan = plans.get(info.up);
+    if (!parent || !plan || !followsPlan(parent.n, plan)) return null;
+    const step = plan.prem[info.parent.box ? parent.n.prem.indexOf(info.parent) : info.slot];
+    const sub = step && (step.box ? step.body : step);
+    return sub && F.eq(sub.f, info.n.f) && fitsScope(sub, info.scope) ? sub : null;
+  }
+
+  /* ---------- obliczanie podpowiedzi ---------- */
+
   /** Podpowiedź dla otwartego celu `info` (z indeksu). */
   function compute(info) {
     const goal = info.n.f, assumptions = info.scope;
-    const valuation = F.countermodel(assumptions, goal);
+    const planned = inheritedPlan(info);
+    const valuation = planned ? null : F.countermodel(assumptions, goal);
     if (valuation) {
       let culprit = null;
       for (let up = info.up; up !== null;) {
@@ -26,8 +66,9 @@
       }
       return { goalId: info.n.id, dead: true, valuation, culprit };
     }
-    const proof = Prover.prove(assumptions, goal);
+    const proof = planned || Prover.prove(assumptions, goal);
     if (!proof) return { goalId: info.n.id, fail: true };
+    remember(info.n.id, proof);
     return {
       goalId: info.n.id, level: 1,
       step: { rule: proof.rule, arg: Rules.paramOf(proof) },
@@ -99,7 +140,7 @@
         c.n.prem = [];
         return true;
       }, { select: () => [culprit] });
-      toast('Usunięto krok prowadzący do ślepego zaułka');
+      toast('Cofnięto krok prowadzący do ślepego zaułka — razem ze wszystkim nad nim');
     }
   }
 
@@ -124,10 +165,9 @@
     return h && h.step && h.goalId === goalId && h.step.rule === ruleId && h.step.arg ? [h.step.arg] : [];
   }
 
-  const valuationHTML = v => {
-    const pairs = Object.entries(v);
-    return pairs.length ? pairs.map(([x, b]) => `<span class="math"><i>${x}</i></span> = ${b ? 1 : 0}`).join(', ') : 'dowolnego wartościowania';
-  };
+  /** Wartościowanie zmiennych jak w skrypcie: „σ(p) = F, σ(q) = T”. */
+  const assignmentHTML = v => Object.entries(v)
+    .map(([x, b]) => `<span class="math">σ(<i>${Render.esc(x)}</i>) = <span class="tv">${b ? 'T' : 'F'}</span></span>`).join(', ');
   const labelled = segs => Render.segHTML(segs, { rules: true });
 
   /** Wiersz podpowiedzi na pasku akcji: { cls, html } albo null. */
@@ -136,8 +176,9 @@
     if (!h) return null;
     const goal = st.idx.get(h.goalId);
     if (h.dead) {
-      const where = goal.scope.length ? 'wszystkie założenia dostępne w tym miejscu są prawdziwe, a ' : '';
-      let text = `<span class="hlev">Ślepy zaułek</span>Tego celu nie da się tu udowodnić: dla ${valuationHTML(h.valuation)} ${where}cel ${Render.math(goal.n.f)} jest fałszywy.`;
+      const which = Object.keys(h.valuation).length ? `dla wartościowania ${assignmentHTML(h.valuation)}` : 'dla każdego wartościowania';
+      const where = goal.scope.length ? 'wszystkie założenia dostępne w tym miejscu są spełnione, a ' : '';
+      let text = `<span class="hlev">Ślepy zaułek</span>Tego celu nie da się tu udowodnić: ${which} ${where}cel ${Render.math(goal.n.f)} nie jest spełniony.`;
       let buttons = '';
       if (h.culprit !== null) {
         const c = st.idx.get(h.culprit);

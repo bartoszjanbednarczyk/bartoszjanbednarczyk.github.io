@@ -11,7 +11,7 @@
   'use strict';
   const { Proof, Render, Explain, Seg } = ND;
   const UI = (ND.UI ||= {});
-  const { $, icon, toast, overlay, perFrame, markChoice } = UI.kit;
+  const { $, icon, toast, overlay, perFrame, markChoice, reducedMotion } = UI.kit;
   const S = UI.store, st = S.state;
   const { T, rule } = Seg;
 
@@ -41,21 +41,36 @@
     return steps;
   }
 
-  function readingSteps(root) {
-    const steps = [{ caption: T`Dowód formuły ${root.f} — od założeń do wniosku.`, reveal: [], focus: [] }];
-    for (const s of Explain.prose(root, { merge: false, skipKnown: false }).steps) {
-      const reveal = [];
-      if (s.event === 'assume') reveal.push(`b:${s.nodes[0].id}:${s.box}`);
-      else {
-        for (const n of s.nodes) {
-          reveal.push(`f:${n.id}`);
-          if (s.event === 'hyp') continue;
-          reveal.push(`r:${n.id}`);
-          n.prem.forEach(p => { if (!p.box && Proof.isBareLeaf(p)) reveal.push(`f:${p.id}`); });
-        }
-      }
-      steps.push({ caption: s.segs, reveal, focus: reveal });
+  /** Elementy dowodu odsłaniane przez zdanie dowodu słownego (okno, formuły, kreski z regułami). */
+  function revealedBy(s) {
+    if (s.event === 'assume') return [`b:${s.nodes[0].id}:${s.box}`];
+    const reveal = [];
+    for (const n of s.nodes) {
+      reveal.push(`f:${n.id}`);
+      if (s.event === 'hyp') continue;
+      reveal.push(`r:${n.id}`);
+      n.prem.forEach(p => { if (!p.box && Proof.isBareLeaf(p)) reveal.push(`f:${p.id}`); });
     }
+    return reveal;
+  }
+
+  /**
+   * Kroki „od przesłanek”: zdania dowodu słownego (semantycznego) w kolejności czytania.
+   * Pierwsza nota (cel dowodu) jest krokiem zerowym, pozostałe noty dołączają do sąsiednich kroków.
+   */
+  function readingSteps(root) {
+    const sentences = Explain.prose(root, { merge: false, skipKnown: false }).sentences;
+    const steps = [];
+    let notes = [];
+    sentences.forEach((s, i) => {
+      if (s.event !== 'note') {
+        const reveal = revealedBy(s);
+        steps.push({ caption: [...notes.flatMap(segs => [...segs, ' ']), ...s.segs], reveal, focus: reveal });
+        notes = [];
+      } else if (i === 0) steps.push({ caption: s.segs, reveal: [], focus: [] });
+      else notes.push(s.segs);
+    });
+    if (notes.length && steps.length > 1) steps[steps.length - 1].caption.push(...notes.flatMap(segs => [' ', ...segs]));
     return steps;
   }
 
@@ -103,12 +118,50 @@
     $('pvCaption').innerHTML = Render.segHTML(pv.steps[pv.k].caption, { rules: true });
     $('pvCount').textContent = `${pv.k + 1} / ${pv.steps.length}`;
     $('pvBar').style.width = `${(100 * pv.k) / Math.max(1, last)}%`;
+    const focused = document.activeElement;
     $('pvFirst').disabled = $('pvPrev').disabled = pv.k === 0;
     $('pvLast').disabled = $('pvNext').disabled = pv.k === last;
+    // przycisk z fokusem właśnie się wyłączył (np. „Następny krok” na końcu) — fokus nie ginie
+    if (focused && focused.disabled) $('pvPlay').focus({ preventScroll: true });
+    keepInView();
     if (pv.k === last) {
       stopAutoplay();
       if (pv.complete && !pv.celebrated) { pv.celebrated = true; UI.fireworks.launch(); }
     }
+  }
+
+  /** Gdy dowód nie mieści się na scenie, przewija ją do części wyróżnionej w bieżącym kroku. */
+  function keepInView({ instant = false } = {}) {
+    const stage = $('pvStage');
+    if (stage.scrollWidth <= stage.clientWidth && stage.scrollHeight <= stage.clientHeight) return;
+    const marked = [...$('pvProof').querySelectorAll('.pv-cur')];
+    if (!marked.length) return;
+    const s = stage.getBoundingClientRect();
+    const box = marked.map(el => el.getBoundingClientRect()).reduce((a, r) => ({
+      left: Math.min(a.left, r.left), right: Math.max(a.right, r.right), top: Math.min(a.top, r.top), bottom: Math.max(a.bottom, r.bottom),
+    }));
+    const centre = (lo, hi, from, size) => lo - from + (hi - lo) / 2 - size / 2;
+    stage.scrollTo({
+      left: stage.scrollLeft + centre(box.left, box.right, s.left, stage.clientWidth),
+      top: stage.scrollTop + centre(box.top, box.bottom, s.top, stage.clientHeight),
+      behavior: instant || reducedMotion() ? 'auto' : 'smooth',
+    });
+  }
+
+  /**
+   * Podpis o stałej wysokości (najdłuższego podpisu w tej prezentacji, najwyżej 40% ekranu):
+   * zmiana długości podpisu między krokami nie przesuwa ani nie przeskalowuje dowodu.
+   */
+  function stabilizeCaption() {
+    const el = $('pvCaption');
+    el.style.minHeight = '';
+    let tallest = 0;
+    for (const s of pv.steps) {
+      el.innerHTML = Render.segHTML(s.caption, { rules: true });
+      tallest = Math.max(tallest, el.offsetHeight);
+    }
+    el.style.minHeight = Math.min(tallest, 0.4 * window.innerHeight) + 'px';
+    el.innerHTML = Render.segHTML(pv.steps[pv.k].caption, { rules: true });
   }
 
   /* ---------- budowa ---------- */
@@ -131,22 +184,36 @@
       b.title = b.disabled ? 'Dostępne dla kompletnych dowodów' : b.dataset.title;
     });
     pv.celebrated = false;
+    pv.k = 0;
+    stabilizeCaption();
     show(0, false);
     fit();
+    keepInView({ instant: true });
   }
 
-  /** Dobiera rozmiar czcionki tak, by cały dowód mieścił się na scenie. */
+  /**
+   * Dobiera rozmiar czcionki tak, by cały dowód mieścił się na scenie. Część odstępów
+   * (ramki, marginesy w px) nie skaluje się z czcionką, więc wynik poprawiamy kilka razy.
+   */
   function fit() {
     if (!pv) return;
     const stage = $('pvStage'), proof = $('pvProof');
-    proof.style.setProperty('--pfs', BASE_FONT + 'px');
-    const box = proof.getBoundingClientRect();
     const cs = getComputedStyle(stage);
     const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    if (!box.width || !box.height || availW <= 0 || availH <= 0) return;
-    const size = BASE_FONT * Math.min(availW / box.width, availH / box.height);
-    proof.style.setProperty('--pfs', Math.max(FONT_RANGE[0], Math.min(FONT_RANGE[1], size)).toFixed(1) + 'px');
+    if (availW <= 0 || availH <= 0) return;
+    let size = BASE_FONT;
+    for (let i = 0; i < 4; i++) {
+      proof.style.setProperty('--pfs', size.toFixed(1) + 'px');
+      const box = proof.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const ratio = Math.min(availW / box.width, availH / box.height);
+      if (i > 0 && ratio >= 1 && ratio < 1.03) break;   // mieści się, z niewielkim zapasem
+      const next = Math.max(FONT_RANGE[0], Math.min(FONT_RANGE[1], size * ratio * (i > 0 ? 0.995 : 1)));
+      if (Math.abs(next - size) < 0.05) break;
+      size = next;
+    }
+    proof.style.setProperty('--pfs', size.toFixed(1) + 'px');
   }
 
   /* ---------- sterowanie ---------- */
@@ -172,6 +239,14 @@
     else toast('Pełny ekran nie jest tu dostępny');
   }
 
+  /** Przycisk pełnego ekranu pokazuje, czy pełny ekran jest włączony. */
+  function syncFullscreenButton() {
+    const on = !!document.fullscreenElement, b = $('pvFull');
+    b.innerHTML = icon(on ? 'shrink' : 'expand');
+    b.setAttribute('aria-pressed', String(on));
+    b.title = on ? 'Wyjdź z pełnego ekranu (F)' : 'Pełny ekran (F)';
+  }
+
   const step = d => { stopAutoplay(); show(pv.k + d, d > 0); };
 
   function open(i) {
@@ -186,7 +261,9 @@
       returnFocus: document.activeElement,
     };
     $('pvTitle').innerHTML = (status.complete ? '⊢ ' : '') + Render.math(root.f);
+    $('pvTitle').title = (status.complete ? '⊢ ' : '') + ND.F.text(root.f);
     $('pv').hidden = false;
+    syncFullscreenButton();
     document.documentElement.style.overflow = 'hidden';
     overlay('present', true);
     build();
@@ -217,7 +294,8 @@
     };
     const handler = keys[e.key];
     if (!handler || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.target.closest && e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;   // przycisk obsłuży sam
+    // Enter na przycisku działa jak kliknięcie w niego; spacja zawsze włącza/wyłącza odtwarzanie
+    if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return;
     e.preventDefault();
     handler();
   }
@@ -240,9 +318,9 @@
         build();
       });
     });
-    const refit = perFrame(fit);
+    const refit = perFrame(() => { if (!pv) return; stabilizeCaption(); fit(); keepInView({ instant: true }); });
     window.addEventListener('resize', refit);
-    document.addEventListener('fullscreenchange', refit);
+    document.addEventListener('fullscreenchange', () => { syncFullscreenButton(); refit(); });
   }
 
   UI.present = Object.freeze({ init, open, close, onKey, isOpen: () => !!pv });

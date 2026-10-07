@@ -45,16 +45,24 @@
   /** Kolejność dla par (α, X), gdzie X zależy od α (np. α ⇒ β albo ¬α) — zaznaczać można w dowolnej kolejności. */
   const pairWith = depends => fs => (depends(fs[1], fs[0]) ? [0, 1] : depends(fs[0], fs[1]) ? [1, 0] : null);
 
+  const PERMUTATIONS = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+
   /**
    * Kolejność dla (∨e): alternatywa α ∨ β, potem gałąź do okna z α i gałąź do okna z β.
-   * Gałęzie dopasowujemy po ich otwartych hipotezach, a nie po kolejności kliknięć.
+   * Role fragmentów dopasowujemy po ich otwartych hipotezach, a nie po kolejności kliknięć:
+   * gałąź „α” zakłada α, gałąź „β” zakłada β, a sama alternatywa nie zakłada żadnej z nich
+   * (ważne, gdy wszystkie trzy zaznaczone formuły są takie same).
    */
   function caseOrder(fs, nodes) {
-    const found = [[0, 1, 2], [1, 0, 2], [2, 0, 1]].find(([d, x, y]) => fs[d].t === 'or' && eq(fs[x], fs[y]));
-    if (!found || !nodes) return found || null;
-    const [d, x, y] = found, D = fs[d];
+    const valid = PERMUTATIONS.filter(([d, x, y]) => fs[d].t === 'or' && eq(fs[x], fs[y]));
+    if (!valid.length || !nodes) return valid[0] || null;
     const assumes = (i, a) => P.openFormulas(nodes[i]).some(h => eq(h, a));
-    return !assumes(x, D.a) && (assumes(y, D.a) || assumes(x, D.b)) ? [d, y, x] : found;
+    const score = ([d, x, y]) => {
+      const D = fs[d];
+      return 2 * (assumes(x, D.a) + assumes(y, D.b)) - assumes(x, D.b) - assumes(y, D.a)
+        - (assumes(d, D.a) || assumes(d, D.b) ? 1 : 0);
+    };
+    return valid.reduce((best, p) => (score(p) > score(best) ? p : best));
   }
 
   /** Parametr reguł z oknem stosowanych „od przesłanek”: założenie okna (result — wniosek zależny od fs). */
@@ -255,7 +263,7 @@
   /** Pseudoreguła: użycie założenia otaczającego okna. */
   const HYP = Object.freeze({
     id: 'hyp', title: 'Założenie', name: 'użycie założenia otaczającego okna',
-    label: Object.freeze({ text: 'założenie', html: 'założenie', tex: '\\mathrm{zał.}' }),
+    label: Object.freeze({ text: 'założenie', html: 'założenie', tex: '\\textrm{zał.}' }),
   });
 
   const get = id => (id === 'hyp' ? HYP : RULES.get(id));

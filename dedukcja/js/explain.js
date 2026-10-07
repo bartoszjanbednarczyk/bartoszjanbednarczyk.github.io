@@ -3,13 +3,13 @@
      goalStep   — co robi reguła stosowana „od celu” (prezentacja, podpowiedzi),
      hintIdea   — delikatna wskazówka (1. poziom podpowiedzi),
      hintStep   — konkretny następny krok (2. poziom podpowiedzi),
-     prose      — dowód w języku naturalnym (okna → wcięte akapity).
+     prose      — dowód w języku naturalnym: semantyczny, na wartościowaniach (okna → przypadki).
    Wynik to segmenty tekstu (ND.Seg) — renderery są w render.js.
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { TOP, BOT, AND, NOT, IMP, key, eq } = ND.F;
-  const { T, list, rule, sym, strong, QED } = ND.Seg;
+  const { TOP, BOT, AND, NOT, IMP, META, key, eq, size } = ND.F;
+  const { T, list, rule, sym, val, strong, QED } = ND.Seg;
   const Rules = ND.Rules;
 
   /** Dowód nie wprost: (¬¬e) zastosowane do (¬i) z oknem zakładającym ¬φ. */
@@ -25,7 +25,7 @@
     const f = n.f, x = Rules.paramOf(n);
     switch (n.rule) {
       case 'hyp': return T`${f} jest założeniem otaczającego okna.`;
-      case 'topI': return T`Formuła ${TOP} jest prawdziwa bez żadnych przesłanek.`;
+      case 'topI': return T`Formułę ${TOP} dowodzimy bez żadnych przesłanek.`;
       case 'andI': return T`Dowodzimy osobno ${f.a} oraz ${f.b}.`;
       case 'orI1': return T`Wystarczy udowodnić lewy człon ${f.a}.`;
       case 'orI2': return T`Wystarczy udowodnić prawy człon ${f.b}.`;
@@ -62,7 +62,7 @@
     const look = src ? T` Przyjrzyj się założeniu ${src}.` : [];
     switch (pf.rule) {
       case 'hyp': return T`Spójrz na założenia okien, w których leży ten cel.`;
-      case 'topI': return T`Formuła ${TOP} jest zawsze prawdziwa.`;
+      case 'topI': return T`Cel to stała ${TOP} — jedna z reguł dowodzi jej bez żadnych przesłanek.`;
       case 'andI': return T`Spójnik główny celu to ${sym('∧')}. Co trzeba wiedzieć, żeby wiedzieć, że koniunkcja jest prawdziwa?`;
       case 'impI': return T`Spójnik główny celu to ${sym('⇒')}. Jak zwykle dowodzi się implikacji?`;
       case 'notI': return T`Cel jest negacją. Spróbuj założyć to, co jest negowane, i dojść do sprzeczności.`;
@@ -75,7 +75,7 @@
         ? T`Wśród założeń jest alternatywa ${pf.prem[0].f}. Rozważ oba przypadki osobno.`
         : T`Z założeń łatwo otrzymać alternatywę ${pf.prem[0].f}. Rozważ oba przypadki osobno.`;
       case 'nnE': return isRAA(pf)
-        ? T`Wprost się nie uda. Spróbuj dowodu nie wprost: załóż, że cel jest fałszywy, i dojdź do sprzeczności.`
+        ? T`Wprost się nie uda. Spróbuj dowodu nie wprost: załóż negację celu i dojdź do sprzeczności.`
         : T`Cel kryje się pod podwójną negacją.${look}`;
       default: return [];
     }
@@ -89,20 +89,29 @@
   }
 
   /* =====================================================================
-     Dowód w języku naturalnym
-     Blok: { items: [zdanie | blok] } — zagnieżdżony blok to treść okna.
+     Dowód w języku naturalnym — semantyczny, jak w rozdz. 2 skryptu.
+     Pokazujemy, że dla dowolnego wartościowania σ zachodzi σ̂(φ) = T, idąc
+     za strukturą dowodu formalnego:
+       • okno reguły (⇒i) to przypadki σ̂(α) = F (oczywisty) i σ̂(α) = T,
+       • okno reguły (¬i) to przypuszczenie σ̂(α) = T prowadzące do sprzeczności,
+       • okna reguły (∨e) to przypadki σ̂(α) = T i σ̂(β) = T,
+       • pozostałe kroki uzasadnia definicja σ̂ dla danego spójnika,
+       • wyprowadzenie ⊥ znaczy, że rozważany przypadek jest niemożliwy (σ̂(⊥) = F).
+     Blok: { items: [zdanie | blok] } — zagnieżdżony blok to treść okna (wcięcie).
      Zdanie: { segs, nodes, event, box, concl, how, contra, projection }
        event: 'assume' (otwarcie okna), 'infer' (wniosek), 'hyp' (użycie założenia), 'note' (komentarz).
-       projection: dane do dołączania kolejnych (∧e) — tylko dopóki zdanie nie zostało rozszerzone.
-     Każde zdanie z węzłami trafia też do listy kroków (dla prezentacji).
+       contra: zdanie kończy się sprzecznością; projection: dane do dołączania kolejnych (∧e).
+     Wszystkie zdania (także noty) trafiają też do listy zdań w kolejności czytania
+     — z niej korzysta prezentacja „od przesłanek”.
      ===================================================================== */
+
+  /** Nazwa dowodzonej formuły w tekście dowodu. */
+  const PHI = META('φ');
 
   /** Zamienniki słów otwierających, by kolejne zdania nie zaczynały się tak samo. */
   const OPENER_ALTERNATIVES = { Zatem: 'W rezultacie', Stąd: 'W takim razie', Wtedy: 'Wówczas' };
-  const PROJECTION_VERB = ' w szczególności ';
+  const BY_CONJUNCTION = ' z definicji koniunkcji ';
 
-  /** „zachodzi φ”, a dla ⊥ — „otrzymujemy sprzeczność”. */
-  const holds = f => (f.t === 'F' ? T`otrzymujemy sprzeczność` : T`zachodzi ${f}`);
 
   /** Elementy bez powtórzeń formuł (ta sama formuła wymieniona raz). */
   const uniqueBy = (items, formulaOf) => items.filter((x, i) => items.findIndex(y => key(formulaOf(y)) === key(formulaOf(x))) === i);
@@ -115,18 +124,45 @@
     /**
      * @param {object} opts
      *   merge      — łączenie zdań i spłaszczanie okien przy korzeniu (dowód do czytania),
-     *   skipKnown  — nie powtarzaj wyprowadzeń formuł już udowodnionych w zasięgu.
+     *   skipKnown  — nie powtarzaj uzasadnień wartości ustalonych już w tym przypadku.
      */
     constructor({ merge = true, skipKnown = true } = {}) {
       this.merge = merge;
       this.skipKnown = skipKnown;
-      this.root = { items: [] };
-      this.block = this.root;
+      this.top = { items: [] };
+      this.block = this.top;
       this.parents = [];
       this.scopes = [new Map()];
-      this.last = null;     // ostatnio ustalony fakt w bloku: { key, how: 'assume' | 'derive' }
-      this.steps = [];
+      this.last = null;       // wartości ustalone w ostatnim zdaniu bloku: { keys: Set, how: 'assume' | 'derive' }
+      this.sentences = [];
+      this.rootKey = null;    // klucz dowodzonej formuły — w wartościach σ̂(…) zastępuje ją nazwa φ
+      this.renamed = new Map();
+      this.announced = new Set();   // formuły, których dowód został już zapowiedziany („Pokażemy, że …”)
     }
+
+    /* ---------- wartości logiczne ---------- */
+
+    /** Formuła z dowodzoną formułą (także jako podformułą) zastąpioną nazwą φ. */
+    rename(f) {
+      if (this.rootKey === null) return f;
+      const k = key(f);
+      if (!this.renamed.has(k)) {
+        let g = f;
+        if (k === this.rootKey) g = PHI;
+        else if (f.a) {
+          const a = this.rename(f.a), b = f.b ? this.rename(f.b) : null;
+          if (a !== f.a || b !== (f.b || null)) g = { ...f, a, ...(f.b ? { b } : {}) };
+        }
+        this.renamed.set(k, g);
+      }
+      return this.renamed.get(k);
+    }
+
+    is(f) { return val(this.rename(f), true); }
+    isNot(f) { return val(this.rename(f), false); }
+
+    /** Wniosek kroku: σ̂(φ) = T, a dla ⊥ — sprzeczność, bo σ̂(⊥) jest zawsze równe F. */
+    outcome(f) { return f.t === 'F' ? T`${this.is(BOT)} — sprzeczność, bo zawsze ${this.isNot(BOT)}` : this.is(f); }
 
     /* ---------- bloki, zasięgi, zdania ---------- */
 
@@ -154,8 +190,8 @@
       const s = { segs: this.varied(segs), nodes: [], event: 'infer', ...meta };
       if (s.concl && s.concl.t === 'F') s.contra = true;
       this.block.items.push(s);
-      if (s.event !== 'note') this.steps.push(s);
-      if (s.concl) this.last = { key: key(s.concl), how: s.how || 'derive' };
+      this.sentences.push(s);
+      if (s.concl) this.last = { keys: new Set([key(s.concl)]), how: s.how || 'derive' };
       return s;
     }
 
@@ -182,8 +218,8 @@
     }
 
     /**
-     * Dopisuje `tail` (zaczynający się od przecinka) do ostatniego zdania, które ustaliło `f`.
-     * Rozszerzone zdanie jest „zamknięte” — kolejne (∧e) już się do niego nie dołączą.
+     * Dopisuje `tail` (zaczynający się od przecinka) do ostatniego zdania, które ustaliło
+     * wartość `f`. Rozszerzone zdanie jest „zamknięte” — kolejne (∧e) już się do niego nie dołączą.
      */
     extendLast(f, tail, n) {
       const s = this.lastSentence();
@@ -193,15 +229,15 @@
       s.contra = true;
       s.concl = n.f;
       s.projection = null;
-      this.last = { key: key(n.f), how: 'derive' };
+      this.last = { keys: new Set([key(n.f)]), how: 'derive' };
       return true;
     }
 
-    /* ---------- ustalanie faktów ---------- */
+    /* ---------- ustalanie wartości ---------- */
 
     /**
-     * Zapewnia, że formuła węzła `n` jest ustalona; zwraca sposób odwołania się do niej:
-     * 'hyp' (założenie), 'known' (udowodniona wcześniej), 'fresh' (właśnie wyprowadzona).
+     * Zapewnia, że wartość formuły węzła `n` jest ustalona; zwraca sposób odwołania się do niej:
+     * 'hyp' (założenie przypadku), 'known' (pokazana wcześniej), 'fresh' (właśnie pokazana).
      */
     establish(n) {
       if (n.rule === 'hyp') return { kind: 'hyp', f: n.f, n };
@@ -213,142 +249,154 @@
     }
 
     isLastAssumption(ref) {
-      return ref.kind === 'hyp' && !!this.last && this.last.how === 'assume' && this.last.key === key(ref.f);
+      return ref.kind === 'hyp' && !!this.last && this.last.how === 'assume' && this.last.keys.has(key(ref.f));
     }
 
-    /** Odwołanie do przesłanek, które nie zostały właśnie wyprowadzone: „α”, „założenia α”, „założeń α oraz β”. */
-    refList(refs) {
-      const facts = refs.filter(r => r.kind !== 'hyp').map(r => r.f);
-      const hyps = refs.filter(r => r.kind === 'hyp').map(r => r.f);
-      const parts = [];
-      if (facts.length) parts.push(list(facts));
-      if (hyps.length) parts.push(hyps.length === 1 ? T`założenia ${hyps[0]}` : T`założeń ${list(hyps)}`);
-      return list(parts);
+    /** Czy wartość przesłanki ustaliło właśnie poprzednie zdanie (można napisać „Stąd”, „Zatem”). */
+    isLastFact(ref) {
+      return ref.kind !== 'hyp' && !!this.last && this.last.how === 'derive' && this.last.keys.has(key(ref.f));
     }
 
     /**
-     * Początek zdania mówiący, skąd wiadomo przesłanki:
-     * „Wtedy” (świeże założenie), „Stąd”/„Zatem” (właśnie wyprowadzone),
-     * „Stąd, wobec założenia α,” (mieszane), „Z założeń α oraz β” (wcześniejsze).
-     * plain — czy po początku można dopisać „na mocy modus ponens”.
+     * Przesłanka w zdaniu „Skoro …”: σ̂(α) = T, z dopiskiem przy założeniach — w wyliczeniu
+     * przy każdym, a pojedynczo tylko przy wcześniejszych (o świeżym założeniu właśnie mowa).
      */
-    from(refs) {
-      const fresh = uniqueBy(refs.filter(r => r.kind === 'fresh'), r => r.f);
-      const freshKeys = new Set(fresh.map(r => key(r.f)));
-      let rest = uniqueBy(refs.filter(r => r.kind !== 'fresh' && !freshKeys.has(key(r.f))), r => r.f);
-      let lead = fresh.length > 1 ? 'Zatem' : fresh.length ? 'Stąd' : null;
-      const assumed = rest.find(r => this.isLastAssumption(r));
-      if (!lead && assumed) { lead = 'Wtedy'; rest = rest.filter(r => r !== assumed); }
-      if (!rest.length) return { lead: T`${lead}`, plain: true };
-      if (lead) return { lead: T`${lead}, wobec ${this.refList(rest)},`, plain: false };
-      return { lead: T`Z ${this.refList(rest)}`, plain: true };
+    fact(ref, { listed = false } = {}) {
+      const annotate = ref.kind === 'hyp' && (listed || !this.isLastAssumption(ref));
+      return annotate ? T`${this.is(ref.f)} (z założenia)` : this.is(ref.f);
+    }
+
+    /** Początek zdania wnioskującego z jednej przesłanki: „Stąd”, „Wtedy” albo „Skoro σ̂(α) = T, to”. */
+    leadFor(ref) {
+      if (this.isLastFact(ref)) return T`Stąd`;
+      if (this.isLastAssumption(ref)) return T`Wtedy`;
+      return T`Skoro ${this.fact(ref)}, to`;
+    }
+
+    /** Zdanie-wniosek: początek (skąd znamy przesłanki), uzasadnienie (definicja σ̂) i wartość wniosku. */
+    infer(n, refs, why, concl = this.outcome(n.f)) {
+      const unique = uniqueBy(refs, r => r.f);
+      const lead = unique.length > 1 && unique.every(r => this.isLastFact(r)) ? T`Zatem`
+        : unique.length === 1 ? this.leadFor(unique[0])
+          : T`Skoro ${list(unique.map(r => this.fact(r, { listed: true })), ' i ')}, to`;
+      return this.say(T`${lead} ${why} ${concl}${rule(n.rule)}.`, { nodes: [n], concl: n.f });
     }
 
     /* ---------- reguły ---------- */
 
     derive(n) {
       switch (n.rule) {
-        case 'topI': return this.say(T`Formuła ${TOP} jest zawsze prawdziwa${rule('topI')}.`, { nodes: [n], concl: n.f });
+        case 'topI': return this.say(T`Z definicji ${this.is(n.f)}${rule('topI')}.`, { nodes: [n], concl: n.f });
         case 'andI': return this.conjunction(n);
-        case 'orI1': case 'orI2': return this.oneStep(n, 'tym bardziej');
+        case 'orI1': case 'orI2': return this.infer(n, [this.establish(n.prem[0])], 'z definicji alternatywy');
         case 'andE1': case 'andE2': return this.projection(n);
-        case 'nnE': return isRAA(n) ? this.byContradiction(n) : this.oneStep(n, '');
-        case 'impE': return this.modusPonens(n);
+        case 'nnE': return isRAA(n) ? this.byContradiction(n) : this.doubleNegation(n);
+        case 'impE': return this.infer(n, [this.establish(n.prem[0]), this.establish(n.prem[1])], 'z definicji implikacji');
         case 'notE': return this.contradiction(n);
         case 'botE': return this.explosion(n);
         case 'impI': return this.implication(n);
         case 'notI': return this.negation(n);
         case 'orE': return this.cases(n);
-        default: return this.say(T`Zachodzi ${n.f}.`, { nodes: [n], concl: n.f });
+        default: return this.say(T`${this.is(n.f)}.`, { nodes: [n], concl: n.f });
       }
     }
 
-    oneStep(n, adverb) {
+    doubleNegation(n) {
       const ref = this.establish(n.prem[0]);
-      this.say(T`${this.from([ref]).lead}${adverb ? ' ' + adverb : ''} ${holds(n.f)}${rule(n.rule)}.`, { nodes: [n], concl: n.f });
+      return this.infer(n, [ref], 'z definicji negacji', T`${this.isNot(NOT(n.f))}, a więc ${this.is(n.f)}`);
     }
 
     /**
-     * (∧e) — kolejne eliminacje z tej samej koniunkcji („zachodzą α oraz β”)
-     * i łańcuchy eliminacji („zachodzą kolejno α, β oraz γ”) łączą się w jedno zdanie.
+     * (∧e) — kolejne eliminacje z tej samej koniunkcji („σ̂(α) = T oraz σ̂(β) = T”)
+     * i łańcuchy eliminacji („σ̂(α ∧ β) = T, a stąd σ̂(α) = T”) łączą się w jedno zdanie.
      */
     projection(n) {
       const ref = this.establish(n.prem[0]);
       const prev = this.lastSentence(), pj = prev && prev.projection;
-      const src = key(ref.f);
-      const sameSource = !!pj && ref.kind !== 'fresh' && pj.src === src;
+      const part = T`${this.outcome(n.f)}${rule(n.rule)}`;
+      const same = !!pj && pj.mode === 'same' && ref.kind !== 'fresh' && pj.src === key(ref.f);
       const chained = !!pj && ref.kind === 'fresh' && eq(prev.concl, ref.f);
-      if (this.merge && (sameSource || chained)) {
-        pj.parts.push([n.f, n.rule]);
-        pj.chain = pj.chain || chained;
-        const items = list(pj.parts.map(([f, r]) => T`${f}${rule(r)}`));
-        prev.segs = T`${pj.lead}${PROJECTION_VERB}zachodzą${pj.chain ? ' kolejno' : ''} ${items}.`;
+      if (this.merge && (same || chained)) {
+        pj.parts.push([chained ? ', a stąd ' : ' oraz ', part]);
+        if (chained) pj.mode = 'chain';
+        prev.segs = T`${pj.lead}${BY_CONJUNCTION}${pj.parts.map(([glue, p], i) => (i ? [glue, p] : p))}.`;
         prev.nodes.push(n);
         prev.concl = n.f;
-        this.last = { key: key(n.f), how: 'derive' };
-        return;
+        if (n.f.t === 'F') prev.contra = true;
+        this.last.keys.add(key(n.f));
+        return prev;
       }
-      const s = this.say(T`${this.from([ref]).lead}${PROJECTION_VERB}${holds(n.f)}${rule(n.rule)}.`, { nodes: [n], concl: n.f });
+      const s = this.say(T`${this.leadFor(ref)}${BY_CONJUNCTION}${part}.`, { nodes: [n], concl: n.f });
       // początek zdania (po ewentualnej zmianie słowa otwierającego) — do późniejszego łączenia
-      s.projection = { src, lead: s.segs.slice(0, s.segs.indexOf(PROJECTION_VERB)), parts: [[n.f, n.rule]] };
+      s.projection = { src: key(ref.f), lead: s.segs.slice(0, s.segs.indexOf(BY_CONJUNCTION)), parts: [['', part]], mode: 'same' };
+      return s;
     }
 
     conjunction(n) {
       const [a, b] = n.prem;
       const heavy = x => x.rule !== 'hyp' && !(this.skipKnown && this.known(key(x.f))) && workIn(x) >= 3;
       const announce = this.merge && heavy(a) && heavy(b);
-      if (announce) this.say(T`Udowodnimy najpierw, że zachodzi ${a.f}.`, { event: 'note' });
+      if (announce) this.announce(a.f, T`Pokażemy najpierw, że ${this.is(a.f)}.`);
       const ra = this.establish(a);
-      if (announce) this.say(T`Teraz udowodnimy, że zachodzi ${b.f}.`, { event: 'note' });
+      // druga część mogła zostać pokazana „po drodze” — wtedy nie zapowiadamy jej dowodu
+      if (announce && heavy(b)) this.announce(b.f, T`Teraz pokażemy, że ${this.is(b.f)}.`);
       const rb = this.establish(b);
-      this.say(T`${this.from([ra, rb]).lead} zachodzi ${n.f}${rule('andI')}.`, { nodes: [n], concl: n.f });
+      return this.infer(n, [ra, rb], 'z definicji koniunkcji');
     }
 
-    modusPonens(n) {
-      const ra = this.establish(n.prem[0]), ri = this.establish(n.prem[1]);
-      const { lead, plain } = this.from([ra, ri]);
-      this.say(T`${lead}${plain ? ' na mocy modus ponens' : ''} ${holds(n.f)}${rule('impE')}.`, { nodes: [n], concl: n.f });
-    }
-
+    /** (¬e): wartości σ̂(α) = T i σ̂(¬α) = T są sprzeczne — rozważany przypadek jest niemożliwy. */
     contradiction(n) {
       const ra = this.establish(n.prem[0]), rn = this.establish(n.prem[1]);
-      const tag = rule('notE');
-      const fresh = [ra, rn].filter(r => r.kind === 'fresh');
+      const a = ra.f, tag = rule('notE');
+      const against = r => (r.kind === 'hyp' ? T`założeniu ${this.is(r.f)}` : T`temu, że ${this.is(r.f)}`);
+      if (this.isLastFact(ra) && rn.kind !== 'fresh'
+        && this.extendLast(a, T`, co przeczy ${against(rn)} (czyli ${this.isNot(a)})${tag}.`, n)) return;
+      if (this.isLastFact(rn) && ra.kind !== 'fresh'
+        && this.extendLast(rn.f, T`, czyli ${this.isNot(a)}, co przeczy ${against(ra)}${tag}.`, n)) return;
       const meta = { nodes: [n], concl: n.f, contra: true };
-      if (fresh.length === 1) {
-        const other = fresh[0] === ra ? rn : ra;
-        const against = other.kind === 'hyp' ? T`założeniu ${other.f}` : T`formule ${other.f}`;
-        if (this.extendLast(fresh[0].f, T`, co przeczy ${against}${tag}.`, n)) return;
-        this.say(T`Formuła ${fresh[0].f} przeczy ${against}${tag}.`, meta);
-      } else if (fresh.length === 2) {
-        this.say(T`Otrzymaliśmy sprzeczność: zachodzą zarówno ${ra.f}, jak i ${rn.f}${tag}.`, meta);
-      } else if (ra.kind === 'hyp' && rn.kind === 'hyp') {
-        this.say(T`Założenia ${ra.f} oraz ${rn.f} są ze sobą sprzeczne${tag}.`, meta);
+      if (ra.kind === 'hyp' && rn.kind === 'hyp') {
+        this.say(T`Założenia ${this.is(a)} i ${this.is(rn.f)} są sprzeczne, bo z definicji negacji ${this.is(rn.f)} oznacza, że ${this.isNot(a)}${tag}.`, meta);
       } else {
-        this.say(T`Formuły ${ra.f} oraz ${rn.f} są ze sobą sprzeczne${tag}.`, meta);
+        this.say(T`Mamy ${this.fact(ra, { listed: true })} oraz ${this.fact(rn, { listed: true })}, czyli ${this.isNot(a)} — sprzeczność${tag}.`, meta);
       }
     }
 
-    explosion(n) {
-      const ref = this.establish(n.prem[0]);
-      const src = ref.kind === 'hyp' ? T`Z założenia ${BOT}` : T`Ze sprzeczności`;
-      this.say(T`${src} wynika dowolna formuła, w szczególności ${n.f}${rule('botE')}.`, { nodes: [n], concl: n.f });
+    /** Zapowiedź dowodu formuły (nota); kolejna zapowiedź tej samej formuły jest pomijana. */
+    announce(f, segs) {
+      this.announced.add(key(f));
+      this.say(segs, { event: 'note' });
     }
 
-    /** Cel okna (bez zdania otwierającego): jego dowód i ewentualne przypomnienie, skąd go znamy. */
+    /** (⊥e): w niemożliwym przypadku każda formuła ma wartość T. */
+    explosion(n) {
+      const ref = this.establish(n.prem[0]), concl = T`${this.is(n.f)}${rule('botE')}`;
+      const text = ref.kind !== 'hyp' ? T`Ten przypadek jest więc niemożliwy, a zatem w szczególności ${concl}.`
+        : this.isLastAssumption(ref) ? T`To jednak niemożliwe, bo zawsze ${this.isNot(BOT)}, więc ten przypadek nie zachodzi — w szczególności ${concl}.`
+          : T`Założenie ${this.is(BOT)} nie może zachodzić (zawsze ${this.isNot(BOT)}), więc ten przypadek jest niemożliwy — w szczególności ${concl}.`;
+      return this.say(text, { nodes: [n], concl: n.f });
+    }
+
+    /** Cel okna (bez zdania otwierającego): jego dowód albo przypomnienie, skąd znamy jego wartość. */
     body(goal) {
       const ref = this.establish(goal);
       if (ref.kind === 'hyp') {
-        const text = this.isLastAssumption(ref) ? T`Wtedy oczywiście zachodzi ${goal.f}.` : T`Na mocy założenia zachodzi ${goal.f}.`;
+        const text = goal.f.t === 'F' ? T`To jednak niemożliwe, bo zawsze ${this.isNot(BOT)}.`
+          : this.isLastAssumption(ref) ? T`Wtedy oczywiście ${this.is(goal.f)}.` : T`Wtedy z założenia ${this.is(goal.f)}.`;
         this.say(text, { event: 'hyp', nodes: [goal], concl: goal.f });
       } else if (ref.kind === 'known') {
-        this.say(T`Jak już wiemy, zachodzi ${goal.f}.`, { event: 'note', concl: goal.f });
+        this.say(T`Jak już wiemy, ${this.is(goal.f)}.`, { event: 'note', concl: goal.f });
       }
     }
 
+    /** „; trzeba wykazać, że σ̂(β) = T” — cel przypadku, gdy jego dowód nie jest natychmiastowy. */
+    subgoal(goal) {
+      if (workIn(goal) < 2) return [];
+      return goal.f.t === 'F' ? T`; trzeba wykazać, że ten przypadek jest niemożliwy` : T`; trzeba wykazać, że ${this.is(goal.f)}`;
+    }
+
     /**
-     * Okno reguły: zdanie otwierające (założenie) i dowód wewnątrz. Okno to wcięty blok,
-     * chyba że `flat` (okna przy korzeniu dowodu nie wcinamy). Zwraca, czy kończy się sprzecznością.
+     * Okno reguły: zdanie otwierające (założenie przypadku) i dowód wewnątrz. Okno to wcięty
+     * blok, chyba że `flat` (okien przy korzeniu nie wcinamy). Zwraca, czy kończy się sprzecznością.
      */
     within(n, index, opening, flat = false) {
       const b = n.prem[index];
@@ -364,92 +412,104 @@
       return contra;
     }
 
+    /** (⇒i): przypadek σ̂(α) = F jest oczywisty, w przypadku σ̂(α) = T dowodzimy σ̂(β) = T. */
     implication(n) {
-      this.within(n, 0, T`Załóżmy, że zachodzi ${n.prem[0].a}.`);
-      return this.say(T`Zatem zachodzi ${n.f}${rule('impI')}.`, { nodes: [n], concl: n.f });
+      const box = n.prem[0], a = box.a;
+      const intro = this.announced.has(key(n.f)) ? [] : T`Pokażemy, że ${this.is(n.f)}. `;
+      this.say(T`${intro}Rozważmy dwa przypadki. Jeśli ${this.isNot(a)}, to z definicji implikacji ${this.is(n.f)}.`, { event: 'note' });
+      const contra = this.within(n, 0, T`Załóżmy teraz, że ${this.is(a)}${this.subgoal(box.body)}.`);
+      return this.say(contra
+        ? T`Przypadek ${this.is(a)} jest więc niemożliwy, zatem ${this.is(n.f)}${rule('impI')}.`
+        : T`Zatem w obu przypadkach ${this.is(n.f)}${rule('impI')}.`, { nodes: [n], concl: n.f });
     }
 
+    /** (¬i): przypuszczenie σ̂(α) = T prowadzi do sprzeczności, więc σ̂(α) = F. */
     negation(n, flat = false) {
-      const contra = this.within(n, 0, T`Przypuśćmy, że zachodzi ${n.prem[0].a}.`, flat);
+      const a = n.prem[0].a;
+      if (!flat && !this.announced.has(key(n.f))) this.say(T`Pokażemy, że ${this.is(n.f)}, czyli że ${this.isNot(a)}.`, { event: 'note' });
+      const contra = this.within(n, 0, T`Przypuśćmy, że ${this.is(a)}.`, flat);
       const lead = contra ? T`Zatem` : T`Otrzymaliśmy sprzeczność, zatem`;
-      return this.say(T`${lead} zachodzi ${n.f}${rule('notI')}.`, { nodes: [n], concl: n.f });
+      return this.say(T`${lead} ${this.isNot(a)}, czyli z definicji negacji ${this.is(n.f)}${rule('notI')}.`, { nodes: [n], concl: n.f });
     }
 
+    /** Dowód nie wprost: przypuszczenie σ̂(φ) = F, czyli σ̂(¬φ) = T, prowadzi do sprzeczności. */
     byContradiction(n, flat = false) {
-      const inner = n.prem[0];
-      this.within(inner, 0, T`Przypuśćmy nie wprost, że zachodzi ${inner.prem[0].a}.`, flat);
+      const inner = n.prem[0], f = n.f;
+      this.within(inner, 0, T`Przypuśćmy nie wprost, że ${this.isNot(f)}, czyli ${this.is(NOT(f))}.`, flat);
       if (!this.merge) {
-        this.say(T`Doszliśmy do sprzeczności, zatem zachodzi ${inner.f}${rule('notI')}.`, { nodes: [inner], concl: inner.f });
-        return this.say(T`Stąd zachodzi ${n.f}${rule('nnE')}.`, { nodes: [n], concl: n.f });
+        this.say(T`Zatem ${this.isNot(NOT(f))}, czyli z definicji negacji ${this.is(NOT(NOT(f)))}${rule('notI')}.`, { nodes: [inner], concl: inner.f });
+        return this.say(T`Stąd z definicji negacji ${this.is(f)}${rule('nnE')}.`, { nodes: [n], concl: n.f });
       }
       this.learn(inner.f, 'derived');
-      return this.say(T`Doszliśmy do sprzeczności, zatem zachodzi ${inner.f}${rule('notI')}, a więc i ${n.f}${rule('nnE')}.`,
+      return this.say(T`Zatem ${this.isNot(NOT(f))}${rule('notI')}, a więc z definicji negacji ${this.is(f)}${rule('nnE')}.`,
         { nodes: [inner, n], concl: n.f });
     }
 
+    /** (∨e): z σ̂(α ∨ β) = T mamy σ̂(α) = T lub σ̂(β) = T — rozważamy oba przypadki. */
     cases(n) {
-      const d = n.prem[0];
+      const d = n.prem[0], D = d.f;
       const ref = this.establish(d);
-      const intro = ref.kind === 'fresh' || this.isLastAssumption(ref) ? T`Rozważmy dwa przypadki.`
-        : ref.kind === 'hyp' ? T`Z założenia zachodzi ${d.f}. Rozważmy dwa przypadki.`
-          : T`Wiemy, że zachodzi ${d.f}. Rozważmy dwa przypadki.`;
-      this.say(intro, { event: 'note' });
-      this.within(n, 1, T`${strong('Przypadek 1:')} zachodzi ${n.prem[1].a}.`);
-      this.within(n, 2, T`${strong('Przypadek 2:')} zachodzi ${n.prem[2].a}.`);
-      this.say(n.f.t === 'F' ? T`W obu przypadkach otrzymaliśmy sprzeczność${rule('orE')}.` : T`W obu przypadkach zachodzi ${n.f}${rule('orE')}.`,
-        { nodes: [n], concl: n.f });
+      this.say(T`${this.leadFor(ref)} z definicji alternatywy ${this.is(D.a)} lub ${this.is(D.b)}. Rozważmy oba przypadki.`, { event: 'note' });
+      this.within(n, 1, T`${strong('Przypadek 1:')} ${this.is(n.prem[1].a)}.`);
+      this.within(n, 2, T`${strong('Przypadek 2:')} ${this.is(n.prem[2].a)}.`);
+      return this.say(n.f.t === 'F'
+        ? T`W obu przypadkach otrzymaliśmy sprzeczność${rule('orE')}.`
+        : T`Zatem w obu przypadkach ${this.is(n.f)}${rule('orE')}.`, { nodes: [n], concl: n.f });
     }
 
     /* ---------- korzeń ---------- */
 
     /**
-     * Korzeń dowodu. W dowodzie do czytania okna przy korzeniu są „spłaszczone”:
-     * łańcuch (⇒i) daje „Załóżmy, że α₁. Załóżmy ponadto, że α₂. …”, a ostatnie zdanie kończy dowód.
+     * Cały dowód: cel (φ jest tautologią), dowolne wartościowanie σ, uzasadnienie σ̂(φ) = T
+     * i wniosek. W dowodzie do czytania okna przy korzeniu są „spłaszczone”.
      */
     proveRoot(root) {
-      if (!this.merge) this.establish(root);
-      else if (root.rule === 'impI') this.implicationChain(root);
-      else if (root.rule === 'notI') this.finish(this.negation(root, true));
-      else if (isRAA(root)) this.finish(this.byContradiction(root, true));
+      if (size(root.f) > 1) this.rootKey = key(root.f);
+      this.say(T`Rozważmy formułę ${PHI} = ${root.f}. Aby pokazać, że ${PHI} jest tautologią, weźmy dowolne wartościowanie ${sym('σ')} i pokażmy, że ${val(PHI)}.`, { event: 'note' });
+      if (this.merge && root.rule === 'impI') this.implicationChain(root);
+      else if (this.merge && root.rule === 'notI') this.negation(root, true);
+      else if (this.merge && isRAA(root)) this.byContradiction(root, true);
       else this.establish(root);
-      const items = this.root.items, end = items[items.length - 1];
-      if (end && end.segs) end.segs.push(' ', QED);
-      else items.push({ segs: [QED], nodes: [], event: 'note' });
+      this.say(T`Ponieważ wartościowanie ${sym('σ')} było dowolne, formuła ${PHI} jest tautologią.`, { event: 'note' }).segs.push(' ', QED);
     }
 
+    /** Łańcuch (⇒i) przy korzeniu: φ = α₁ ⇒ (α₂ ⇒ … ⇒ β) — wystarczy przypadek σ̂(αᵢ) = T dla wszystkich i. */
     implicationChain(root) {
       const chain = [];
       for (let n = root; n.rule === 'impI'; n = n.prem[0].body) chain.push(n);
       const goal = chain[chain.length - 1].prem[0].body;
+      const assumptions = uniqueBy(chain.map(c => c.prem[0].a), f => f);
       this.scopes.push(new Map());
+      const single = chain.length === 1;
+      this.say(single
+        ? T`Rozważmy dwa przypadki. Jeśli ${this.isNot(assumptions[0])}, to z definicji implikacji ${this.is(root.f)}.`
+        : T`Z definicji implikacji, jeśli ${list(assumptions.map(a => this.isNot(a)), ' lub ')}, to ${this.is(root.f)}.`, { event: 'note' });
       chain.forEach((c, i) => {
-        const a = c.prem[0].a;
-        this.say(i ? T`Załóżmy ponadto, że zachodzi ${a}.` : T`Załóżmy, że zachodzi ${a}.`,
-          { event: 'assume', nodes: [c], box: 0, concl: a, how: 'assume' });
+        const a = c.prem[0].a, last = i === chain.length - 1;
+        const opening = i > 0 ? T`Załóżmy ponadto, że ${this.is(a)}` : single ? T`Załóżmy teraz, że ${this.is(a)}` : T`Załóżmy więc, że ${this.is(a)}`;
+        this.say(T`${opening}${last ? this.subgoal(goal) : []}.`, { event: 'assume', nodes: [c], box: 0, concl: a, how: 'assume' });
         this.learn(a, 'hyp');
       });
       this.body(goal);
-      const assumptions = uniqueBy(chain.map(c => c.prem[0].a), f => f);
-      const from = assumptions.length > 1 ? T`z założeń ${list(assumptions)}` : T`z założenia ${assumptions[0]}`;
-      this.say(T`Pokazaliśmy, że ${from} wynika ${goal.f}, co kończy dowód ${chain.length > 1 ? 'formuły' : 'implikacji'} ${root.f}${rule('impI')}.`,
-        { nodes: [...chain].reverse(), concl: root.f });
+      const s = this.lastSentence(), contra = !!(s && s.contra), nodes = [...chain].reverse();
+      const end = T`z definicji implikacji także w tym przypadku ${this.is(root.f)}${rule('impI')}`;
+      if (contra) this.say(T`Ten przypadek jest więc niemożliwy, zatem zawsze ${this.is(root.f)}${rule('impI')}.`, { nodes, concl: root.f });
+      // cel jest założeniem: „Wtedy z założenia σ̂(β) = T, a więc z definicji implikacji …”
+      else if (s && s.event === 'hyp' && ProseWriter.dropPeriod(s)) { s.segs.push(...T`, a więc ${end}.`); s.nodes.push(...nodes); }
+      else this.say(T`Zatem ${end}.`, { nodes, concl: root.f });
       this.scopes.pop();
-    }
-
-    /** Domyka ostatnie zdanie słowami „co kończy dowód”. */
-    finish(s) {
-      if (ProseWriter.dropPeriod(s)) s.segs.push(', co kończy dowód.');
     }
   }
 
   /**
-   * Dowód w języku naturalnym dla kompletnego, poprawnego dowodu.
-   * Zwraca { blocks, steps }: drzewo akapitów oraz zdania przypisane węzłom (kolejność czytania).
+   * Dowód w języku naturalnym (semantyczny) dla kompletnego, poprawnego dowodu.
+   * Zwraca { blocks, sentences }: drzewo akapitów oraz wszystkie zdania w kolejności czytania
+   * (zdania z węzłami opisują kroki dowodu, noty — komentarze między nimi).
    */
   function prose(root, opts) {
     const w = new ProseWriter(opts);
     w.proveRoot(root);
-    return { blocks: w.root, steps: w.steps };
+    return { blocks: w.top, sentences: w.sentences };
   }
 
   ND.Explain = Object.freeze({ goalStep, hintIdea, hintStep, prose, isRAA });

@@ -1,8 +1,10 @@
 /* =====================================================================
    Samouczek: prowadzi przez pierwszy dowód (p ∧ q ⇒ q ∧ p).
-   Kroki z warunkiem `done` czekają na ruch użytkownika (sprawdzany po każdej
-   zmianie stanu), pozostałe przechodzą dalej przyciskiem. Podświetlenie to
-   „dziura” w przyciemnieniu — nie blokuje kliknięć w aplikację.
+   Kroki z warunkiem `done` czekają na ruch użytkownika: bieżący krok wynika ze
+   stanu dowodu (cofnięcie ruchu cofa też samouczek), pozostałe przechodzą dalej
+   przyciskiem. Podświetlenie to „dziura” w przyciemnieniu — nie blokuje kliknięć.
+   Cele dowodu z samouczka zamykają się automatycznie, gdy są założeniami — bez
+   zmiany ustawień użytkownika i bez wpływu na jego inne dowody.
    ===================================================================== */
 (function (ND) {
   'use strict';
@@ -16,7 +18,7 @@
   const GOAL = F.parse('p & q -> q & p');
   const [P, Q] = [F.V('p'), F.V('q')];
 
-  let tour = null;   // { index, settle, restoreAutoHyp }
+  let tour = null;   // { index, settle, html }
 
   /** Części dowodu z samouczka (szukane po formule — identyfikatory zmieniają się przy cofaniu). */
   function parts() {
@@ -31,18 +33,14 @@
   const formulaEl = n => (n ? query(`.ws .fm[data-id="${n.id}"]`) : null);
   const fragmentEl = (p, sel = '') => { const i = st.frags.indexOf(p.root); return i < 0 ? null : query(`.frag[data-fi="${i}"] ${sel}`.trim()); };
   const ruleEl = id => query(`#dock:not([hidden]) .chip[data-rule="${id}"]`) || query(`.rcard[data-rule="${id}"]`);
-  const otherRule = (n, id) => (n && n.rule && n.rule !== 'hyp' && n.rule !== id ? `To inna reguła — cofnij ją (Ctrl+Z albo ↶) i wybierz (${ND.Rules.get(id).label.text}).` : null);
+  const otherRule = (n, id) => (n && n.rule && n.rule !== 'hyp' && n.rule !== id ? `To inna reguła — cofnij ją przyciskiem „Cofnij krok” na pasku na dole (albo Ctrl+Z) i wybierz (${ND.Rules.get(id).label.text}).` : null);
 
-  /** Pole wyboru ustawienia i samo ustawienie (samouczek włącza na chwilę automatyczne zamykanie celów). */
-  function setAutoHyp(on) {
-    S.setPref('autoHyp', on);
-    $('optAutoHyp').checked = on;
-  }
+  const isTutorialProof = root => F.eq(root.f, GOAL);
 
+  /** Dodaje dowód samouczka; false, gdy się nie zmieścił (komunikat o limicie pokazuje commit). */
   function begin() {
     S.setMode('back');
-    if (!S.prefs.autoHyp) { tour.restoreAutoHyp = true; setAutoHyp(true); }
-    UI.actions.addFragment(Proof.node(GOAL));
+    return UI.actions.addFragment(Proof.node(GOAL));
   }
 
   const STEPS = [
@@ -113,6 +111,7 @@
     },
   ];
 
+  const FIRST_TASK = STEPS.findIndex(s => s.done);      // pierwszy krok czekający na ruch użytkownika
   const FINISHED = STEPS.findIndex(s => s.finished);
 
   /* ---------- silnik ---------- */
@@ -120,24 +119,43 @@
   function start() {
     storage.set(SEEN_KEY, '1');
     Modal.close('helpModal');
-    tour = { index: 0 };
+    tour = { index: 0, html: '' };
+    S.setAutoCloseFor(isTutorialProof);
     $('tutorial').hidden = false;
     update();
+    focusBubble();
   }
 
   function stop() {
-    if (tour && tour.restoreAutoHyp) setAutoHyp(false);
+    S.setAutoCloseFor(null);
     tour = null;
     $('tutorial').hidden = true;
   }
 
   function next() {
     const step = STEPS[tour.index];
-    if (step.onNext) step.onNext();
+    if (step.onNext && step.onNext() === false) { stop(); return; }
     if (!tour) return;
     if (step.last) { stop(); return; }
     tour.index++;
     update(true);
+    focusBubble();
+  }
+
+  /** Klawiatura: fokus na przycisku dymka (o ile krok go ma — inaczej użytkownik działa w aplikacji). */
+  function focusBubble() {
+    const button = tour && $('tutBubble').querySelector('[data-tut="next"]');
+    if (button) button.focus({ preventScroll: true });
+  }
+
+  /**
+   * Krok wynikający ze stanu dowodu: pierwszy niewykonany. Dzięki temu cofnięcie ruchu
+   * (Ctrl+Z) cofa samouczek, a dowód ukończony inną drogą przenosi do podsumowania.
+   */
+  function stepFor(p) {
+    if (p.complete) return Math.max(FINISHED, tour.index);
+    for (let i = FIRST_TASK; i < FINISHED; i++) if (!STEPS[i].done(p)) return i;
+    return FINISHED;
   }
 
   function currentTarget(p) {
@@ -149,9 +167,11 @@
   function update(scroll = false) {
     if (!tour) return;
     const p = tour.index > 0 ? parts() : null;
-    if (tour.index > 0 && !p) { stop(); toast('Samouczek przerwany — jego dowód został usunięty'); return; }
-    if (p && p.complete && tour.index < FINISHED) { tour.index = FINISHED; scroll = true; }   // dowód ukończony inną drogą
-    while (STEPS[tour.index].done && STEPS[tour.index].done(p)) { tour.index++; scroll = true; }
+    if (tour.index > 0) {
+      if (!p) { stop(); toast('Samouczek przerwany — jego dowód został usunięty albo przebudowany'); return; }
+      const index = stepFor(p);
+      if (index !== tour.index) { tour.index = index; scroll = true; }
+    }
     const layer = $('tutorial');
     layer.hidden = anyOverlay();
     if (layer.hidden) return;
@@ -170,21 +190,32 @@
     if (tour.index === 0 || p) position(currentTarget(p));
   });
 
+  /** Treść dymka — podmieniana tylko przy zmianie (czytniki ekranu ogłaszają każdą podmianę). */
   function renderBubble(step, p) {
     const warn = step.wrong ? step.wrong(p) : null;
     const waiting = step.done && !warn ? '<span class="tut-wait">czekam na Twój ruch…</span>' : '';
     const nextButton = step.done ? '' : `<button type="button" class="btn primary" data-tut="next">${step.next || 'Dalej'}</button>`;
     const skipButton = step.last ? '' : `<button type="button" class="btn ghost" data-tut="skip">${tour.index === 0 ? 'Nie teraz' : 'Zakończ'}</button>`;
-    $('tutBubble').innerHTML = `<h3 id="tutTitle">${Render.esc(step.title)}</h3>`
+    const html = `<h3 id="tutTitle">${Render.esc(step.title)}</h3>`
       + `<p>${Render.segHTML(step.text(p), { rules: true })}</p>${warn ? `<p class="warn">${Render.esc(warn)}</p>` : ''}`
       + `<div class="tut-foot"><span class="count">${tour.index + 1} / ${STEPS.length}</span>${waiting}<span class="sp"></span>${skipButton}${nextButton}</div>`;
+    if (html === tour.html) return;
+    tour.html = html;
+    $('tutBubble').innerHTML = html;
   }
 
-  /** Ustawia podświetlenie na elemencie i dymek obok niego (w granicach okna). */
+  /**
+   * Ustawia podświetlenie na elemencie i dymek obok niego (w granicach okna, nad paskiem akcji,
+   * bo tam użytkownik wybiera reguły). Gdy dymek nie mieści się ani nad, ani pod elementem,
+   * dostaje przewijanie — nigdy go nie zasłania.
+   */
   function position(target) {
-    const hole = $('tutHole'), bubble = $('tutBubble');
-    const vw = window.innerWidth, vh = window.innerHeight, pad = 6, gap = 12, margin = 8;
-    const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+    const hole = $('tutHole'), bubble = $('tutBubble'), dock = $('dock');
+    const dockTop = !dock.hidden && !(target && dock.contains(target)) ? dock.getBoundingClientRect().top : Infinity;
+    const vw = window.innerWidth, vh = Math.min(window.innerHeight, dockTop), pad = 6, gap = 12, margin = 8, minHeight = 96;
+    bubble.style.maxHeight = '';
+    const bw = bubble.offsetWidth;
+    let bh = bubble.offsetHeight;
     if (!target) {
       hole.classList.add('none');
       Object.assign(hole.style, { left: vw / 2 + 'px', top: vh / 2 + 'px', width: '0px', height: '0px' });
@@ -194,8 +225,15 @@
     const r = target.getBoundingClientRect();
     hole.classList.remove('none');
     Object.assign(hole.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + 2 * pad + 'px', height: r.height + 2 * pad + 'px' });
-    let top = r.bottom + pad + gap;
-    if (top + bh > vh - margin) top = r.top - pad - gap - bh;
+    const below = vh - margin - (r.bottom + pad + gap), above = r.top - pad - gap - margin;
+    let top;
+    if (bh <= below) top = r.bottom + pad + gap;
+    else if (bh <= above) top = r.top - pad - gap - bh;
+    else {
+      bubble.style.maxHeight = Math.max(minHeight, below, above) + 'px';
+      bh = bubble.offsetHeight;
+      top = below >= above ? r.bottom + pad + gap : r.top - pad - gap - bh;
+    }
     top = Math.max(margin, Math.min(vh - bh - margin, top));
     const left = Math.max(margin, Math.min(vw - bw - margin, r.left + r.width / 2 - bw / 2));
     Object.assign(bubble.style, { left: left + 'px', top: top + 'px' });

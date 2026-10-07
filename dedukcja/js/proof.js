@@ -8,8 +8,12 @@
   'use strict';
   const { eq, key, parse, size } = ND.F;
 
-  /** Limity całego obszaru roboczego (pilnowane centralnie przy każdej zmianie). */
-  const LIMITS = Object.freeze({ nodes: 1500, fragments: 40, depth: 400 });
+  /**
+   * Limity całego obszaru roboczego (pilnowane centralnie przy każdej zmianie).
+   * Głębokość: każdy poziom dowodu to ok. 3 zagnieżdżone elementy HTML, a parser HTML
+   * przeglądarek nie zagnieżdża więcej niż 512 elementów — 120 poziomów zostawia zapas.
+   */
+  const LIMITS = Object.freeze({ nodes: 1500, fragments: 40, depth: 120 });
 
   let lastId = 0;
   const node = (f, rule = null, prem = []) => ({ id: ++lastId, f, rule, prem });
@@ -103,7 +107,9 @@
 
   /** Otwiera użycia założeń, które znalazły się poza swoim oknem (np. po odłączeniu poddrzewa). */
   function reopenStrayHyps(roots) {
-    walk(roots, (n, ctx) => { if (n.rule === 'hyp' && !inScope(ctx.scope, n.f)) n.rule = null; });
+    walk(roots, (n, ctx) => {
+      if (n.rule === 'hyp' && !inScope(ctx.scope, n.f)) { n.rule = null; n.prem = []; }
+    });
   }
 
   /* ---------- zapis i odczyt ---------- */
@@ -139,7 +145,7 @@
       n.prem = (o.p || []).map(p => (p && typeof p === 'object' && 'a' in p
         ? box(formula(p.a), rec(p.b, depth + 1))
         : rec(p, depth + 1)));
-      if (n.rule === null && n.prem.length) throw new FormatError('otwarty cel z przesłankami');
+      if ((n.rule === null || n.rule === 'hyp') && n.prem.length) throw new FormatError('liść z przesłankami');
       return n;
     };
     return list.map(o => rec(o, 0));

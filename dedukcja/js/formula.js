@@ -26,8 +26,22 @@
 
   const isFormula = x => !!x && typeof x === 'object' && typeof x.t === 'string';
 
+  /**
+   * Pamięć wyników dla funkcji formuły. Formuły są niezmienne (nikt nie modyfikuje
+   * ich pól), więc wynik dla danego obiektu można policzyć raz — to ważne przy
+   * dużych dowodach, gdzie te same formuły porównuje się tysiące razy.
+   */
+  function memo(fn) {
+    const cache = new WeakMap();
+    return f => {
+      let v = cache.get(f);
+      if (v === undefined) { v = fn(f); cache.set(f, v); }
+      return v;
+    };
+  }
+
   /** Liczba węzłów drzewa formuły. */
-  const size = f => 1 + (f.a ? size(f.a) : 0) + (f.b ? size(f.b) : 0);
+  const size = memo(f => 1 + (f.a ? size(f.a) : 0) + (f.b ? size(f.b) : 0));
 
   /* ---------- wypisywanie ---------- */
 
@@ -60,11 +74,11 @@
 
   const same = n => n;
   const italic = n => `<i>${n}</i>`;
-  const TEX_GREEK = { α: '\\alpha', β: '\\beta', γ: '\\gamma' };
+  const TEX_GREEK = { α: '\\alpha', β: '\\beta', γ: '\\gamma', φ: '\\phi' };
   const UNICODE = { T: '⊤', F: '⊥', not: '¬', and: ' ∧ ', or: ' ∨ ', imp: ' ⇒ ', lp: '(', rp: ')' };
 
   /** Klucz: zwarta, jednoznaczna postać — do porównań, map i zapisu (zgodna ze starszymi linkami). */
-  const key = printer({ v: same, meta: n => '?' + n, T: 'T', F: 'F', not: '~', and: '&', or: '|', imp: '>', lp: '(', rp: ')' });
+  const key = memo(printer({ v: same, meta: n => '?' + n, T: 'T', F: 'F', not: '~', and: '&', or: '|', imp: '>', lp: '(', rp: ')' }));
   /** Zwykły tekst (Unicode). */
   const text = printer({ ...UNICODE, v: same, meta: same });
   /** HTML: zmienne kursywą. Bezpieczne — litery zmiennych pochodzą z białej listy parsera. */
@@ -91,12 +105,17 @@
     ['⊤', 'T'], ['⊥', 'F'], ['(', 'lp'], [')', 'rp'],
   ];
   const CONSTANTS = { T: 'T', 1: 'T', F: 'F', 0: 'F' };
+  /** Równoważności nie ma wśród spójników systemu (rozdz. 2.9 traktuje ją jako skrót). */
+  const IFF = ['<->', '<=>', '⇔', '↔'];
 
   function tokenize(src) {
     const out = [];
     for (let i = 0; i < src.length;) {
       const c = src[i];
       if (/\s/.test(c)) { i++; continue; }
+      if (IFF.some(lit => src.startsWith(lit, i))) {
+        throw new ParseError('Równoważności ⇔ nie ma wśród spójników — zapisz φ ⇔ ψ jako (φ ⇒ ψ) ∧ (ψ ⇒ φ)');
+      }
       const hit = TOKENS.find(([lit]) => src.startsWith(lit, i));
       if (hit) { out.push({ t: hit[1] }); i += hit[0].length; continue; }
       if (ALL_VARS.includes(c)) { out.push({ t: 'v', n: c }); i++; continue; }

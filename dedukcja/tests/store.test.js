@@ -1,7 +1,7 @@
 /* =====================================================================
    Testy modułu stanu (bez przeglądarki):  node dedukcja/tests/store.test.js
    commit() z limitami i wycofywaniem, historia, odczyt zapisu i linków.
-   Zastępuje UI.kit (komunikaty, localStorage) i location prostymi atrapami.
+   Komunikaty, localStorage i adres strony są zastąpione prostymi atrapami.
    ===================================================================== */
 'use strict';
 const assert = require('node:assert/strict');
@@ -9,20 +9,21 @@ const path = require('node:path');
 
 const memory = new Map();
 const toasts = [];
+let storageWorks = true;
 globalThis.location = { hash: '' };
-globalThis.ND = {
-  UI: {
-    kit: {
-      toast: m => toasts.push(m),
-      storage: {
-        get: k => (memory.has(k) ? memory.get(k) : null),
-        set: (k, v) => { memory.set(k, String(v)); return true; },
-        available: () => true,
-      },
-    },
+globalThis.ND = {};
+for (const f of ['formula', 'text', 'proof', 'rules']) require(path.join(__dirname, '..', 'js', f + '.js'));
+require(path.join(__dirname, '..', 'js', 'ui', 'kit.js'));
+// prawdziwe narzędzia, ale komunikaty i localStorage zastąpione atrapami
+globalThis.ND.UI.kit = {
+  ...globalThis.ND.UI.kit,
+  toast: m => toasts.push(m),
+  storage: {
+    get: k => (memory.has(k) ? memory.get(k) : null),
+    set: (k, v) => { if (!storageWorks) return false; memory.set(k, String(v)); return true; },
+    available: () => storageWorks,
   },
 };
-for (const f of ['formula', 'text', 'proof', 'rules']) require(path.join(__dirname, '..', 'js', f + '.js'));
 require(path.join(__dirname, '..', 'js', 'ui', 'store.js'));
 const ND = globalThis.ND;
 const { F, Proof } = ND;
@@ -33,7 +34,7 @@ const failures = [];
 function test(name, fn) {
   try { fn(); passed++; } catch (e) { failures.push(`✗ ${name}\n  ${e.stack.split('\n').slice(0, 3).join('\n  ')}`); }
 }
-const reset = () => { st.frags = []; st.sel = []; memory.clear(); toasts.length = 0; location.hash = ''; S.refresh(); };
+const reset = () => { st.frags = []; st.sel = []; memory.clear(); toasts.length = 0; location.hash = ''; storageWorks = true; S.refresh(); };
 const b64 = s => Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 /** Fragment-łańcuch o n węzłach: p ⇐(¬¬e) ¬¬p ⇐(¬¬e) ¬¬¬¬p ⇐ …; ostatni liść jest otwartym celem. */
@@ -129,6 +130,94 @@ test('zbyt długi link nie powstaje — shareHash zwraca null zamiast linku, kt�
   assert.equal(S.shareHash(), null);
   st.frags = [Proof.node(big)];
   assert.match(S.shareHash(), /^#d=[\w-]+$/);
+});
+
+test('włączenie automatycznego zamykania celów jest krokiem historii (cofnięcie przywraca cele i ustawienie)', () => {
+  reset();
+  S.setPref('autoHyp', false);
+  const p = F.parse('p');
+  S.commit(() => { st.frags.push(Proof.node(F.parse('p -> p'), 'impI', [Proof.box(p, Proof.node(p))])); return true; });
+  assert.equal(Proof.openLeaves(st.frags[0]).length, 1);
+  const events = [];
+  S.on('prefs', () => events.push(S.prefs.autoHyp));
+  S.setAutoHyp(true);
+  assert.equal(Proof.openLeaves(st.frags[0]).length, 0);
+  S.undo();
+  assert.equal(S.prefs.autoHyp, false);
+  assert.equal(Proof.openLeaves(st.frags[0]).length, 1);
+  S.redo();
+  assert.equal(S.prefs.autoHyp, true);
+  assert.equal(Proof.openLeaves(st.frags[0]).length, 0);
+  assert.deepEqual(events, [true, false, true]);
+});
+
+test('ten sam link otwarty dwa razy nie dubluje fragmentu, także gdy cel zamyka się automatycznie', () => {
+  reset();
+  S.setPref('autoHyp', true);
+  location.hash = '#d=' + b64('[{"f":"p>p","r":"impI","p":[{"a":"p","b":{"f":"p"}}]}]');
+  S.load();
+  S.load();
+  assert.equal(st.frags.length, 1);
+  assert.equal(S.status(st.frags[0]).complete, true);
+});
+
+test('link z doklejonymi znakami (np. kropką z czatu) jest wczytywany', () => {
+  reset();
+  location.hash = '#d=' + b64('[{"f":"q>q"}]') + '.';
+  assert.equal(S.load(), 'link');
+  assert.equal(st.frags.length, 1);
+});
+
+test('link otwarty w działającej aplikacji można cofnąć', () => {
+  reset();
+  S.commit(() => { st.frags.push(Proof.node(F.parse('p'))); return true; });
+  const result = S.openLink('#d=' + b64('[{"f":"q"}]'));
+  assert.equal(result.ok, true);
+  assert.equal(st.frags.length, 2);
+  S.undo();
+  assert.equal(st.frags.length, 1);
+  assert.equal(S.openLink('#x'), null);
+  assert.equal(S.openLink('#d=%%%').ok, false);
+});
+
+test('wstawienie kompletnego fragmentu w ostatni cel świętuje ukończenie dowodu', () => {
+  reset();
+  let celebrated = 0;
+  S.on('complete', () => celebrated++);
+  const q = F.parse('q -> q');
+  S.commit(() => {
+    st.frags.push(Proof.node(F.parse('(q -> q) & T'), 'andI', [Proof.node(q), Proof.node(F.TOP, 'topI')]));
+    st.frags.push(Proof.node(q, 'impI', [Proof.box(F.parse('q'), Proof.node(F.parse('q'), 'hyp'))]));
+    return true;
+  });
+  const goal = st.idx.get(st.frags[0].prem[0].id);
+  S.commit(() => { Proof.replaceAt(st.frags, goal, st.frags[1]); st.frags.splice(1, 1); return true; }, { celebrate: true });
+  assert.equal(st.frags.length, 1);
+  assert.equal(celebrated, 1);
+});
+
+test('gdy przeglądarka nie zapisuje pracy, użytkownik dostaje jedno ostrzeżenie', () => {
+  reset();
+  storageWorks = false;
+  S.commit(() => { st.frags.push(Proof.node(F.parse('p'))); return true; });
+  S.commit(() => { st.frags.push(Proof.node(F.parse('q'))); return true; });
+  assert.equal(S.persistent(), false);
+  assert.equal(toasts.filter(t => /nie pozwala zapisać/.test(t)).length, 1);
+  storageWorks = true;
+  S.commit(() => { st.frags.push(Proof.node(F.parse('r'))); return true; });
+  assert.equal(S.persistent(), true);
+});
+
+test('zmiana zapisu w innej karcie jest przejmowana (zamiast nadpisania przy następnej zmianie)', () => {
+  reset();
+  S.commit(() => { st.frags.push(Proof.node(F.parse('p'))); return true; });
+  const other = '[{"f":"p"},{"f":"q>q"}]';
+  S.onStorageEvent({ key: 'nd-proof', newValue: other });
+  assert.equal(st.frags.length, 2);
+  assert.equal(S.canUndo(), false);
+  assert.match(toasts.join(' '), /innej karty/);
+  S.onStorageEvent({ key: 'nd-proof', newValue: '[{"f":"p","r":"nieznana"}]' });   // nieczytelny zapis — bez zmian
+  assert.equal(st.frags.length, 2);
 });
 
 if (failures.length) {

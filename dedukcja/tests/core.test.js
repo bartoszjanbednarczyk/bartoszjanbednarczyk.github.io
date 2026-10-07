@@ -176,36 +176,82 @@ test('zapis i odczyt zachowują dowód (także w starym formacie kluczy)', () =>
   assert.equal(Proof.deserialize(legacy, Rules.isRule)[0].prem[0].body.f.t, 'v');
 });
 
-/* ---------- dowód słowny ---------- */
+test('odczyt odrzuca użycie założenia z przesłankami (otwarłoby się jako cel z przesłankami)', () => {
+  assert.throws(() => Proof.fromPlain([{ f: 'p', r: 'hyp', p: [{ f: 'p' }] }], Rules.isRule), Proof.FormatError);
+});
 
-test('dowód słowny: każdy przykład daje tekst zaczynający się od „Dowód.” i kończący ∎', () => {
+test('(∨e) w przód: role fragmentów według hipotez także dla trzech takich samych formuł', () => {
+  const r = Rules.get('orE'), t = s => F.parse(s);
+  const make = () => [Proof.node(t('p | q')), Proof.node(t('p | q'), 'orI1', [Proof.node(t('p'))]), Proof.node(t('p | q'), 'orI2', [Proof.node(t('q'))])];
+  for (const order of [[0, 1, 2], [1, 0, 2], [2, 1, 0], [1, 2, 0]]) {
+    const frags = make(), nodes = order.map(i => frags[i]);
+    const a = Rules.fwdArrange(r, nodes.map(n => n.f), nodes);
+    const built = r.fwd.build(a.fs, a.nodes);
+    const root = Proof.node(built.f, 'orE', Rules.enclose(built.prem));
+    assert.deepEqual(Proof.openFormulas(root).map(F.text), ['p ∨ q'], String(order));
+  }
+});
+
+test('równoważność ⇔ dostaje zrozumiały komunikat', () => {
+  assert.throws(() => F.parse('p <-> q'), /Równoważności ⇔ nie ma wśród spójników/);
+});
+
+test('duży dowód w limitach jest przetwarzany szybko (klucze formuł liczone raz)', () => {
+  // łańcuch ¬i/¬e z dużą formułą: głęboko zagnieżdżone okna, wiele porównań z założeniami
+  const P = F.parse(Array.from({ length: 30 }, (_, i) => 'pqrst'[i % 5]).join(' & '));
+  let n = Proof.node(F.BOT, 'notE', [Proof.node(P, 'hyp'), Proof.node(F.NOT(P), 'hyp')]);
+  for (let d = 0; d < 55; d++) {
+    const neg = Proof.node(F.NOT(P), 'notI', [Proof.box(P, n)]);
+    n = Proof.node(F.BOT, 'notE', [Proof.node(P, 'hyp'), neg]);
+  }
+  const root = Proof.node(F.NOT(P), 'notI', [Proof.box(P, n)]);
+  const t0 = Date.now();
+  for (let i = 0; i < 20; i++) { Proof.index([root]); Rules.verify([root]); Proof.closeByScope([root]); Proof.reopenStrayHyps([root]); }
+  assert.ok(Date.now() - t0 < 3000, `${Date.now() - t0} ms`);
+  assert.ok(Proof.stats([root]).depth <= Proof.LIMITS.depth);
+});
+
+/* ---------- dowód słowny (semantyczny) ---------- */
+
+test('dowód słowny: cel, dowolne wartościowanie σ, wniosek i ∎ — dla każdego przykładu', () => {
   for (const root of exampleRoots()) {
     const text = Render.proseText(Explain.prose(root), { rules: true });
-    assert.ok(text.startsWith('Dowód.'), text.slice(0, 40));
-    assert.ok(text.trim().endsWith('∎'), text.slice(-40));
-    assert.ok(!/undefined|null|\[object/.test(text), text);
+    assert.ok(text.startsWith('Dowód. Rozważmy formułę φ = '), text.slice(0, 60));
+    assert.match(text, /Aby pokazać, że φ jest tautologią, weźmy dowolne wartościowanie σ i pokażmy, że σ̂\(φ\) = T\./);
+    assert.ok(text.trim().endsWith('Ponieważ wartościowanie σ było dowolne, formuła φ jest tautologią. ∎'), text.slice(-80));
+    assert.ok(!/undefined|null|\[object|zachodzi /.test(text), text);
     const html = Render.proseHTML(Explain.prose(root), { rules: false });
     assert.ok(!/\(∧i\)|undefined/.test(html));
   }
 });
 
-test('dowód słowny w trybie kroków opisuje każdy węzeł (prezentacja „od przesłanek”)', () => {
+test('dowód słowny: każdy krok dowodu ma swoje zdanie (prezentacja „od przesłanek”)', () => {
   for (const root of exampleRoots()) {
     const covered = new Set();
-    for (const s of Explain.prose(root, { merge: false, skipKnown: false }).steps) s.nodes.forEach(n => covered.add(n.id));
+    for (const s of Explain.prose(root, { merge: false, skipKnown: false }).sentences) s.nodes.forEach(n => covered.add(n.id));
     Proof.walk([root], n => {
       if (n.rule !== 'hyp') assert.ok(covered.has(n.id), `${n.rule} w ${F.text(root.f)}`);
     });
   }
 });
 
-test('dowód słowny jako LaTeX: symbole logiczne tylko w trybie matematycznym', () => {
+test('dowód słowny: okna to przypadki, a (⊥e) i (¬e) — niemożliwe przypadki', () => {
+  const text = s => Render.proseText(Explain.prose(proofOf(F.parse(s))));
+  assert.match(text('p -> p'), /Jeśli σ̂\(p\) = F, to z definicji implikacji σ̂\(φ\) = T\. Załóżmy teraz, że σ̂\(p\) = T\./);
+  assert.match(text('(p | q) & (p -> r) & (q -> r) -> r'), /Przypadek 1: σ̂\(p\) = T\..*Przypadek 2: σ̂\(q\) = T\..*w obu przypadkach σ̂\(r\) = T/s);
+  assert.match(text('F -> p'), /ten przypadek (jest niemożliwy|nie zachodzi) — w szczególności σ̂\(p\) = T/);
+  assert.match(text('~(p & ~p)'), /Przypuśćmy, że σ̂\(p ∧ ¬p\) = T\./);
+});
+
+test('dowód słowny jako LaTeX: symbole tylko w trybie matematycznym, T i F jak w skrypcie', () => {
   const extra = ['p -> T', 'F -> p', '~p -> p -> q'].map(s => proofOf(F.parse(s)));
   for (const root of [...exampleRoots(), ...extra]) {
     for (const rules of [false, true]) {
       const tex = Render.proseTeX(Explain.prose(root), { rules });
       const outside = tex.replace(/\$[^$]*\$/g, '');
-      assert.ok(!/[⊤⊥¬∧∨⇒αβγ∎]/.test(outside), outside.match(/.{0,30}[⊤⊥¬∧∨⇒αβγ∎].{0,10}/)?.[0]);
+      assert.ok(!/[⊤⊥¬∧∨⇒αβγσφ∎̂]/.test(outside), outside.match(/.{0,30}[⊤⊥¬∧∨⇒αβγσφ∎̂].{0,10}/)?.[0]);
+      assert.match(tex, /\\hat\{\\sigma\}\(\\phi\) = \\mathsf\{T\}/);
+      assert.ok(!/\\begin\{quote\}/.test(tex), 'okna jako \\leftskip, bez zagnieżdżonych list');
     }
   }
 });
@@ -221,7 +267,16 @@ test('dowód słowny: sprzeczność dopisana do zdania nie ginie przy łączeniu
     Proof.node(t('p & r -> F & r'), 'impI', [Proof.box(pr, body)]))]);
   assert.equal(Rules.verify([root]).size, 0);
   const text = Render.proseText(Explain.prose(root), { rules: true });
-  assert.match(text, /co przeczy założeniu ¬p \(¬e\)/, text);
+  assert.match(text, /co przeczy założeniu σ̂\(¬p\) = T \(czyli σ̂\(p\) = F\) \(¬e\)/, text);
+});
+
+test('dowód słowny: zapowiedź „Teraz pokażemy” tylko dla formuł, których wartość nie jest jeszcze znana', () => {
+  const text = Render.proseText(Explain.prose(proofOf(F.parse('(p & (p -> q)) & (q -> r) -> r & q'))));
+  const announced = [...text.matchAll(/Teraz pokażemy, że (σ̂\([^)]*\) = T)/g)].map(m => m[1]);
+  for (const claim of announced) {
+    const before = text.slice(0, text.indexOf('Teraz pokażemy, że ' + claim));
+    assert.ok(!before.includes(claim + ' (') && !before.includes(claim + '.') && !before.includes(claim + ','), claim);
+  }
 });
 
 test('opisy kroków „od celu” istnieją dla każdej reguły', () => {

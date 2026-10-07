@@ -4,7 +4,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { F, Proof, Export, Render } = ND;
+  const { F, Export, Render } = ND;
   const UI = (ND.UI ||= {});
   const { $, toast, copyText, copyImage, download, theme, markChoice, Modal } = UI.kit;
   const S = UI.store, st = S.state;
@@ -47,9 +47,14 @@
 
   /* ---------- zawartość okna ---------- */
 
-  function incompleteNote() {
-    const open = Proof.openLeaves(root()).length;
-    return open ? `Dowód nie jest jeszcze kompletny (otwarte cele: ${open}).` : '';
+  /** Uwagi o eksportowanym dowodzie: niekompletny, z błędami, (dla LaTeX-a) bardzo głęboki. */
+  function problemsNote({ tex = false } = {}) {
+    const w = Export.warnings(root());
+    return [
+      w.open ? `Dowód nie jest jeszcze kompletny (otwarte cele: ${w.open}).` : '',
+      w.errors ? `Dowód zawiera błędnie zastosowane reguły (${w.errors}).` : '',
+      tex && w.deep ? 'Bardzo głęboki dowód — kompilacja LaTeX-a może się nie udać.' : '',
+    ].filter(Boolean).join(' ');
   }
 
   function renderImage() {
@@ -60,14 +65,14 @@
     const scale = pngScale(L);
     const sizeNote = scale >= S.prefs.exportScale ? ''
       : scale < MIN_PNG_SCALE ? 'Za duży na PNG — użyj SVG.' : `PNG zostanie zmniejszony do skali ${decimal(scale)}×.`;
-    $('expNote').textContent = [incompleteNote(), sizeNote].filter(Boolean).join(' ');
+    $('expNote').textContent = [problemsNote(), sizeNote].filter(Boolean).join(' ');
   }
 
   const latexCode = () => Export.latex(root(), { standalone: S.prefs.texStandalone });
 
   function renderLatex() {
     $('tex').value = latexCode();
-    $('texNote').textContent = incompleteNote();
+    $('texNote').textContent = problemsNote({ tex: true });
   }
 
   function render() {
@@ -76,8 +81,9 @@
     $('expImagePane').hidden = tab !== 'image';
     $('expLatexPane').hidden = tab !== 'latex';
     const select = $('expFrag');
+    const mark = r => { const s = S.status(r); return s.errors ? ' (błędy)' : s.open ? ' (niekompletny)' : ''; };
     select.innerHTML = st.frags.map((r, i) => `<option value="${i}">${st.frags.length > 1 ? (i + 1) + '. ' : ''}${Render.esc(F.text(r.f))}`
-      + `${Proof.openLeaves(r).length ? ' (niekompletny)' : ''}</option>`).join('');
+      + `${mark(r)}</option>`).join('');
     select.value = String(fi);
     select.hidden = st.frags.length < 2;
     $('expBg').value = background();
@@ -111,6 +117,11 @@
       copyImage(pngBlob(), 'Skopiowano obrazek — wklej go np. na Discordzie');
     });
     $('texCopy').addEventListener('click', () => copyText($('tex').value, 'Skopiowano kod LaTeX'));
+    // praca zmieniona w innej karcie: okno pokazuje bieżący stan albo się zamyka, gdy fragmentu już nie ma
+    S.on('external', () => {
+      if (!Modal.isOpen('exportModal')) return;
+      if (st.frags[fi]) render(); else Modal.close('exportModal');
+    });
     $('texDownload').addEventListener('click', () => {
       download(fileName('tex'), latexCode(), 'application/x-tex');
       toast('Pobrano plik .tex');

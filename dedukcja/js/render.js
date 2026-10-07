@@ -13,7 +13,10 @@
 
   const TEX_ESCAPES = { '\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', $: '\\$', '&': '\\&', '#': '\\#', '%': '\\%', _: '\\_', '^': '\\^{}', '~': '\\~{}' };
   const texEsc = s => String(s).replace(/[\\{}$&#%_^~]/g, c => TEX_ESCAPES[c]);
-  const TEX_SYMBOLS = { '∧': '\\land', '∨': '\\lor', '⇒': '\\Rightarrow', '¬': '\\neg', '⊤': '\\top', '⊥': '\\bot' };
+  const TEX_SYMBOLS = { '∧': '\\land', '∨': '\\lor', '⇒': '\\Rightarrow', '¬': '\\neg', '⊤': '\\top', '⊥': '\\bot', 'σ': '\\sigma' };
+  /** Wartościowanie formuł σ̂ (σ z daszkiem) i wartości logiczne T, F — jak w rozdz. 2 skryptu. */
+  const SIGMA_HAT = 'σ\u0302';
+  const truth = value => (value ? 'T' : 'F');
 
   const math = f => `<span class="math">${F.html(f)}</span>`;
   const UNKNOWN_LABEL = Object.freeze({ text: '?', html: '?', tex: '?' });
@@ -22,7 +25,7 @@
   /* ---------- segmenty ---------- */
 
   /**
-   * Renderer segmentów dla danego formatu (napis, formuła, etykieta reguły, symbol, wyróżnienie, ∎).
+   * Renderer segmentów dla danego formatu (napis, formuła, etykieta reguły, symbol, wartość σ̂, wyróżnienie, ∎).
    * Etykieta reguły dostaje spację przed sobą, chyba że tekst już się nią kończy.
    */
   const segRenderer = fmt => (segs, { rules = false } = {}) => {
@@ -37,6 +40,7 @@
       if (F.isFormula(s)) out += fmt.formula(s);
       else if (s.rule) out += (spaced ? '' : ' ') + fmt.rule(label(s.rule));
       else if (s.sym) out += fmt.sym(s.sym);
+      else if (s.val) out += fmt.val(s.val, s.value);
       else if (s.strong) out += fmt.strong(s.strong);
       else if (s.qed) out += fmt.qed;
       spaced = false;
@@ -46,11 +50,16 @@
 
   const segHTML = segRenderer({
     str: esc, formula: math, rule: l => `<span class="rl">(${l.html})</span>`, sym: s => `<span class="math">${esc(s)}</span>`,
+    val: (f, v) => `<span class="math">${SIGMA_HAT}(${F.html(f)}) = <span class="tv">${truth(v)}</span></span>`,
     strong: s => `<b>${esc(s)}</b>`, qed: '<span class="qed" aria-label="koniec dowodu">∎</span>',
   });
-  const segText = segRenderer({ str: s => s, formula: F.text, rule: l => `(${l.text})`, sym: s => s, strong: s => s, qed: '∎' });
+  const segText = segRenderer({
+    str: s => s, formula: F.text, rule: l => `(${l.text})`, sym: s => s,
+    val: (f, v) => `${SIGMA_HAT}(${F.text(f)}) = ${truth(v)}`, strong: s => s, qed: '∎',
+  });
   const segTeX = segRenderer({
     str: texEsc, formula: f => `$${F.tex(f)}$`, rule: l => `$(${l.tex})$`, sym: s => `$${TEX_SYMBOLS[s] || texEsc(s)}$`,
+    val: (f, v) => `$\\hat{\\sigma}(${F.tex(f)}) = \\mathsf{${truth(v)}}$`,
     strong: s => `\\textbf{${texEsc(s)}}`, qed: '',
   });
 
@@ -94,11 +103,15 @@
     nested: inner => inner.join('\n'),
   }).join('\n');
 
+  /**
+   * Okna jako wcięte akapity: grupa z powiększonym \leftskip zamiast środowiska quote
+   * (LaTeX zagnieżdża najwyżej 6 list — głębszy dowód by się nie skompilował).
+   */
   const proseTeX = (p, opts) => '\\begin{proof}\n' + walkProse(p.blocks, {
     lead: '',
     sentence: segs => segTeX(segs, opts),
     paragraph: (lead, ss) => ss.join('\n'),
-    nested: inner => `\\begin{quote}\n${inner.join('\n\n')}\n\\end{quote}`,
+    nested: inner => `\\begingroup\\advance\\leftskip by 1.5em\n${inner.join('\n\n')}\n\\par\\endgroup`,
   }).join('\n\n') + '\n\\end{proof}';
 
   /* ---------- drzewo dowodu ---------- */

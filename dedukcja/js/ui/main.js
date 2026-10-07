@@ -5,7 +5,7 @@
 (function (ND) {
   'use strict';
   const UI = ND.UI;
-  const { $, icon, hydrateIcons, toast, storage, copyText, markChoice, Modal } = UI.kit;
+  const { $, icon, hydrateIcons, toast, storage, copyText, markChoice, syncBars, Modal } = UI.kit;
   const S = UI.store, st = S.state;
 
   const THEME_KEY = 'nd-theme';
@@ -29,37 +29,47 @@
     sync();
   }
 
-  /** Wysokość przyklejonego nagłówka (--head) — margines przewijania, by nic nie chowało się pod nim. */
-  function trackHeader() {
-    const head = document.querySelector('header.top');
-    const update = () => document.documentElement.style.setProperty('--head', head.offsetHeight + 'px');
-    update();
-    if (window.ResizeObserver) new ResizeObserver(update).observe(head);
+  /** Zmienne CSS z wysokościami nagłówka i paska akcji, aktualne po każdej zmianie ich rozmiaru. */
+  function trackBars() {
+    syncBars();
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(syncBars);
+      [document.querySelector('header.top'), $('dock')].forEach(el => observer.observe(el));
+    }
   }
 
   /* ---------- powiększenie i ustawienia ---------- */
 
+  const applyZoom = () => document.documentElement.style.setProperty('--fs', S.prefs.fontSize + 'px');
+  const applyColors = () => document.documentElement.classList.toggle('colors-off', !S.prefs.colors);
+
   function initZoom() {
-    const apply = () => document.documentElement.style.setProperty('--fs', S.prefs.fontSize + 'px');
-    const zoom = d => { S.setPref('fontSize', Math.max(12, Math.min(34, S.prefs.fontSize + d))); apply(); };
+    const zoom = d => { S.setPref('fontSize', Math.max(12, Math.min(34, S.prefs.fontSize + d))); applyZoom(); };
     $('zoomIn').addEventListener('click', () => zoom(FONT_STEP));
     $('zoomOut').addEventListener('click', () => zoom(-FONT_STEP));
-    apply();
+    applyZoom();
+  }
+
+  /** Pola wyboru ustawień ↔ ustawienia (automatyczne zamykanie celów jest krokiem historii). */
+  const OPTIONS = { optAutoHyp: 'autoHyp', optColors: 'colors', optFireworks: 'fireworks' };
+
+  /** Wygląd zgodny z ustawieniami (także po cofnięciu zmiany albo zmianie w innej karcie). */
+  function syncOptions() {
+    Object.entries(OPTIONS).forEach(([id, pref]) => { $(id).checked = S.prefs[pref]; });
+    applyColors();
+    applyZoom();
   }
 
   function initOptions() {
-    const applyColors = () => document.documentElement.classList.toggle('colors-off', !S.prefs.colors);
-    const options = {
-      optAutoHyp: ['autoHyp', on => { if (on) S.commit(() => true); }],   // włączenie zamyka pasujące cele (można cofnąć)
-      optColors: ['colors', applyColors],
-      optFireworks: ['fireworks', () => {}],
-    };
-    Object.entries(options).forEach(([id, [pref, effect]]) => {
+    Object.entries(OPTIONS).forEach(([id, pref]) => {
       const box = $(id);
-      box.checked = S.prefs[pref];
-      box.addEventListener('change', () => { S.setPref(pref, box.checked); effect(box.checked); });
+      box.addEventListener('change', () => {
+        if (pref === 'autoHyp') S.setAutoHyp(box.checked);
+        else { S.setPref(pref, box.checked); syncOptions(); }
+      });
     });
-    applyColors();
+    S.on('prefs', syncOptions);
+    syncOptions();
   }
 
   /* ---------- osadzenie w stronie (ramka na bartoszjanbednarczyk.github.io/dedukcja.html) ---------- */
@@ -102,11 +112,27 @@
     return embedded;
   }
 
-  /** Po wczytaniu dowodu z linku usuwa #d=… z adresu, by odświeżenie nie wczytywało go ponownie. */
+  /** Usuwa #d=… z adresu (także strony-rodzica), by odświeżenie nie wczytywało dowodu ponownie. */
   function forgetLinkHash(embedded) {
-    const clean = w => { try { if (/^#d=/.test(w.location.hash)) w.history.replaceState(null, '', w.location.pathname + w.location.search); } catch (e) { /* inna domena */ } };
+    const clean = w => { try { if (S.isLinkHash(w.location.hash)) w.history.replaceState(null, '', w.location.pathname + w.location.search); } catch (e) { /* inna domena */ } };
     clean(window);
     if (embedded) clean(window.top);
+  }
+
+  /**
+   * Link z dowodem: po wczytaniu znika z adresu — chyba że przeglądarka nie zapisuje pracy,
+   * bo wtedy tylko link pozwoli ją odtworzyć po odświeżeniu. Nieczytelny link znika zawsze.
+   */
+  const settleLinkHash = (ok, embedded) => { if (!ok || S.persistent()) forgetLinkHash(embedded); };
+
+  /** Link otwarty, gdy aplikacja już działa (zmiana adresu w tej samej karcie). */
+  function initLinkNavigation(embedded) {
+    window.addEventListener('hashchange', () => {
+      const result = S.openLink(location.hash);
+      if (!result) return;
+      toast(result.message, { important: !result.ok });
+      settleLinkHash(result.ok, embedded);
+    });
   }
 
   function initShare(embedded) {
@@ -122,17 +148,36 @@
 
   /* ---------- klawiatura ---------- */
 
+  /** Pola, w których klawisze służą do pisania (pola wyboru nie blokują skrótów). */
+  const TEXT_ENTRY = 'textarea, select, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=button])';
+
+  /**
+   * Przytrzymany Enter/spacja na przycisku nie może go „klikać” wielokrotnie
+   * (np. stosować podpowiedzi aż do końca dowodu albo usuwać kolejne fragmenty).
+   */
+  function blockKeyRepeat(e) {
+    if (e.repeat && (e.key === 'Enter' || e.key === ' ') && e.target.closest
+      && e.target.closest('button, summary, [role="button"]')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   function onKey(e) {
     if (UI.present.isOpen()) { UI.present.onKey(e); return; }
     if (Modal.anyOpen()) { if (e.key === 'Escape') Modal.close(Modal.top()); return; }
-    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    if (e.key === 'Escape' && UI.tutorial.isActive() && e.target.closest && e.target.closest('#tutorial')) { UI.tutorial.stop(); return; }
+    if (e.target.closest && e.target.closest(TEXT_ENTRY)) return;
     const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); S.undo(); return; }
     if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); S.redo(); return; }
     if (mod || e.altKey) return;
-    // przytrzymany klawisz nie może „wyklikać” całego dowodu podpowiedziami
-    if (e.repeat && (k === 'h' || k === 'p')) return;
-    if (e.key === 'Delete' || e.key === 'Backspace') { if (UI.actions.runOp('clear')) e.preventDefault(); }
+    // przytrzymany klawisz nie może „wyklikać” całego dowodu podpowiedziami ani go rozebrać
+    if (e.repeat && (k === 'h' || k === 'p' || e.key === 'Delete' || e.key === 'Backspace')) return;
+    // Delete: cofnij krok; Shift+Delete: cofnij całe poddrzewo (gdy nad formułą jest tylko jeden krok — to samo)
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (UI.actions.runOp(e.shiftKey ? 'clear' : 'step') || (e.shiftKey && UI.actions.runOp('step'))) e.preventDefault();
+    }
     else if (e.key === 'Escape') {
       if ($('exMenu').open) $('exMenu').open = false;
       else if (st.sel.length) S.select([]);
@@ -145,8 +190,9 @@
 
   function boot() {
     hydrateIcons();
-    trackHeader();
+    trackBars();
     Modal.init();
+    const hadLink = S.isLinkHash(location.hash);
     const source = S.load();
     UI.ask.init();
     UI.workspace.init();
@@ -158,7 +204,10 @@
     initOptions();
     const embedded = initEmbed();
     initShare(embedded);
-    if (source === 'link') forgetLinkHash(embedded);
+    if (hadLink) settleLinkHash(source === 'link', embedded);
+    initLinkNavigation(embedded);
+    window.addEventListener('storage', S.onStorageEvent);
+    document.addEventListener('keydown', blockKeyRepeat, true);
     document.addEventListener('keydown', onKey);
     $('helpOpen').addEventListener('click', () => Modal.open('helpModal'));
     $('exportOpen').addEventListener('click', () => UI.exporter.open());
