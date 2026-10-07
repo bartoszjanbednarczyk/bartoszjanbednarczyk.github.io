@@ -154,7 +154,7 @@
                 <span class="nd-bar-title">Dedukcja naturalna</span>
                 <a class="nd-bar-full" href="dedukcja/index.html" target="_blank" rel="noopener"><i class="fa fa-expand"></i>Pełny ekran</a>
             </div>
-            <iframe id="nd-frame" class="nd-frame" src="dedukcja/index.html?v=20261007d" title="Dedukcja naturalna — aplikacja" allow="clipboard-write; fullscreen" allowfullscreen></iframe>
+            <iframe id="nd-frame" class="nd-frame" src="dedukcja/index.html?v=20261007e" title="Dedukcja naturalna — aplikacja" allow="clipboard-write; fullscreen" allowfullscreen></iframe>
             <noscript><p style="padding:20px">Aplikacja wymaga JavaScriptu. <a href="dedukcja/index.html">Otwórz ją bezpośrednio</a>.</p></noscript>
         </div>
     </div>
@@ -163,7 +163,7 @@
     /* link z dowodem (#d=...) trafia do aplikacji w ramce — także gdy zmieni się adres już otwartej strony */
     (function () {
         var frame = document.getElementById('nd-frame');
-        var app = 'dedukcja/index.html?v=20261007d';
+        var app = 'dedukcja/index.html?v=20261007e';
         var link = function () { var m = location.hash.match(/^#d=[\w-]+/); return m ? m[0] : null; };
         if (link()) frame.src = app + link();
         window.addEventListener('hashchange', function () {

@@ -1,17 +1,33 @@
 /* =====================================================================
    Podpowiedzi: trzy poziomy (wskazówka → reguła → wykonanie kroku),
    a gdy cel nie wynika z założeń — kontrprzykład i wskazanie kroku,
-   który zaprowadził w ślepy zaułek.
+   który zaprowadził w ślepy zaułek. Podpowiedzi działają tylko w zadaniach
+   przykładowych (Examples.isSample) i w dowodzie z samouczka — zadania ze
+   skryptu i pozostałe formuły trzeba rozwiązywać samodzielnie.
      stan: { goalId, level, step: { rule, arg }, idea, next }
          | { goalId, dead: true, valuation, culprit } | { goalId, fail: true }
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { F, Proof, Rules, Prover, Explain, Render, Seg } = ND;
+  const { F, Proof, Rules, Prover, Explain, Render, Seg, Examples } = ND;
   const UI = (ND.UI ||= {});
-  const { icon, toast, anyOverlay } = UI.kit;
+  const { $, icon, toast, anyOverlay } = UI.kit;
   const S = UI.store, st = S.state;
   const { T, rule } = Seg;
+
+  /* ---------- gdzie wolno podpowiadać ---------- */
+
+  const LOCKED = 'Podpowiedzi działają tylko w zadaniach przykładowych — wybierz je z menu „Przykłady”';
+
+  /** Czy we fragmencie o tym korzeniu działają podpowiedzi (zadanie przykładowe albo dowód z samouczka). */
+  const allowedRoot = root => !!root && (Examples.isSample(root.f)
+    || !!(UI.tutorial && UI.tutorial.isTutorialProof && UI.tutorial.isTutorialProof(root)));
+
+  /** Czy podpowiedź działa dla węzła (wpisu indeksu) — rozstrzyga korzeń jego fragmentu. */
+  const allowedFor = info => !!info && allowedRoot(st.frags[info.fi]);
+
+  /** Czy w obszarze roboczym jest choć jeden fragment, w którym działają podpowiedzi. */
+  const available = () => st.frags.some(allowedRoot);
 
   /* ---------- plany: dowody, z których pochodzą kolejne podpowiedzi ---------- */
 
@@ -81,29 +97,38 @@
     const h = st.hint;
     if (!h) return;
     const g = st.idx.get(h.goalId);
-    const stale = !g || !Proof.isOpen(g.n) || st.mode !== 'back' || st.sel.length !== 1 || st.sel[0] !== h.goalId
+    const stale = !g || !Proof.isOpen(g.n) || !allowedFor(g) || st.mode !== 'back' || st.sel.length !== 1 || st.sel[0] !== h.goalId
       || (h.culprit != null && !st.idx.has(h.culprit));
     if (stale) st.hint = null;
   }
 
-  /** Cel podpowiedzi: zaznaczony otwarty cel albo pierwszy otwarty cel (najpierw we fragmencie zaznaczenia). */
+  /**
+   * Cel podpowiedzi: zaznaczony otwarty cel albo pierwszy otwarty cel (najpierw we fragmencie
+   * zaznaczenia), pomijając fragmenty bez podpowiedzi. 'locked' — są otwarte cele, ale żaden
+   * (albo zaznaczony) nie leży w zadaniu przykładowym; null — wszystkie cele są zamknięte.
+   */
   function target() {
     const cur = st.sel.length ? st.idx.get(st.sel[st.sel.length - 1]) : null;
-    if (cur && st.sel.length === 1 && Proof.isOpen(cur.n)) return cur;
+    if (cur && st.sel.length === 1 && Proof.isOpen(cur.n)) return allowedFor(cur) ? cur : 'locked';
     const order = cur ? [st.frags[cur.fi], ...st.frags.filter((_, i) => i !== cur.fi)] : st.frags;
+    let locked = false;
     for (const root of order) {
       const leaf = Proof.openLeaves(root)[0];
-      if (leaf) return st.idx.get(leaf.id);
+      if (!leaf) continue;
+      if (allowedRoot(root)) return st.idx.get(leaf.id);
+      locked = true;
     }
-    return null;
+    return locked ? 'locked' : null;
   }
 
   /** Klawisz H / przycisk „Podpowiedź”: kolejne naciśnięcia odsłaniają kolejne poziomy. */
   function press() {
     if (anyOverlay()) return;
     if (!st.frags.length) { toast('Najpierw dodaj cel do udowodnienia'); return; }
+    if (target() === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
     if (st.mode === 'fwd') { S.setMode('back'); toast('Podpowiedzi działają w trybie „od celu” — przełączono'); }
     const t = target();
+    if (t === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
     if (!t) { st.hint = null; S.refresh(); toast('Wszystkie cele są zamknięte — dowód jest kompletny'); return; }
     const h = st.hint;
     if (h && h.goalId === t.n.id && st.sel.length === 1 && st.sel[0] === t.n.id) {
@@ -145,6 +170,16 @@
   }
 
   /* ---------- wygląd ---------- */
+
+  /** Przycisk „Podpowiedź” na górnym pasku: wyszarzony, gdy w obszarze roboczym nie ma zadania przykładowego. */
+  function syncButton() {
+    const b = $('hintBtn');
+    if (!b) return;
+    const on = available();
+    b.classList.toggle('off', !on);
+    b.setAttribute('aria-disabled', String(!on));
+    b.title = on ? 'Podpowiedź dla zaznaczonego lub następnego celu (H)' : LOCKED;
+  }
 
   /** Klasy formuły węzła wynikające z podpowiedzi. */
   function classesFor(n) {
@@ -205,5 +240,5 @@
     };
   }
 
-  UI.hints = Object.freeze({ press, act, validate, classesFor, hintedRule, bestArgs, row });
+  UI.hints = Object.freeze({ press, act, validate, classesFor, hintedRule, bestArgs, row, allowedRoot, allowedFor, available, syncButton });
 })(globalThis.ND ||= {});

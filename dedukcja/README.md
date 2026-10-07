@@ -15,7 +15,7 @@ Rdzeń bez DOM-u (`js/`, działa też w Node):
 - `explain.js` — opisy kroków, podpowiedzi i dowód w języku naturalnym (semantyczny: wartościowanie σ, okna jako przypadki),
 - `render.js` — HTML/tekst/LaTeX z segmentów oraz rysunek dowodu,
 - `export.js` — kod LaTeX, układ obrazka, SVG i PNG,
-- `examples.js` — przykłady ze skryptu, kolokwiów i egzaminów.
+- `examples.js` — przykłady ze skryptu, kolokwiów i egzaminów; dziesięć z nich to zadania przykładowe (grupa `przyk`) — tylko w nich (i w dowodzie z samouczka) działa przycisk „Podpowiedź”.
 
 Interfejs (`js/ui/`):
 
@@ -35,6 +35,7 @@ więc kolejność znaczników `<script>` w `index.html` ma znaczenie.
 node dedukcja/tests/core.test.js
 node dedukcja/tests/store.test.js
 node dedukcja/tests/actions.test.js
+node dedukcja/tests/hints.test.js
 ```
 
 ## Po każdej zmianie

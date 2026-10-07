@@ -216,7 +216,7 @@
     let rules;
     if (av.available.length) {
       rules = '<span class="grp">Reguły</span>' + av.available.map(id => chipHTML(id, av.natural.has(id), id === hinted)).join('');
-      if (st.mode === 'back' && n && Proof.isOpen(n) && !st.hint) {
+      if (st.mode === 'back' && n && Proof.isOpen(n) && !st.hint && UI.hints.allowedFor(infos[0])) {
         rules += `<button type="button" class="chip hintc" data-hintgo="start" title="Podpowiedź (H)">${icon('bulb')}Podpowiedź</button>`;
       }
     } else rules = `<span class="note">${dockMessage(infos)}</span>`;
@@ -255,7 +255,10 @@
     if (!st.frags.some(r => Proof.openLeaves(r).length)) {
       return '<b>Gotowe!</b> Wszystkie cele są zamknięte. Pod dowodem znajdziesz jego wersję słowną, przycisk <b>Odtwórz</b> pokaże go krok po kroku, a <b>Eksport</b> zapisze go jako obrazek lub kod LaTeX.';
     }
-    if (!infos.length) return 'Kliknij <b>otwarty cel</b> (przerywana ramka) i wybierz regułę — nad celem pojawią się przesłanki. Utknąłeś? Naciśnij <b>Podpowiedź</b>.';
+    if (!infos.length) {
+      return 'Kliknij <b>otwarty cel</b> (przerywana ramka) i wybierz regułę — nad celem pojawią się przesłanki.'
+        + (UI.hints.available() ? ' Utknąłeś? Naciśnij <b>Podpowiedź</b>.' : '');
+    }
     if (infos.length === 1 && Proof.isOpen(infos[0].n)) {
       return Proof.inScope(infos[0].scope, infos[0].n.f)
         ? 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.'
@@ -277,6 +280,7 @@
     const selection = st.sel.join(','), selectionChanged = selection !== lastSelection;
     lastSelection = selection;
     UI.hints.validate();
+    UI.hints.syncButton();
     markChoice('modeSeg', 'mode', st.mode);
     $('newGoalLabel').textContent = st.mode === 'back' ? 'Nowy cel' : 'Nowa przesłanka';
     const av = A.availability();

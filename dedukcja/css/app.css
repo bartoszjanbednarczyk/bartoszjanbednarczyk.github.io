@@ -260,6 +260,8 @@ main, aside { min-width: 0; }
 .btn.hintb { border-color: color-mix(in srgb, var(--hint) 55%, var(--line2)); color: var(--hint-ink); }
 .btn.hintb:hover:not(:disabled) { background: var(--hint-bg); border-color: var(--hint); }
 .btn.hintb .ic { color: var(--hint); }
+.btn.hintb.off { opacity: .45; }
+.btn.hintb.off:hover { background: transparent; border-color: color-mix(in srgb, var(--hint) 55%, var(--line2)); }
 .dock-hint { display: flex; gap: 10px; align-items: flex-start; background: var(--hint-bg); border: 1px solid var(--hint); border-color: color-mix(in srgb, var(--hint) 45%, transparent); border-radius: 12px; padding: 9px 10px 9px 12px; font-size: .9rem; color: var(--ink); animation: rise .18s ease-out; }
 .dock-hint > .ic { color: var(--hint); margin-top: 2px; }
 .dock-hint .htext { flex: 1; min-width: 0; }

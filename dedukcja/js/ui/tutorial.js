@@ -106,7 +106,7 @@
     {
       title: 'Dalej już samodzielnie',
       target: () => $('modeSeg'),
-      text: () => T`Dowody można też budować od przesłanek — przełączysz to tutaj. Zadania ze skryptu, kolokwiów i egzaminów są w menu „Przykłady”, a samouczek uruchomisz ponownie z pomocy (?).`,
+      text: () => T`Dowody można też budować od przesłanek — przełączysz to tutaj. Zadania ze skryptu, kolokwiów i egzaminów są w menu „Przykłady” — podpowiedzi działają w nich tylko dla zadań przykładowych (na górze menu). Samouczek uruchomisz ponownie z pomocy (?).`,
       next: 'Zakończ', last: true,
     },
   ];
@@ -256,5 +256,5 @@
   /** Czy samouczek powinien sam wystartować: pierwsza wizyta (i działający zapis — inaczej startowałby za każdym razem). */
   const shouldAutostart = () => storage.available() && !storage.get(SEEN_KEY);
 
-  UI.tutorial = Object.freeze({ init, start, stop, shouldAutostart, isActive: () => !!tour });
+  UI.tutorial = Object.freeze({ init, start, stop, shouldAutostart, isTutorialProof, isActive: () => !!tour });
 })(globalThis.ND ||= {});

@@ -1,6 +1,7 @@
 /* =====================================================================
-   Przykłady: rozdział 2.9 skryptu, zadanie 41, kolokwia i egzaminy
-   oraz gotowe dowody ze skryptu (do oglądania i odtwarzania).
+   Przykłady: zadania przykładowe (wybrane z kolokwiów i egzaminów — tylko
+   w nich działa przycisk „Podpowiedź”), rozdział 2.9 skryptu, zadanie 41,
+   pozostałe zadania z kolokwiów i egzaminów oraz gotowe dowody ze skryptu.
    ===================================================================== */
 (function (ND) {
   'use strict';
@@ -8,6 +9,7 @@
   const { node, box } = ND.Proof;
 
   const GROUPS = Object.freeze([
+    { id: 'przyk', title: 'Przykładowe zadania — z podpowiedziami' },
     { id: 's29', title: 'Rozdział 2.9' },
     { id: 'z41', title: 'Zadanie 41 — tautologie' },
     { id: 'kol', title: 'Kolokwia (sprawdzian nr 1)' },
@@ -29,8 +31,23 @@
     return node(lem, 'nnE', [node(NOT(h), 'notI', [box(h, node(BOT, 'notE', [node(lem, 'orI2', [notP]), node(h, 'hyp')]))])]);
   }
 
-  /** proof — funkcja budująca gotowy dowód (tylko w grupie „demo”). */
+  /**
+   * proof — funkcja budująca gotowy dowód (tylko w grupie „demo”).
+   * Grupa „przyk” (zadania przykładowe, uporządkowane od najłatwiejszego) to jedyne zadania,
+   * w których działają podpowiedzi; pozostałe uczniowie rozwiązują samodzielnie.
+   */
   const LIST = Object.freeze([
+    { group: 'przyk', title: 'Egzamin 2018', formula: 'p -> (q & r) | p', note: 'zad. 6' },
+    { group: 'przyk', title: 'Kolokwium 1, 2014 (C)', formula: '(p -> q) & (p -> r) -> (p -> q & r)', note: 'zad. 4' },
+    { group: 'przyk', title: 'Kolokwium 1, 2011 (A)', formula: '(p -> q) -> (~q -> ~p)', note: 'zad. 2 · kontrapozycja' },
+    { group: 'przyk', title: 'Kolokwium 1, 2016 (A)', formula: '~p & ~q -> ~(p | q)', note: 'zad. 5 · prawo De Morgana' },
+    { group: 'przyk', title: 'Kolokwium 1, 2013 (A)', formula: 'p & ~q -> ~(p -> q)', note: 'zad. 4' },
+    { group: 'przyk', title: 'Kolokwium 1, 2023 (D)', formula: 'p & (q | r) -> (p & q) | (p & r)', note: 'zad. 2 · rozdzielność' },
+    { group: 'przyk', title: 'Poprawka 2015', formula: '(p -> q) | (p -> r) -> (p -> q | r)', note: 'zad. 3' },
+    { group: 'przyk', title: 'Kolokwium 1, 2024 (D)', formula: '((p -> q) -> (q -> p)) -> (q -> p)', note: 'zad. 1' },
+    { group: 'przyk', title: 'Kolokwium 1, 2011 (C)', formula: '(~p -> F) -> p', note: 'zad. 2 · reguła dowodu nie wprost' },
+    { group: 'przyk', title: 'Egzamin 2023', formula: '(a -> b) & (b -> a) -> (a & b) | (~a & ~b)', note: 'zad. 3 · wskazówka: a ∨ ¬a' },
+
     { group: 's29', title: 'Przykład 48', formula: '~(p|q) -> ~p & ~q', note: 'prawo De Morgana' },
     { group: 's29', title: 'Przykład 49', formula: 'p | ~p', note: 'prawo wyłączonego środka' },
     { group: 's29', title: 'Zadanie 141', formula: '~(p&q) -> ~p | ~q', note: 'wymaga (¬¬e)' },
@@ -60,32 +77,28 @@
     { group: 'z41', title: '41.17', formula: '(~p -> p) -> p', note: 'prawo Claviusa' },
     { group: 'z41', title: '41.18', formula: '(p -> p) & (p -> p)', note: 'prawo tożsamości: p ⇔ p jako skrót' },
 
-    { group: 'kol', title: 'Kolokwium 1, 2011 (A)', formula: '(p -> q) -> (~q -> ~p)', note: 'zad. 2 · kontrapozycja' },
-    { group: 'kol', title: 'Kolokwium 1, 2011 (C)', formula: '(~p -> F) -> p', note: 'zad. 2 · reguła dowodu nie wprost' },
-    { group: 'kol', title: 'Kolokwium 1, 2013 (A)', formula: 'p & ~q -> ~(p -> q)', note: 'zad. 4' },
     { group: 'kol', title: 'Kolokwium 1, 2013 (D)', formula: '(p -> q & r) -> (p -> q) & (p -> r)', note: 'zad. 3 · też egzamin 2014, zad. 4' },
     { group: 'kol', title: 'Kolokwium 1, 2014 (A)', formula: '(p -> r) & (q -> r) -> (p | q -> r)', note: 'zad. 4' },
-    { group: 'kol', title: 'Kolokwium 1, 2014 (C)', formula: '(p -> q) & (p -> r) -> (p -> q & r)', note: 'zad. 4' },
-    { group: 'kol', title: 'Kolokwium 1, 2016 (A)', formula: '~p & ~q -> ~(p | q)', note: 'zad. 5 · prawo De Morgana' },
     { group: 'kol', title: 'Kolokwium 1, 2016 (D)', formula: '~p | ~q -> ~(p & q)', note: 'zad. 4 · prawo De Morgana' },
-    { group: 'kol', title: 'Kolokwium 1, 2023 (D)', formula: 'p & (q | r) -> (p & q) | (p & r)', note: 'zad. 2 · rozdzielność' },
     { group: 'kol', title: 'Kolokwium 1, 2024 (A)', formula: '((p -> q) | r) & ~r -> (p -> q)', note: 'zad. 2' },
-    { group: 'kol', title: 'Kolokwium 1, 2024 (D)', formula: '((p -> q) -> (q -> p)) -> (q -> p)', note: 'zad. 1' },
 
-    { group: 'egz', title: 'Poprawka 2015', formula: '(p -> q) | (p -> r) -> (p -> q | r)', note: 'zad. 3' },
     { group: 'egz', title: 'Egzamin 2016', formula: '(a & b) | (~a & ~b) -> (a -> b)', note: 'zad. 6 · też poprawka 2023, zad. 5' },
     { group: 'egz', title: 'Poprawka 2016', formula: '(p -> q) & (p -> r) -> (p -> q | r)', note: 'zad. 3' },
     { group: 'egz', title: 'Egzamin 2017', formula: '~a & (b -> a) -> ~b', note: 'zad. 6 · modus tollens' },
     { group: 'egz', title: 'Poprawka 2017', formula: '(p -> q) & (q -> r) -> (p | q -> r)', note: 'zad. 3' },
-    { group: 'egz', title: 'Egzamin 2018', formula: 'p -> (q & r) | p', note: 'zad. 6' },
     { group: 'egz', title: 'Poprawka 2018', formula: 'p & q -> (~p -> q)', note: 'zad. 5' },
     { group: 'egz', title: 'Egzamin 2020', formula: '(p -> ~q) -> (q -> ~p)', note: 'zad. 6' },
     { group: 'egz', title: 'Poprawka 2022', formula: 'p & (q -> r) -> (p & q -> p & r)', note: 'zad. 3' },
-    { group: 'egz', title: 'Egzamin 2023', formula: '(a -> b) & (b -> a) -> (a & b) | (~a & ~b)', note: 'zad. 3 · wskazówka: a ∨ ¬a' },
 
     { group: 'demo', title: 'Przykład 48', formula: '~(p|q) -> ~p & ~q', note: 'gotowy dowód', proof: demo48 },
     { group: 'demo', title: 'Przykład 49', formula: 'p | ~p', note: 'gotowy dowód', proof: demo49 },
   ].map(Object.freeze));
 
-  ND.Examples = Object.freeze({ GROUPS, LIST });
+  /** Formuły zadań przykładowych — tylko dla nich działają podpowiedzi. */
+  const SAMPLES = Object.freeze(LIST.filter(e => e.group === 'przyk').map(e => ND.F.parse(e.formula)));
+
+  /** Czy formuła (korzeń dowodu) jest zadaniem przykładowym. */
+  const isSample = f => SAMPLES.some(g => ND.F.eq(f, g));
+
+  ND.Examples = Object.freeze({ GROUPS, LIST, SAMPLES, isSample });
 })(globalThis.ND ||= {});
