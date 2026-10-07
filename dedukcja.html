@@ -4,14 +4,14 @@
     <title>Bartosz Bednarczyk – Dedukcja naturalna</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="author" content="Bartosz Bednarczyk">
-    <meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku i eksport do LaTeX-a.">
+    <meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku, dowód w języku naturalnym, prezentacja i eksport do PNG/SVG/LaTeX-a.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="canonical" href="https://bartoszjanbednarczyk.github.io/dedukcja.html">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Bartosz Bednarczyk">
     <meta property="og:title" content="Bartosz Bednarczyk – Dedukcja naturalna">
-    <meta property="og:description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku i eksport do LaTeX-a.">
+    <meta property="og:description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi krok po kroku, dowód w języku naturalnym, prezentacja i eksport do PNG/SVG/LaTeX-a.">
     <meta property="og:url" content="https://bartoszjanbednarczyk.github.io/dedukcja.html">
     <meta property="og:image" content="https://bartoszjanbednarczyk.github.io/img/personal/bart-with-dog.jpg">
     <meta property="og:image:alt" content="Bartosz Bednarczyk greeting a very fluffy white dog">
@@ -154,7 +154,7 @@
                 <span class="nd-bar-title">Dedukcja naturalna</span>
                 <a class="nd-bar-full" href="dedukcja/index.html" target="_blank" rel="noopener"><i class="fa fa-expand"></i>Pełny ekran</a>
             </div>
-            <iframe id="nd-frame" class="nd-frame" src="dedukcja/index.html?v=20261006" title="Dedukcja naturalna — aplikacja" allow="clipboard-write"></iframe>
+            <iframe id="nd-frame" class="nd-frame" src="dedukcja/index.html?v=20261007" title="Dedukcja naturalna — aplikacja" allow="clipboard-write; fullscreen" allowfullscreen></iframe>
             <noscript><p style="padding:20px">Aplikacja wymaga JavaScriptu. <a href="dedukcja/index.html">Otwórz ją bezpośrednio</a>.</p></noscript>
         </div>
     </div>
@@ -163,7 +163,7 @@
     /* link z dowodem (#d=...) trafia do aplikacji w ramce */
     (function () {
         var h = location.hash;
-        if (/^#d=[\w-]+$/.test(h)) document.getElementById('nd-frame').src = 'dedukcja/index.html?v=20261006' + h;
+        if (/^#d=[\w-]+$/.test(h)) document.getElementById('nd-frame').src = 'dedukcja/index.html?v=20261007' + h;
     })();
 </script>
 </body>
