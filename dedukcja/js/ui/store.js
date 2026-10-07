@@ -21,6 +21,8 @@
     frags: [],          // korzenie fragmentów
     mode: 'back',       // 'back' (od celu) | 'fwd' (od przesłanek)
     sel: [],            // zaznaczone identyfikatory węzłów
+    picks: [],          // zaznaczone założenia i wnioski okien: 'a:<okno>' | 'f:<okno>:<nr>' (okno — klucz z boxIndex)
+    boxes: new Map(),   // klucz okna → { b, owner, i, fi, scope, boxes } (Proof.boxIndex)
     hint: null,         // bieżąca podpowiedź (ui/hints.js)
     idx: new Map(),     // id → { n, fi, parent, slot, scope, up, depth }
     errors: new Set(),  // id węzłów z błędnie zastosowaną regułą
@@ -78,8 +80,34 @@
 
   function reindex() {
     state.idx = Proof.index(state.frags);
+    state.boxes = Proof.boxIndex(state.frags);
     state.errors = Rules.verify(state.frags);
     state.sel = state.sel.filter(id => state.idx.has(id));
+    state.picks = state.picks.filter(k => resolvePick(k));
+  }
+
+  /* ---------- założenia i wnioski okien ---------- */
+
+  /**
+   * Zaznaczone założenie albo wniosek okna:
+   * { key, kind: 'asm' | 'fact', box (z boxIndex), boxKey, k, f, fact } albo null, gdy już nie istnieje.
+   */
+  function resolvePick(key) {
+    const m = /^(a|f):(\d+:\d+)(?::(\d+))?$/.exec(key);
+    const box = m && state.boxes.get(m[2]);
+    if (!box) return null;
+    if (m[1] === 'a') return m[3] === undefined ? { key, kind: 'asm', box, boxKey: m[2], k: null, f: box.b.a, fact: null } : null;
+    const fact = m[3] === undefined ? null : Proof.factsOf(box.b)[+m[3]];
+    return fact ? { key, kind: 'fact', box, boxKey: m[2], k: +m[3], f: fact.f, fact } : null;
+  }
+
+  /** Usuwa wnioski, które przestały być poprawne (np. okno odłączone od założeń, z których wyciągnięto wniosek). */
+  function pruneFacts(roots) {
+    Proof.boxIndex(roots).forEach(({ b, scope }) => {
+      if (!b.facts) return;
+      const keep = b.facts.filter(w => Rules.validFact(w, scope));
+      if (keep.length !== b.facts.length) b.facts = keep;
+    });
   }
 
   /** Stan fragmentu: liczba otwartych celów i błędów, kompletność. */
@@ -110,6 +138,7 @@
   /** Porządki we fragmentach: założenia poza oknem otwarte, automatyczne zamykanie celów. */
   function normalizeRoots(roots) {
     Proof.reopenStrayHyps(roots);
+    pruneFacts(roots);
     if (prefs.autoHyp) Proof.closeByScope(roots);
     else if (autoCloseAlso) Proof.closeByScope(roots.filter(autoCloseAlso));
   }
@@ -127,6 +156,7 @@
   function restore(json, { trusted = true } = {}) {
     state.frags = Proof.deserialize(json, Rules.isRule, { trusted });
     state.sel = [];
+    state.picks = [];
     state.hint = null;
     normalize();
     markSeen();
@@ -226,7 +256,10 @@
       notify();
       return false;
     }
-    if (select) state.sel = select().filter(id => state.idx.has(id));
+    if (select) {
+      state.sel = select().filter(id => state.idx.has(id));
+      state.picks = [];
+    }
     const after = snapshot(), changed = after !== before;
     if (changed) {
       record(entry(before));
@@ -252,6 +285,15 @@
 
   function select(ids) {
     state.sel = ids;
+    state.picks = [];
+    refresh();
+  }
+
+  /** Zaznacza założenia/wnioski okien (zaznaczenie formuł dowodu znika). */
+  function pick(keys) {
+    state.picks = keys;
+    state.sel = [];
+    state.hint = null;
     refresh();
   }
 
@@ -404,7 +446,7 @@
   UI.store = Object.freeze({
     state, prefs, setPref, setAutoHyp, setAutoCloseFor, autoCloses, on, emit,
     status, completeNodes, isFresh,
-    commit, refresh, select, setMode,
+    commit, refresh, select, pick, resolvePick, setMode,
     undo, redo, canUndo, canRedo,
     load, save, persistent: () => persistent, shareHash, isLinkHash, openLink, onStorageEvent,
   });

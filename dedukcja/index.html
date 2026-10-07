@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20261007f">
+<link rel="stylesheet" href="css/app.css?v=20261007g">
 <script>
   /* motyw przed pierwszym malowaniem (bez mignięcia): zapisany wybór, domyślnie białe tło */
   (function () {
@@ -180,6 +180,12 @@
       <li>Założenia wolno używać tylko wewnątrz jego okna — reguła <i>założenie</i> jest dostępna tylko tam.</li>
       <li>Otwarte cele to po prostu niezamknięte hipotezy. W trybie „od przesłanek” nagłówek fragmentu pokazuje sekwent <span class="math">Γ ⊢ φ</span>, gdzie Γ to te hipotezy. Dowód jest kompletny, gdy Γ jest puste — wtedy nagłówek pokazuje <span class="math">⊢ φ</span>.</li>
     </ul>
+    <h4>Wnioski z założeń</h4>
+    <ul>
+      <li>Kliknij <b>założenie w nagłówku okna</b> i wybierz regułę na pasku na dole — pod założeniem pojawi się <b>wniosek</b>. Np. z <span class="math"><i>p</i> ∧ <i>q</i></span> regułami (∧e<sub>1</sub>) i (∧e<sub>2</sub>) dostaniesz <span class="math"><i>p</i></span> oraz <span class="math"><i>q</i></span>.</li>
+      <li>Z wniosków można wyciągać kolejne: kliknij jeden albo dwa (np. <span class="math"><i>p</i></span> i <span class="math"><i>p</i> ⇒ <i>q</i></span> dla (⇒e)). Działają reguły eliminacji oraz (∧i) i (∨i); wolno łączyć założenia okna z założeniami okien, które je otaczają.</li>
+      <li>Wnioski działają jak założenia: cel w tym oknie równy wnioskowi zamyka się sam (albo regułą <i>założenie</i>), a do dowodu trafia pełne wyprowadzenie — np. <span class="math">(∧e<sub>1</sub>)</span> nad założeniem. Zaznaczony wniosek usuniesz klawiszem <span class="kbd">Delete</span>.</li>
+    </ul>
     <h4>Cofanie kroków</h4>
     <ul>
       <li><b>Cofnij krok</b> (<span class="kbd">Delete</span>): zaznacz uzasadnioną formułę albo kliknij nazwę reguły przy kresce — reguła zostanie cofnięta, a formuła znów będzie otwartym celem. Kroki wykonane nad przesłankami nie giną: zostają jako osobne fragmenty, które wstawisz z powrotem (zaznacz otwarty cel i wybierz <i>Wstaw fragment</i>) albo usuniesz. Przy zaznaczonym otwartym celu cofa się krok, z którego ten cel powstał.</li>
@@ -253,25 +259,25 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/formula.js?v=20261007f"></script>
-<script src="js/text.js?v=20261007f"></script>
-<script src="js/proof.js?v=20261007f"></script>
-<script src="js/rules.js?v=20261007f"></script>
-<script src="js/prover.js?v=20261007f"></script>
-<script src="js/explain.js?v=20261007f"></script>
-<script src="js/render.js?v=20261007f"></script>
-<script src="js/export.js?v=20261007f"></script>
-<script src="js/examples.js?v=20261007f"></script>
-<script src="js/ui/kit.js?v=20261007f"></script>
-<script src="js/ui/store.js?v=20261007f"></script>
-<script src="js/ui/ask.js?v=20261007f"></script>
-<script src="js/ui/hints.js?v=20261007f"></script>
-<script src="js/ui/actions.js?v=20261007f"></script>
-<script src="js/ui/workspace.js?v=20261007f"></script>
-<script src="js/ui/exporter.js?v=20261007f"></script>
-<script src="js/ui/present.js?v=20261007f"></script>
-<script src="js/ui/tutorial.js?v=20261007f"></script>
-<script src="js/ui/fireworks.js?v=20261007f"></script>
-<script src="js/ui/main.js?v=20261007f"></script>
+<script src="js/formula.js?v=20261007g"></script>
+<script src="js/text.js?v=20261007g"></script>
+<script src="js/proof.js?v=20261007g"></script>
+<script src="js/rules.js?v=20261007g"></script>
+<script src="js/prover.js?v=20261007g"></script>
+<script src="js/explain.js?v=20261007g"></script>
+<script src="js/render.js?v=20261007g"></script>
+<script src="js/export.js?v=20261007g"></script>
+<script src="js/examples.js?v=20261007g"></script>
+<script src="js/ui/kit.js?v=20261007g"></script>
+<script src="js/ui/store.js?v=20261007g"></script>
+<script src="js/ui/ask.js?v=20261007g"></script>
+<script src="js/ui/hints.js?v=20261007g"></script>
+<script src="js/ui/actions.js?v=20261007g"></script>
+<script src="js/ui/workspace.js?v=20261007g"></script>
+<script src="js/ui/exporter.js?v=20261007g"></script>
+<script src="js/ui/present.js?v=20261007g"></script>
+<script src="js/ui/tutorial.js?v=20261007g"></script>
+<script src="js/ui/fireworks.js?v=20261007g"></script>
+<script src="js/ui/main.js?v=20261007g"></script>
 </body>
 </html>

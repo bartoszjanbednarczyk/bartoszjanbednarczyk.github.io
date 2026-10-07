@@ -176,7 +176,7 @@
     }
     else if (e.key === 'Escape') {
       if ($('exMenu').open) $('exMenu').open = false;
-      else if (st.sel.length) S.select([]);
+      else if (st.sel.length || st.picks.length) S.select([]);
     } else if (k === 'n') UI.actions.gotoNextOpen();
     else if (k === 'h') UI.hints.press();
     else if (k === 'p') UI.present.open();

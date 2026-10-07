@@ -31,14 +31,40 @@
     return pick ? [pick.id] : [];
   }
 
+  /* ---------- założenia i wnioski okien ---------- */
+
+  /** Zaznaczone założenia/wnioski okien (w kolejności klikania). */
+  const picks = () => st.picks.map(S.resolvePick).filter(Boolean);
+
+  /**
+   * Okno, w którym powstanie wniosek z zaznaczonych formuł: najgłębsze z ich okien — pozostałe muszą
+   * je otaczać (wtedy ich założenia są w nim dostępne). { target } albo { reason }.
+   */
+  function pickTarget(items) {
+    if (!items.length) return { reason: 'Kliknij założenie okna albo jego wniosek' };
+    const target = items.reduce((t, x) => (x.box.boxes.length > t.box.boxes.length ? x : t)).box;
+    const outside = items.some(x => !target.boxes.includes(x.box.b));
+    return outside ? { reason: 'Zaznaczone formuły leżą w różnych oknach — wniosek można wyciągnąć tylko z formuł dostępnych w jednym oknie' } : { target };
+  }
+
+  /** Powód, dla którego reguły nie można zastosować do zaznaczonych założeń/wniosków (null — można). */
+  function pickBlocked(id, items = picks()) {
+    const { reason } = pickTarget(items);
+    return reason || Rules.factBlocked(Rules.get(id), items.map(x => x.f));
+  }
+
+  /** Czy cel zamyka założenie albo wniosek otaczającego okna. */
+  const closableByScope = info => Proof.inScope(info.scope, info.n.f) || !!Proof.factFor(info.boxes, info.n.f);
+
   /* ---------- dostępność reguł ---------- */
 
   /** Powód, dla którego reguły nie można teraz zastosować (null — można). */
   function blocked(id, infos = selection()) {
+    if (st.picks.length) return pickBlocked(id);
     if (id === 'hyp') {
       if (infos.length !== 1) return 'Zaznacz jeden otwarty cel';
       if (!Proof.isOpen(infos[0].n)) return 'Ta formuła ma już uzasadnienie';
-      return Proof.inScope(infos[0].scope, infos[0].n.f) ? null : 'Ta formuła nie jest założeniem żadnego okna, w którym leży';
+      return closableByScope(infos[0]) ? null : 'Ta formuła nie jest założeniem ani wnioskiem żadnego okna, w którym leży';
     }
     const r = Rules.get(id);
     if (st.mode === 'back') {
@@ -90,6 +116,7 @@
     const infos = selection();
     const why = blocked(id, infos);
     if (why) { toast(why); return; }
+    if (st.picks.length) return deriveFact(Rules.get(id));
     if (id === 'hyp') closeByAssumption(infos[0]);
     else if (st.mode === 'back') applyBack(Rules.get(id), infos[0]);
     else applyFwd(Rules.get(id), infos);
@@ -105,8 +132,11 @@
     const id = info.n.id;
     S.commit(() => {
       const cur = st.idx.get(id);
-      if (!cur || !Proof.isOpen(cur.n) || !Proof.inScope(cur.scope, cur.n.f)) return false;
-      cur.n.rule = 'hyp';
+      if (!cur || !Proof.isOpen(cur.n)) return false;
+      if (Proof.inScope(cur.scope, cur.n.f)) { cur.n.rule = 'hyp'; return true; }
+      const fact = Proof.factFor(cur.boxes, cur.n.f);
+      if (!fact) return false;
+      Proof.closeByFact(cur.n, fact);
       return true;
     }, { celebrate: true, select: () => nextOpenGoal(id) });
   }
@@ -158,7 +188,13 @@
   /* ---------- operacje na drzewie ---------- */
 
   /** Czy krok uzasadniający formułę można cofnąć (użycie założenia zamknęłoby się z powrotem samo). */
-  const undoable = info => !Proof.isOpen(info.n) && !(info.n.rule === 'hyp' && S.autoCloses(st.frags[info.fi]));
+  const undoable = info => !Proof.isOpen(info.n) && !(S.autoCloses(st.frags[info.fi]) && (info.n.rule === 'hyp' || closedByFact(info)));
+  const plainOf = n => JSON.stringify(Proof.toPlain(n));
+  /** Czy formuła jest uzasadniona wyprowadzeniem wniosku okna (wstawionym przy zamykaniu celu). */
+  function closedByFact(info) {
+    const fact = Proof.factFor(info.boxes, info.n.f);
+    return !!fact && plainOf(fact) === plainOf(info.n);
+  }
   /** Czy nad formułą jest więcej niż jeden krok (któraś przesłanka ma własny dowód). */
   const workAbove = n => Proof.children(n).some(c => !Proof.isBareLeaf(c));
   /**
@@ -176,8 +212,14 @@
     if (infos.length !== 1) return null;
     const [info] = infos;
     if (undoable(info)) return { info, own: true };
-    const below = info.up === null ? null : st.idx.get(info.up);
-    return below ? { info: below, own: false } : null;
+    // krok pod spodem — z pominięciem wyprowadzeń wniosków, które i tak zamknęłyby się z powrotem same
+    for (let up = info.up; up !== null;) {
+      const below = st.idx.get(up);
+      if (!below) return null;
+      if (undoable(below)) return { info: below, own: false };
+      up = below.up;
+    }
+    return null;
   }
 
   /**
@@ -286,6 +328,12 @@
    * [{ name, label (HTML), title, icon, preview, target — id formuły, której krok zmieni operacja }].
    */
   function offeredOps() {
+    if (st.picks.length) {
+      const items = picks();
+      return items.length === 1 && items[0].kind === 'fact'
+        ? [{ name: 'dropFact', label: 'Usuń wniosek', title: 'Usuwa ten wniosek z okna (cele, które już zamknął, zostają uzasadnione) (Delete)', icon: 'trash', preview: null, target: null }]
+        : [];
+    }
     const infos = selection();
     return Object.entries(OPS).map(([name, op]) => {
       const parts = op.parts(infos);
@@ -298,9 +346,75 @@
 
   /** Wykonuje operację, jeśli pasuje do zaznaczenia; zwraca, czy ją wykonano. */
   function runOp(name) {
+    if (st.picks.length) {
+      const items = picks();
+      if (!['dropFact', 'step', 'clear'].includes(name) || items.length !== 1 || items[0].kind !== 'fact') return false;
+      dropFact(items[0]);
+      return true;
+    }
     const op = OPS[name], parts = op && op.parts(selection());
     if (parts) op.run(parts);
     return !!parts;
+  }
+
+  /* ---------- wnioski z założeń ---------- */
+
+  /** Przesłanka wniosku: użycie założenia albo kopia wyprowadzenia wcześniejszego wniosku. */
+  const premiseOf = item => (item.kind === 'asm' ? Proof.node(item.f, 'hyp') : Proof.clone(item.fact));
+
+  /**
+   * Wyciąga wniosek z zaznaczonych założeń/wniosków regułą `r` (np. z p ∧ q regułą (∧e₁) — p).
+   * Wniosek trafia do najgłębszego z ich okien i zamyka tam cele równe jego formule.
+   * Zaznaczenie zostaje — z tej samej formuły można od razu wyciągnąć kolejny wniosek.
+   */
+  async function deriveFact(r) {
+    const keys = [...st.picks], items = picks();
+    const fs = items.map(x => x.f), at = pickTarget(items).target;
+    let x;
+    if (r.fwd.param) {
+      // podsuwane formuły: podformuły założeń dostępnych w oknie, korzeni i otwartych celów
+      const p = r.fwd.param, arranged = Rules.fwdArrange(r, fs, items).fs, here = { scope: at.scope };
+      x = await UI.ask.ask({
+        title: dialogTitle(r), desc: p.desc(arranged), best: p.best(arranged, paramContext(here), items.map(premiseOf)), sugg: candidates(here),
+      });
+      if (!x) { S.refresh(); return; }
+    }
+    let made = null, duplicate = null;
+    const done = S.commit(() => {
+      const now = keys.map(S.resolvePick);
+      if (now.some(i => !i)) return false;                       // stan zmienił się w międzyczasie
+      const { target } = pickTarget(now);
+      if (!target) return false;
+      const fact = Rules.buildFact(r, now.map(i => i.f), now.map(premiseOf), x);
+      if (Proof.inScope(target.scope, fact.f) || Proof.factFor(target.boxes, fact.f)) { duplicate = fact.f; return false; }
+      (target.b.facts ||= []).push(fact);
+      made = { f: fact.f, a: target.b.a };
+      return true;
+    });
+    // commit() bez `select` nie rusza zaznaczenia, ale porządki mogły je zmienić — przywracamy klucze, które nadal istnieją
+    st.picks = keys.filter(k => S.resolvePick(k));
+    S.refresh();
+    if (duplicate) toast(`${F.text(duplicate)} jest już założeniem albo wnioskiem w tym oknie`);
+    else if (done && made) {
+      toast(`Nowy wniosek: ${F.text(made.f)} — dostępny w oknie z założeniem ${F.text(made.a)}`
+        + (S.prefs.autoHyp ? '; cele równe tej formule zamykają się same' : '; zamkniesz nim cel regułą „założenie”'));
+    }
+  }
+
+  function dropFact(item) {
+    const { boxKey, k } = item;
+    const done = S.commit(() => {
+      const box = st.boxes.get(boxKey);
+      if (!box || !box.b.facts || !box.b.facts[k]) return false;
+      box.b.facts.splice(k, 1);
+      return true;
+    }, { select: () => [] });
+    if (done) toast('Usunięto wniosek — możesz to cofnąć (Ctrl+Z)');
+  }
+
+  /** Kliknięcie założenia lub wniosku w nagłówku okna: dodaje do zaznaczenia albo z niego usuwa. */
+  function togglePick(key) {
+    S.pick(st.picks.includes(key) ? st.picks.filter(k => k !== key) : [...st.picks, key]);
   }
 
   /* ---------- formuły, przykłady, fragmenty ---------- */
@@ -375,7 +489,7 @@
   }
 
   UI.actions = Object.freeze({
-    selection, isRoot, targetFragment, availability,
+    selection, picks, isRoot, targetFragment, availability, togglePick,
     apply, applyStep, offeredOps, runOp,
     addFragment, newFormula, loadExample, deleteFragment, clearAll, copyProse, toggleSelect, gotoNextOpen,
   });

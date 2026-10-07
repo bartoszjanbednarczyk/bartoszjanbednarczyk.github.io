@@ -416,7 +416,7 @@
     implication(n) {
       const box = n.prem[0], a = box.a;
       const intro = this.announced.has(key(n.f)) ? [] : T`Pokażemy, że ${this.is(n.f)}. `;
-      this.say(T`${intro}Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny: jeśli ${this.isNot(a)}, to z definicji implikacji ${this.is(n.f)}.`, { event: 'note' });
+      this.say(T`${intro}Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny.`, { event: 'note' });
       const contra = this.within(n, 0, T`Załóżmy teraz, że ${this.is(a)}${this.subgoal(box.body)}.`);
       return this.say(contra
         ? T`Przypadek ${this.is(a)} jest więc niemożliwy, zatem ${this.is(n.f)}${rule('impI')}.`
@@ -478,12 +478,11 @@
       const chain = [];
       for (let n = root; n.rule === 'impI'; n = n.prem[0].body) chain.push(n);
       const goal = chain[chain.length - 1].prem[0].body;
-      const assumptions = uniqueBy(chain.map(c => c.prem[0].a), f => f);
       this.scopes.push(new Map());
       const single = chain.length === 1;
       this.say(single
-        ? T`Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny: jeśli ${this.isNot(assumptions[0])}, to z definicji implikacji ${this.is(root.f)}.`
-        : T`Przypadek, gdy któryś z poprzedników jest fałszywy, jest trywialny: jeśli ${list(assumptions.map(a => this.isNot(a)), ' lub ')}, to z definicji implikacji ${this.is(root.f)}.`, { event: 'note' });
+        ? T`Rozważmy dwa przypadki. Przypadek, gdy poprzednik jest fałszywy, jest trywialny.`
+        : T`Przypadek, gdy któryś z poprzedników jest fałszywy, jest trywialny.`, { event: 'note' });
       chain.forEach((c, i) => {
         const a = c.prem[0].a, last = i === chain.length - 1;
         const opening = i > 0 ? T`Załóżmy ponadto, że ${this.is(a)}` : single ? T`Załóżmy teraz, że ${this.is(a)}` : T`Załóżmy więc, że ${this.is(a)}`;

@@ -166,6 +166,15 @@ main, aside { min-width: 0; }
 .box > .bhead { white-space: nowrap; }
 .box > .bhead .zal { font-family: var(--math); margin-left: .8em; color: var(--ink2); }
 .box.sch { padding: .1em .4em; gap: 0; }
+/* założenie okna i wnioski z niego (tylko w obszarze roboczym) */
+.ws .bhead .asm { display: inline-block; padding: 1px 5px; border-radius: 6px; border: 1.5px dashed color-mix(in srgb, var(--box) 55%, transparent); cursor: pointer; transition: background .2s, border-color .2s; }
+.ws .bhead .asm:hover, .ws .fact:hover { background: var(--sel-bg); }
+.ws .bhead .asm.picked, .ws .fact.picked { border: 1.5px solid var(--sel); background: var(--sel-bg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sel) 18%, transparent); }
+.ws .bhead .asm:focus-visible, .ws .fact:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.bfacts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .35em; max-width: 100%; font-size: .9em; }
+.bfacts .wl { font-family: var(--math); color: var(--ink2); font-style: italic; }
+.fact { display: inline-flex; align-items: baseline; gap: .25em; padding: 0 .4em; border: 1.5px solid var(--line2); border-radius: 6px; background: var(--panel); cursor: pointer; white-space: nowrap; }
+.fact .frule { font-family: var(--math); font-size: .78em; color: var(--ink2); }
 .lbl sub, .chip sub, .rl sub { font-size: .72em; }
 .dots { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
 .dots .v { font-size: .9em; }
@@ -349,7 +358,13 @@ textarea { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Reg
 .tut-hole { position: fixed; z-index: 70; border-radius: 12px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(10, 14, 18, .45), 0 0 0 3px var(--accent); transition: left .25s, top .25s, width .25s, height .25s; }
 .tut-hole.none { box-shadow: 0 0 0 9999px rgba(10, 14, 18, .45); }
 .tut-bubble { position: fixed; z-index: 71; overflow: auto; overscroll-behavior: contain; width: min(360px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 14px 16px 12px; animation: mod .18s ease-out; }
-.tut-bubble h3 { margin: 0 0 6px; font-size: 1.02rem; font-weight: 900; }
+.tut-bubble h3 { margin: 0; font-size: 1.02rem; font-weight: 900; }
+.tut-head { display: flex; align-items: center; gap: 6px; margin: -6px -8px 6px; padding: 4px 8px 2px; border-radius: 9px; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; }
+.tut-head:hover { background: var(--soft); }
+.tut-bubble.dragging { animation: none; box-shadow: var(--shadow-lg), 0 0 0 2px var(--accent); }
+.tut-bubble.dragging .tut-head { cursor: grabbing; }
+.tut-grip { flex: none; display: grid; place-items: center; width: 22px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; cursor: inherit; touch-action: none; }
+.tut-grip:hover, .tut-grip:focus-visible { color: var(--ink); background: var(--line); }
 .tut-bubble p { margin: 0 0 6px; font-size: .92rem; color: var(--ink2); }
 .tut-bubble .math { color: var(--ink); }
 .tut-bubble .warn { color: var(--err); font-weight: 700; }

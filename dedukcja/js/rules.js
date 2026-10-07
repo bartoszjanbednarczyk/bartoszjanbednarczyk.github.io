@@ -312,6 +312,37 @@
     return P.box(p.assume, p.sub);
   });
 
+  /* ---------- wnioski z założeń (w oknach) ---------- */
+
+  /**
+   * Reguły, którymi wyciąga się wnioski z założeń i wcześniejszych wniosków okna — te,
+   * które z gotowych formuł robią nową bez otwierania okna (jak „od przesłanek”).
+   */
+  const FACT_RULES = Object.freeze(['andE1', 'andE2', 'impE', 'notE', 'nnE', 'botE', 'andI', 'orI1', 'orI2']);
+
+  /** Powód, dla którego reguły nie można zastosować do zaznaczonych założeń/wniosków `fs` (null — można). */
+  function factBlocked(r, fs) {
+    if (!FACT_RULES.includes(r.id)) {
+      return r.id === 'hyp' ? 'To już jest założenie albo wniosek tego okna'
+        : `Reguła (${r.label.text}) potrzebuje celu albo okna — wnioski wyciąga się regułami eliminacji oraz (∧i) i (∨i)`;
+    }
+    return fwdBlocked(r, fs);
+  }
+
+  /** Wniosek: węzeł reguły `r` nad przesłankami `nodes` (gotowe wyprowadzenia zaznaczonych formuł). */
+  function buildFact(r, fs, nodes, x) {
+    const arranged = fwdArrange(r, fs, nodes);
+    const { f, prem } = r.fwd.build(arranged.fs, arranged.nodes, x);
+    return P.node(f, r.id, prem);
+  }
+
+  /** Czy wniosek jest kompletnym, poprawnym wyprowadzeniem z założeń `scope`. */
+  function validFact(fact, scope) {
+    let ok = true;
+    P.walk([fact], (n, ctx) => { if (n.rule === null || !checkNode(n, ctx.scope)) ok = false; }, scope);
+    return ok;
+  }
+
   /* ---------- weryfikacja ---------- */
 
   const sameShape = (prem, shapes) => prem.length === shapes.length && prem.every((p, i) => {
@@ -346,6 +377,6 @@
   ND.Rules = Object.freeze({
     ALL, ORDER, GROUPS, get, isRule,
     backBlocked, materialize, fwdBlocked, fwdArrange, enclose,
-    paramOf, checkNode, verify,
+    paramOf, checkNode, verify, FACT_RULES, factBlocked, buildFact, validFact,
   });
 })(globalThis.ND ||= {});

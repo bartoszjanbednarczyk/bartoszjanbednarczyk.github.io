@@ -101,7 +101,7 @@
     ].join('');
     return `<section class="frag card${selectedFragments.has(i) ? ' has-sel' : ''}${s.complete ? ' done' : ''}" data-fi="${i}" data-root="${root.id}">
       <div class="fhead"><span class="num">${st.frags.length > 1 ? 'Fragment ' + (i + 1) : 'Dowód'}</span><span class="seq">${sequentHTML(root, s)}</span>${pill}<span class="sp"></span><div class="acts">${actions}</div></div>
-      <div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: nodeDecorator(root), interactive: true })}</div></div>
+      <div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: nodeDecorator(root), interactive: true, facts: { picked: new Set(st.picks) } })}</div></div>
       ${s.complete ? proseHTML(root) : ''}
     </section>`;
   }
@@ -127,7 +127,7 @@
 
   /* ---------- fokus klawiatury przy przerysowaniu ---------- */
 
-  const DATA_KEYS = ['id', 'present', 'export', 'delfrag', 'nlcopy', 'nlrules', 'act', 'ex', 'rule', 'op', 'hintgo'];
+  const DATA_KEYS = ['id', 'asm', 'fact', 'present', 'export', 'delfrag', 'nlcopy', 'nlrules', 'act', 'ex', 'rule', 'op', 'hintgo'];
   let lastSelection = '';
 
   /** Gdzie był fokus przed przerysowaniem: kontener i selektor elementu (po atrybutach data-…). */
@@ -165,7 +165,7 @@
   /* ---------- tabela reguł i pasek akcji ---------- */
 
   function renderRules(av) {
-    const anySelected = st.sel.length > 0;
+    const anySelected = st.sel.length > 0 || st.picks.length > 0;
     const hinted = UI.hints.hintedRule();
     let usable = 0;
     document.querySelectorAll('.rcard').forEach(c => {
@@ -180,7 +180,8 @@
       c.title = `(${r.label.text}) ${r.name}` + (why && anySelected ? ` — ${why}` : '');
     });
     $('rulesSub').textContent = anySelected
-      ? (usable ? `Reguły, które da się tu zastosować (${usable}), są obramowane — którą wybrać, zdecyduj sam.`
+      ? (usable ? (st.picks.length ? `Reguły, którymi można wyciągnąć wniosek z zaznaczonych formuł (${usable}), są obramowane.`
+        : `Reguły, które da się tu zastosować (${usable}), są obramowane — którą wybrać, zdecyduj sam.`)
         : 'Żadna reguła nie pasuje do tego zaznaczenia.')
       : (st.mode === 'back' ? 'Zaznacz otwarty cel, a podświetlą się reguły, które można do niego zastosować.' : 'Zaznacz formuły na dole fragmentów, a podświetlą się pasujące reguły.');
   }
@@ -200,9 +201,27 @@
     return 'Żadna reguła nie pasuje do tego zaznaczenia.';
   }
 
+  /** Pasek akcji dla zaznaczonych założeń/wniosków okien: reguły wyciągania wniosków i usuwanie wniosku. */
+  function renderPickDock(av, items) {
+    const what = x => `${x.kind === 'asm' ? 'Założenie okna' : 'Wniosek'}: ${Render.math(x.f)}`;
+    $('dockSel').innerHTML = items.length === 1 ? what(items[0])
+      : 'Zaznaczone: ' + items.map((x, k) => `<b>${k + 1}.</b>&nbsp;${Render.math(x.f)}`).join(' &nbsp; ');
+    const apart = av.reasons.get('andE1');   // formuły z różnych okien — ten sam powód dla każdej reguły
+    const note = apart && /różnych oknach/.test(apart) ? apart
+      : 'Z tych formuł nie wyciągniesz wniosku żadną regułą — zaznacz inne albo dodaj kolejną formułę (np. α i α ⇒ β dla (⇒e)).';
+    $('dockRules').innerHTML = av.available.length
+      ? '<span class="grp">Wyciągnij wniosek</span>' + av.available.map(id => chipHTML(id, false)).join('')
+      : `<span class="note">${Render.esc(note)}</span>`;
+    const ops = A.offeredOps().map(op => `<button type="button" class="chip op" data-op="${op.name}" title="${Render.esc(op.title)}">${op.icon ? icon(op.icon) : ''}${op.label}</button>`);
+    $('dockOps').innerHTML = ops.length ? '<span class="grp">Edycja</span>' + ops.join('') : '';
+    $('dockOps').hidden = !ops.length;
+    $('dockHint').hidden = true;
+  }
+
   function renderDock(av) {
-    const infos = A.selection(), dock = $('dock');
-    dock.hidden = !infos.length;
+    const infos = A.selection(), items = A.picks(), dock = $('dock');
+    dock.hidden = !infos.length && !items.length;
+    if (items.length) { renderPickDock(av, items); return; }
     if (!infos.length) return;
     const n = infos.length === 1 ? infos[0].n : null;
     $('dockSel').innerHTML = n
@@ -254,14 +273,20 @@
     if (!st.frags.some(r => Proof.openLeaves(r).length)) {
       return '<b>Gotowe!</b> Wszystkie cele są zamknięte. Pod dowodem znajdziesz jego wersję słowną, przycisk <b>Odtwórz</b> pokaże go krok po kroku, a <b>Eksport</b> zapisze go jako obrazek lub kod LaTeX.';
     }
+    if (st.picks.length) {
+      return 'Wybierz regułę na pasku na dole: wniosek pojawi się pod założeniem okna i zamknie cele równe tej formule.'
+        + ' Dla reguł z dwiema przesłankami (np. <span class="math">(⇒e)</span>) kliknij też drugą formułę.';
+    }
     if (!infos.length) {
       return 'Kliknij <b>otwarty cel</b> (przerywana ramka) i wybierz regułę — nad celem pojawią się przesłanki.'
         + (UI.hints.available() ? ' Utknąłeś? Naciśnij <b>Podpowiedź</b>.' : '');
     }
     if (infos.length === 1 && Proof.isOpen(infos[0].n)) {
-      return Proof.inScope(infos[0].scope, infos[0].n.f)
-        ? 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.'
-        : 'Wybierz regułę z paska na dole ekranu albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.';
+      const info = infos[0];
+      if (Proof.inScope(info.scope, info.n.f)) return 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.';
+      if (Proof.factFor(info.boxes, info.n.f)) return 'Ten cel jest wnioskiem wyciągniętym w otaczającym oknie — zamknij go regułą <b>założenie</b>.';
+      return 'Wybierz regułę z paska na dole ekranu albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.'
+        + (info.scope.length ? ' Możesz też <b>kliknąć założenie okna</b> (nad celem) i wyciągać z niego wnioski, np. z <span class="math">p ∧ q</span> — <span class="math">p</span> oraz <span class="math">q</span>.' : '');
     }
     const ops = new Set(A.offeredOps().map(op => op.name));
     const undo = [ops.has('step') && '<b>Cofnij krok</b> (<span class="kbd">Delete</span>)', ops.has('clear') && '<b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>)'].filter(Boolean);
@@ -348,10 +373,13 @@
       return;
     }
     if (t.closest('.nl')) return;
+    // założenie albo wniosek okna (zaznaczenie do wyciągania wniosków)
+    const pickable = t.closest('[data-asm], [data-fact]');
+    if (pickable) { A.togglePick(pickable.dataset.asm || pickable.dataset.fact); return; }
     // formuła albo nazwa reguły przy kresce (zaznacza wniosek tego kroku)
     const formula = t.closest('[data-id], .lbl[data-of]');
     if (formula) select(+(formula.dataset.id || formula.dataset.of), e.shiftKey || e.ctrlKey || e.metaKey);
-    else if (t.closest('.fbody') && st.sel.length) S.select([]);
+    else if (t.closest('.fbody') && (st.sel.length || st.picks.length)) S.select([]);
   }
 
   function select(id, additive) {
@@ -370,6 +398,12 @@
 
   /** Formuły są przyciskami: Enter/spacja działa jak kliknięcie. */
   function onWorkspaceKey(e) {
+    const pickable = e.target.closest && e.target.closest('[data-asm], [data-fact]');
+    if (pickable && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      if (!e.repeat) A.togglePick(pickable.dataset.asm || pickable.dataset.fact);
+      return;
+    }
     const formula = e.target.closest && e.target.closest('.fm[data-id]');
     if (!formula || (e.key !== 'Enter' && e.key !== ' ')) return;
     e.preventDefault();

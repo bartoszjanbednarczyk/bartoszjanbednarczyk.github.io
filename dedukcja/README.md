@@ -9,7 +9,7 @@ Rdzeń bez DOM-u (`js/`, działa też w Node):
 
 - `formula.js` — formuły: parser z limitami, wypisywanie (tekst, HTML, LaTeX), semantyka i kontrprzykłady,
 - `text.js` — tekst z formułami jako segmenty, niezależny od formatu wyjściowego,
-- `proof.js` — drzewa dowodów z oknami, zapis i ścisły odczyt (limity rozmiaru),
+- `proof.js` — drzewa dowodów z oknami (i wnioskami wyciągniętymi w oknach z założeń), zapis i ścisły odczyt (limity rozmiaru),
 - `rules.js` — reguły (każda opisana jednym rekordem) i weryfikacja dowodu,
 - `prover.js` — automatyczny dowodzący, z którego korzystają podpowiedzi,
 - `explain.js` — opisy kroków, podpowiedzi i dowód w języku naturalnym (semantyczny: wartościowanie σ, okna jako przypadki),
@@ -36,6 +36,7 @@ node dedukcja/tests/core.test.js
 node dedukcja/tests/store.test.js
 node dedukcja/tests/actions.test.js
 node dedukcja/tests/hints.test.js
+node dedukcja/tests/facts.test.js
 ```
 
 ## Po każdej zmianie

@@ -119,10 +119,27 @@
   /**
    * HTML dowodu w stylu skryptu (okna jako ramki).
    *   decorate(n) → { cls, title, pressed } — wygląd formuły węzła (zaznaczenie, błąd, podpowiedź…),
-   *   interactive — formuły jako przyciski dostępne z klawiatury.
-   * Atrybuty: data-id (formuła węzła), data-of (kreska i etykieta reguły węzła), data-box="id:nr" (okno).
+   *   interactive — formuły jako przyciski dostępne z klawiatury,
+   *   facts — { picked: Set } — założenia okien do klikania i wnioski okien (tylko obszar roboczy).
+   * Atrybuty: data-id (formuła węzła), data-of (kreska i etykieta reguły węzła), data-box="id:nr" (okno),
+   *   data-asm="a:id:nr" (założenie okna), data-fact="f:id:nr:k" (wniosek okna).
    */
-  function proofHTML(root, { decorate = () => null, interactive = false } = {}) {
+  function proofHTML(root, { decorate = () => null, interactive = false, facts = null } = {}) {
+    const pickable = (key, cls, title, inner) => {
+      const on = facts.picked.has(key);
+      return `<span class="${cls}${on ? ' picked' : ''}" data-${key[0] === 'a' ? 'asm' : 'fact'}="${key}" tabindex="0" role="button"`
+        + ` aria-pressed="${on}" title="${esc(title)}">${inner}</span>`;
+    };
+    const assumption = (k, b) => (facts
+      ? pickable(`a:${k}`, 'math asm', 'Założenie okna — kliknij, aby wyciągać z niego wnioski', F.html(b.a))
+      : `<span class="math">${F.html(b.a)}</span>`);
+    const factsHTML = (k, b) => {
+      const list = Proof.factsOf(b);
+      if (!facts || !list.length) return '';
+      return `<div class="bfacts"><span class="wl">wnioski:</span>${list.map((w, j) => pickable(`f:${k}:${j}`, 'fact',
+        `Wniosek z reguły (${label(w.rule).text}) — kliknij, aby wyciągać z niego dalsze wnioski`,
+        `<span class="math">${F.html(w.f)}</span><span class="frule">(${label(w.rule).html})</span>`)).join('')}</div>`;
+    };
     const formula = n => {
       const d = decorate(n) || {};
       const attrs = (d.cls ? ` class="fm ${d.cls}"` : ' class="fm"') + ` data-id="${n.id}"`
@@ -131,7 +148,7 @@
       return `<span${attrs}>${F.html(n.f)}</span>`;
     };
     const windowHTML = (owner, b, i) => `<div class="box" data-box="${owner.id}:${i}">`
-      + `<div class="bhead"><span class="math">${F.html(b.a)}</span><span class="zal">założenie</span></div>${rec(b.body)}</div>`;
+      + `<div class="bhead">${assumption(`${owner.id}:${i}`, b)}<span class="zal">założenie</span></div>${factsHTML(`${owner.id}:${i}`, b)}${rec(b.body)}</div>`;
     const rec = n => {
       if (Proof.isBareLeaf(n)) return formula(n);
       const prem = n.prem.map((p, i) => (p.box ? windowHTML(n, p, i) : rec(p))).join('');
