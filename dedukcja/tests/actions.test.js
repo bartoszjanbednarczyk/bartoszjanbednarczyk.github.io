@@ -70,7 +70,7 @@ test('„Cofnij krok” zachowuje gotowe dowody przesłanek jako osobne fragment
   // przesłanki z dowodem są osobno, a użycia założenia spoza okna stały się otwartymi celami
   assert.deepEqual(st.frags.slice(1).map(r => F.text(r.f)), ['q', 'p']);
   assert.deepEqual(st.frags.slice(1).map(r => Proof.openFormulas(r).map(F.text)), [['p ∧ q'], ['p ∧ q']]);
-  assert.match(toasts.join(' '), /Cofnięto krok \(∧i\)\. Dowody przesłanek zostały zachowane/);
+  assert.match(toasts.join(' '), /Cofnięto krok \(∧i\)\. Dowody przesłanek zachowano/);
   S.undo();
   assert.equal(st.frags.length, 1);
   assert.ok(complete(0));

@@ -239,7 +239,7 @@ test('dowód słowny: okna to przypadki, a (⊥e) i (¬e) — niemożliwe przypa
   const text = s => Render.proseText(Explain.prose(proofOf(F.parse(s))));
   assert.match(text('p -> p'), /Rozważmy dwa przypadki\. Przypadek, gdy poprzednik jest fałszywy, jest trywialny\. Załóżmy teraz, że σ̂\(p\) = T\./);
   assert.match(text('(p | q) & (p -> r) & (q -> r) -> r'), /Przypadek 1: σ̂\(p\) = T\..*Przypadek 2: σ̂\(q\) = T\..*w obu przypadkach σ̂\(r\) = T/s);
-  assert.match(text('F -> p'), /ten przypadek (jest niemożliwy|nie zachodzi) — w szczególności σ̂\(p\) = T/);
+  assert.match(text('F -> p'), /[Tt]en przypadek jest (jednak )?niemożliwy.* w szczególności σ̂\(p\) = T/);
   assert.match(text('~(p & ~p)'), /Przypuśćmy, że σ̂\(p ∧ ¬p\) = T\./);
 });
 
@@ -247,7 +247,7 @@ test('dowód słowny: przy każdym (⇒i) zaznaczony trywialny przypadek fałszy
   const text = s => Render.proseText(Explain.prose(proofOf(F.parse(s))));
   // łańcuch implikacji przy korzeniu
   assert.match(text('(p -> q) -> (~q -> ~p)'),
-    /Przypadek, gdy któryś z poprzedników jest fałszywy, jest trywialny\. Załóżmy więc, że σ̂\(p ⇒ q\) = T\./);
+    /Przypadek, gdy któryś z poprzedników jest fałszywy, jest trywialny\. Załóżmy więc, że σ̂\(p ⇒ q\) = T i σ̂\(¬q\) = T;/);
   // (⇒i) głębiej w dowodzie i dwa razy w jednym dowodzie
   const nested = text('(p -> p) & (q -> q)');
   assert.equal(nested.match(/Przypadek, gdy poprzednik jest fałszywy, jest trywialny/g).length, 2);

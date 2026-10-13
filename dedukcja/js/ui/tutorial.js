@@ -35,7 +35,7 @@
   const formulaEl = n => (n ? query(`.ws .fm[data-id="${n.id}"]`) : null);
   const fragmentEl = (p, sel = '') => { const i = st.frags.indexOf(p.root); return i < 0 ? null : query(`.frag[data-fi="${i}"] ${sel}`.trim()); };
   const ruleEl = id => query(`#dock:not([hidden]) .chip[data-rule="${id}"]`) || query(`.rcard[data-rule="${id}"]`);
-  const otherRule = (n, id) => (n && n.rule && n.rule !== 'hyp' && n.rule !== id ? `To inna reguła — cofnij ją przyciskiem „Cofnij krok” na pasku na dole (albo Ctrl+Z) i wybierz (${ND.Rules.get(id).label.text}).` : null);
+  const otherRule = (n, id) => (n && n.rule && n.rule !== 'hyp' && n.rule !== id ? `To inna reguła — cofnij ją przyciskiem „Cofnij krok” na dolnym pasku (albo Ctrl+Z) i wybierz (${ND.Rules.get(id).label.text}).` : null);
 
   const isTutorialProof = root => F.eq(root.f, GOAL);
 
@@ -60,7 +60,7 @@
     {
       title: 'Wybierz regułę',
       target: () => ruleEl('impI'),
-      text: () => T`Spójnikiem głównym celu jest ⇒, więc naturalnym wyborem jest wprowadzanie implikacji ${rule('impI')}. Kliknij je na pasku na dole albo w tabeli reguł.`,
+      text: () => T`Spójnikiem głównym celu jest ⇒, więc naturalnym wyborem jest reguła wprowadzania implikacji ${rule('impI')}. Kliknij ją na dolnym pasku albo w tabeli reguł.`,
       done: p => p.root.rule === 'impI',
       wrong: p => otherRule(p.root, 'impI'),
     },
@@ -108,7 +108,7 @@
     {
       title: 'Dalej już samodzielnie',
       target: () => $('modeSeg'),
-      text: () => T`Dowody można też budować od przesłanek — przełączysz to tutaj. Zadania ze skryptu, kolokwiów i egzaminów są w menu „Przykłady” — podpowiedzi działają w nich tylko dla zadań przykładowych (na górze menu). Samouczek uruchomisz ponownie z pomocy (?).`,
+      text: () => T`Dowody można też budować od przesłanek — przełączysz to tutaj. Zadania ze skryptu, kolokwiów i egzaminów są w menu „Przykłady”; podpowiedzi działają tylko w zadaniach przykładowych na górze menu. Samouczek uruchomisz ponownie z pomocy (?).`,
       next: 'Zakończ', last: true,
     },
   ];

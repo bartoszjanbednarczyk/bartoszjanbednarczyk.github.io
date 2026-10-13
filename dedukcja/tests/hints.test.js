@@ -1,7 +1,8 @@
 /* =====================================================================
    Testy podpowiedzi (bez przeglądarki):  node dedukcja/tests/hints.test.js
-   Zadania przykładowe: podpowiedzi prowadzą do końca dowodu. Zadania ze skryptu
-   i własne formuły: podpowiedź się nie włącza. Dowód z samouczka: działa.
+   Zadania przykładowe (kolokwia i egzaminy z opublikowanymi rozwiązaniami): podpowiedzi
+   prowadzą do końca dowodu — w rachunku zdań i w rachunku kwantyfikatorów. Zadania ze skryptu,
+   pozostałe zadania i własne formuły: podpowiedź się nie włącza. Dowód z samouczka: działa.
    Komunikaty, localStorage i elementy strony są zastąpione atrapami.
    ===================================================================== */
 'use strict';
@@ -12,7 +13,7 @@ const toasts = [];
 globalThis.location = { hash: '' };
 globalThis.ND = {};
 const js = f => require(path.join(__dirname, '..', 'js', f + '.js'));
-['formula', 'text', 'proof', 'rules', 'prover', 'explain', 'render', 'examples'].forEach(js);
+['formula', 'text', 'proof', 'rules', 'prover', 'prover-fo', 'explain', 'render', 'examples'].forEach(js);
 js('ui/kit');
 const memory = new Map();
 const button = {   // atrapa przycisku „Podpowiedź” z górnego paska
@@ -70,10 +71,12 @@ function solveWithHints(limit = 400) {
 
 /* ---------- lista zadań przykładowych ---------- */
 
-test('jest dokładnie 10 zadań przykładowych, a ich grupa jest pierwsza w menu', () => {
-  assert.equal(SAMPLES.length, 10);
+test('zadania przykładowe: 5–10 zadań z kolokwiów i egzaminów z opublikowanymi rozwiązaniami, na górze menu', () => {
+  assert.ok(SAMPLES.length >= 5 && SAMPLES.length <= 10);
   assert.equal(Examples.PROP.GROUPS[0].id, 'przyk');
-  assert.equal(Examples.PROP.SAMPLES.length, 10);
+  assert.equal(Examples.PROP.SAMPLES.length, SAMPLES.length);
+  // rozwiązania opublikowano tylko do tych zadań z dedukcji naturalnej w rachunku zdań
+  assert.deepEqual(SAMPLES.map(([e]) => e.title).sort(), ['Kolokwium 1, 2011 (C)', 'Kolokwium 1, 2023 (A)', 'Kolokwium 1, 2023 (D)', 'Kolokwium 1, 2024 (A)', 'Kolokwium 1, 2024 (D)']);
 });
 
 test('zadania przykładowe pochodzą z kolokwiów i egzaminów', () => {
@@ -82,7 +85,7 @@ test('zadania przykładowe pochodzą z kolokwiów i egzaminów', () => {
 
 test('zadania przykładowe są różne, nie powtarzają się w innych grupach i nie są zadaniami ze skryptu', () => {
   const keys = SAMPLES.map(([e]) => F.key(F.parse(e.formula)));
-  assert.equal(new Set(keys).size, 10);
+  assert.equal(new Set(keys).size, SAMPLES.length);
   Examples.PROP.LIST.filter(e => e.group !== 'przyk').forEach(e => {
     assert.equal(Examples.PROP.isSample(F.parse(e.formula)), false, `${e.title} (${e.group}) nie może mieć podpowiedzi`);
   });
@@ -220,6 +223,52 @@ test('dowód z samouczka ma podpowiedzi', () => {
   addGoal('p & q -> q & p');
   solveWithHints();
   assert.ok(complete(0));
+});
+
+/* ---------- rachunek kwantyfikatorów ---------- */
+
+const foGroup = g => Examples.FO.LIST.map((e, i) => [e, i]).filter(([e]) => e.group === g);
+
+test('rachunek kwantyfikatorów: zadania przykładowe rozwiązują same podpowiedzi', () => {
+  S.setSystem('fo');
+  try {
+    for (const autoHyp of [true, false]) {
+      foGroup('qprzyk').forEach(([e, i]) => {
+        reset({ autoHyp });
+        A.loadExample(i);
+        const presses = solveWithHints();
+        assert.ok(complete(0), `niekompletny dowód: ${e.title} (${presses} naciśnięć)`);
+        assert.equal(st.errors.size, 0, e.title);
+      });
+    }
+  } finally { S.setSystem('prop'); }
+});
+
+test('rachunek kwantyfikatorów: pozostałe zadania z kolokwiów i egzaminów oraz zadania ze skryptu — bez podpowiedzi', () => {
+  S.setSystem('fo');
+  try {
+    Examples.FO.LIST.map((e, i) => [e, i]).filter(([e]) => e.group !== 'qprzyk').forEach(([e, i]) => {
+      reset();
+      A.loadExample(i);
+      assert.equal(H.available(), false, e.title);
+      H.press();
+      assert.equal(st.hint, null, e.title);
+      assert.match(toasts.join(' '), LOCKED, e.title);
+    });
+  } finally { S.setSystem('prop'); }
+});
+
+test('H przy zaznaczonym założeniu okna: zaznaczenie przechodzi na cel i widać podpowiedź', () => {
+  reset();
+  A.loadExample(SAMPLES[2][1]);
+  H.press(); H.press(); H.press();                       // (⇒i): okno z założeniem
+  const box = [...st.boxes.keys()][0];
+  S.pick([`a:${box}`]);
+  assert.equal(st.picks.length, 1);
+  H.press();
+  assert.equal(st.picks.length, 0);
+  assert.equal(st.sel.length, 1);
+  assert.ok(st.hint);
 });
 
 if (failures.length) {

@@ -1,6 +1,6 @@
 /* =====================================================================
    Dowodzący dla rachunku kwantyfikatorów (źródło podpowiedzi w zadaniach
-   przykładowych z rozdz. 3.3). Rachunek kwantyfikatorów jest nierozstrzygalny,
+   przykładowych z kolokwiów i egzaminów). Rachunek kwantyfikatorów jest nierozstrzygalny,
    więc to przeszukiwanie heurystyczne w ograniczonym budżecie: reguły odwracalne
    (⇒i, ∧i, ¬i, ∀i ze świeżą zmienną), eliminacje z wiedzy (∀e dla termów z kontekstu),
    (∃e) ze świeżą zmienną, (∨e), (∃i) dla termów z kontekstu, modus ponens
@@ -23,7 +23,10 @@
 
   const learn = (K, f, proof) => { const k = key(f); if (!K.has(k)) { K.set(k, proof); return true; } return false; };
 
-  /** Domyka wiedzę eliminacjami bez nowych celów: ∧e, ⇒e, ¬e, ¬¬e oraz ∀e dla termów z puli. */
+  /**
+   * Domyka wiedzę eliminacjami bez nowych celów: ∧e, ⇒e, ¬e, ¬¬e oraz ∀e dla termów z puli
+   * (gdy pula jest pusta — dla samej zmiennej kwantyfikatora, np. z ∀x q wynika q).
+   */
   function saturate(K, pool) {
     const instantiated = new Set();
     for (let changed = true; changed;) {
@@ -41,7 +44,7 @@
           if (a) changed = learn(K, BOT, inference(BOT, 'notE', [a, proof])) || changed;
           if (f.a.t === 'not') changed = learn(K, f.a.a, inference(f.a.a, 'nnE', [proof])) || changed;
         } else if (f.t === 'all') {
-          for (const t of pool.values()) {
+          for (const t of (pool.size ? pool.values() : [VAR(f.x)])) {
             const tag = key(f) + '@' + key(t);
             if (instantiated.has(tag)) continue;
             instantiated.add(tag);
@@ -150,12 +153,13 @@
       for (const [dk, ex] of [...K]) {
         if (ex.f.t !== 'ex' || st.usedEx.has(dk)) continue;
         st.usedEx.add(dk);
+        const names = new Set(st.used);     // nieudana próba oddaje nazwę świeżej zmiennej
         try {
           const D = ex.f, y = fresh(D.x), a = subst(D.a, D.x, VAR(y));
-          if (!a) continue;
-          const s = assume(a, y);
-          const r = search(s.K, s.pool, goal, depth - 1, st);
+          const s = a && assume(a, y);
+          const r = s && search(s.K, s.pool, goal, depth - 1, st);
           if (r) return inference(goal, 'exE', [ex, windowed(a, r, y)]);
+          st.used = names;
         } finally { st.usedEx.delete(dk); }
       }
       /* rozpatrywanie przypadków dla znanej alternatywy */

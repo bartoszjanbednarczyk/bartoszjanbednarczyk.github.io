@@ -308,12 +308,12 @@ main, aside { min-width: 0; }
 .prev .muted { color: var(--muted); }
 .pal { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; }
 .pal .prow { display: flex; gap: 6px; align-items: center; }
-.pal .plab { width: 74px; font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; flex: none; }
-.pal .pbtns { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; flex: 1; }
-.pal button { font-family: var(--math); font-size: 20px; height: 42px; border: 1px solid var(--line2); border-radius: 9px; background: var(--panel); cursor: pointer; display: grid; place-items: center; transition: background .1s, border-color .1s; }
+.pal .plab { width: 88px; font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; flex: none; }
+.pal .pbtns { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(min-content, 1fr); gap: 6px; flex: 1; }
+.pal button { font-family: var(--math); font-size: 20px; height: 42px; padding: 0; border: 1px solid var(--line2); border-radius: 9px; background: var(--panel); cursor: pointer; display: grid; place-items: center; transition: background .1s, border-color .1s; }
 .pal button:hover { border-color: var(--accent); background: var(--accent-soft); }
 .pal button:active { transform: translateY(1px); }
-.pal button.ui { font-family: var(--ui); font-size: .86rem; }
+.pal button.ui { font-family: var(--ui); font-size: .86rem; padding: 0 6px; }
 .sugw .lab { font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; margin-top: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
 .chips button { font-family: var(--math); font-size: 15.5px; border: 1px solid var(--line2); border-radius: 999px; padding: 3px 11px; background: var(--canvas); cursor: pointer; }
@@ -435,6 +435,7 @@ main, aside { min-width: 0; }
 .cval.yes { background: var(--accent-soft); color: var(--accent-ink); }
 .cval.no { background: var(--goal-bg); color: var(--goal); }
 .rseq { padding: 4px 18px 14px; border-top: 1px solid var(--line); font-size: .9rem; color: var(--ink2); }
+.rnote { margin: 0; padding: 12px 18px; font-size: .9rem; color: var(--ink2); }
 .rseq p { margin: 10px 0 6px; }
 .rseq ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: calc(var(--fs) * .85); }
 .rseq li .math { font-size: 1em; }

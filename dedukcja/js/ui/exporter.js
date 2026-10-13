@@ -103,7 +103,8 @@
 
   function open(i) {
     if (res()) {
-      if (!UI.res.exportSource()) { toast('Eksportuje się drzewo dowodu sprzeczności — najpierw wyprowadź klauzulę pustą ⊥'); return; }
+      const src = UI.res.exportSource();
+      if (!src || !src.root) { toast((src && src.problem) || 'Eksportować można tylko drzewo dowodu sprzeczności — najpierw wyprowadź klauzulę pustą ⊥'); return; }
       render();
       Modal.open('exportModal');
       return;
@@ -114,34 +115,45 @@
     Modal.open('exportModal');
   }
 
-  function init() {
-    document.querySelectorAll('#expTabs button').forEach(b => b.addEventListener('click', () => { S.setPref('exportTab', b.dataset.tab); render(); }));
-    $('expFrag').addEventListener('change', e => { fi = +e.target.value; render(); });
-    $('expBg').addEventListener('change', e => { S.setPref('exportBg', e.target.value); render(); });
-    $('expScale').addEventListener('change', e => { S.setPref('exportScale', +e.target.value); render(); });
-    $('texFull').addEventListener('change', e => { S.setPref('texStandalone', e.target.checked); render(); });
-    $('expSvg').addEventListener('click', () => {
-      download(fileName('svg'), Export.toSVG(layout(), colors(), mathFont()), 'image/svg+xml');
-      toast('Pobrano obrazek SVG');
-    });
-    $('expPng').addEventListener('click', () => {
-      pngBlob().then(b => { download(fileName('png'), b); toast('Pobrano obrazek PNG'); }, e => toast(e.message));
-    });
-    $('expCopyPng').addEventListener('click', () => {
-      if (pngScale(layout()) < MIN_PNG_SCALE) { toast('Dowód jest za duży na obrazek PNG — pobierz SVG'); return; }
-      copyImage(pngBlob(), 'Skopiowano obrazek — wklej go np. na Discordzie');
-    });
-    $('texCopy').addEventListener('click', () => copyText($('tex').value, 'Skopiowano kod LaTeX'));
-    // praca zmieniona w innej karcie: okno pokazuje bieżący stan albo się zamyka, gdy fragmentu już nie ma
-    S.on('external', () => {
-      if (!Modal.isOpen('exportModal') || res()) return;
-      if (st.frags[fi]) render(); else Modal.close('exportModal');
-    });
-    $('texDownload').addEventListener('click', () => {
-      download(fileName('tex'), latexCode(), 'application/x-tex');
-      toast('Pobrano plik .tex');
-    });
+  /**
+   * Praca zmieniona pod otwartym oknem (inna karta, link, cofnięcie): okno pokazuje bieżący stan
+   * albo się zamyka, gdy eksportowanego dowodu już nie ma.
+   */
+  function sync() {
+    if (!Modal.isOpen('exportModal')) return;
+    if (root()) render(); else Modal.close('exportModal');
   }
 
-  UI.exporter = Object.freeze({ init, open });
+  /** Obsługa przycisku: działa tylko na istniejącym dowodzie (inaczej zamyka okno). */
+  const guarded = fn => () => {
+    if (!root()) { Modal.close('exportModal'); toast('Tego dowodu już nie ma — otwórz eksport ponownie'); return; }
+    fn();
+  };
+
+  function init() {
+    document.querySelectorAll('#expTabs button').forEach(b => b.addEventListener('click', guarded(() => { S.setPref('exportTab', b.dataset.tab); render(); })));
+    $('expFrag').addEventListener('change', e => { fi = +e.target.value; guarded(render)(); });
+    $('expBg').addEventListener('change', e => { S.setPref('exportBg', e.target.value); guarded(render)(); });
+    $('expScale').addEventListener('change', e => { S.setPref('exportScale', +e.target.value); guarded(render)(); });
+    $('texFull').addEventListener('change', e => { S.setPref('texStandalone', e.target.checked); guarded(render)(); });
+    $('expSvg').addEventListener('click', guarded(() => {
+      download(fileName('svg'), Export.toSVG(layout(), colors(), mathFont()), 'image/svg+xml');
+      toast('Pobrano obrazek SVG');
+    }));
+    $('expPng').addEventListener('click', guarded(() => {
+      pngBlob().then(b => { download(fileName('png'), b); toast('Pobrano obrazek PNG'); }, e => toast(e.message));
+    }));
+    $('expCopyPng').addEventListener('click', guarded(() => {
+      if (pngScale(layout()) < MIN_PNG_SCALE) { toast('Dowód jest za duży na obrazek PNG — pobierz SVG'); return; }
+      copyImage(pngBlob(), 'Skopiowano obrazek — wklej go np. na Discordzie');
+    }));
+    $('texCopy').addEventListener('click', guarded(() => copyText($('tex').value, 'Skopiowano kod LaTeX')));
+    $('texDownload').addEventListener('click', guarded(() => {
+      download(fileName('tex'), latexCode(), 'application/x-tex');
+      toast('Pobrano plik .tex');
+    }));
+    ['external', 'system'].forEach(event => S.on(event, sync));
+  }
+
+  UI.exporter = Object.freeze({ init, open, sync });
 })(globalThis.ND ||= {});

@@ -11,11 +11,12 @@
   'use strict';
   const { F, Res, Render, Examples } = ND;
   const UI = (ND.UI ||= {});
-  const { $, icon, toast, storage, plural, scrollToView, Modal, anyOverlay, createHistory, decodeLink, LINK_LIMIT } = UI.kit;
+  const { $, icon, toast, storage, plural, scrollToView, keepFocus, Modal, anyOverlay, createHistory, decodeLink, LINK_LIMIT } = UI.kit;
   const S = UI.store;
 
   const KEYS = Object.freeze({ work: 'nd-res', backup: 'nd-res-backup' });
-  const LOCKED = 'Podpowiedzi działają tylko w zbiorach z grupy „z podpowiedziami” w menu „Przykłady”';
+  const LOCKED = 'Podpowiedzi działają tylko w zbiorach przykładowych z kolokwiów i egzaminów — znajdziesz je na górze menu „Przykłady”';
+  const TREE_TOO_BIG = 'Drzewo tego dowodu jest za duże, by je narysować — rezolwenty użyte wiele razy trzeba by w nim powtarzać. Dowodem sprzeczności jest ciąg klauzul poniżej.';
   const EMPTY_CHIPS = 5;        // przykłady na pustym ekranie
 
   let work = null;              // { initial, steps, valuation } albo null (brak zbioru)
@@ -39,7 +40,7 @@
     hint = null;
   }
 
-  const save = () => S.noteSaved(storage.set(KEYS.work, snapshot()));
+  const save = () => S.noteSaved(storage.set(KEYS.work, snapshot()), 'res');
 
   /** Stan rozwiązania: 'refuted' (jest ⊥), 'satisfied' (σ spełnia 𝓕) albo null. */
   const solved = () => (!work ? null : Res.refuted(work) ? 'refuted' : Res.satisfied(work) ? 'satisfied' : null);
@@ -200,13 +201,13 @@
     const h = hint, first = h.level === 1;
     const v = h.v && sigmaHTML(h.v), p = h.on && math(F.htmlName(h.on));
     const TEXTS = {
-      step: () => (first ? `Spróbuj wyeliminować zmienną ${p}: połącz klauzulę z literałem ${p} z klauzulą z literałem ${math('¬' + F.htmlName(h.on))}.`
+      step: () => (first ? `Spróbuj wyeliminować zmienną ${p}: weź klauzulę zawierającą ${p} i klauzulę zawierającą ${math('¬' + F.htmlName(h.on))}.`
         : `Weź rezolwentę ${numHTML(h.a)} i ${numHTML(h.b)} względem ${p} — otrzymasz ${clauseHTML(h.clause)}.`),
-      value: () => (first ? 'Ten zbiór nie jest sprzeczny — dobierz wartościowanie, przy którym w każdej klauzuli jest prawdziwy literał. Zacznij od klauzul z jednym literałem bez wartości.'
+      value: () => (first ? 'Ten zbiór nie jest sprzeczny — dobierz wartościowanie, przy którym w każdej klauzuli jest prawdziwy literał. Zacznij od klauzul, w których została tylko jedna zmienna bez wartości.'
         : `Ustaw ${v} = ${truthHTML(h.value)}.`),
-      change: () => (first ? 'Obecnych wartości nie da się uzupełnić do wartościowania spełniającego wszystkie klauzule — zmień wartość jednej ze zmiennych.'
+      change: () => (first ? 'Ustawionych wartości nie da się uzupełnić do wartościowania spełniającego wszystkie klauzule — zmień wartość jednej ze zmiennych.'
         : `Zmień ${v} na ${truthHTML(h.value)}.`),
-      reset: () => (first ? 'Obecnych wartości nie da się uzupełnić do wartościowania spełniającego wszystkie klauzule — nie wystarczy zmienić jednej z nich.'
+      reset: () => (first ? 'Ustawionych wartości nie da się uzupełnić do wartościowania spełniającego wszystkie klauzule — nie wystarczy zmienić jednej z nich.'
         : 'Wyczyść wartościowanie i zacznij od nowa.'),
     };
     const button = first ? '<button type="button" class="btn" data-hintgo="more">Pokaż krok</button>'
@@ -241,12 +242,14 @@
     const list = all(), empty = Res.emptyIndex(work), used = Res.usedIn(work, empty);
     const renumbered = j => numHTML(used.indexOf(j));
     const seq = used.map((j, k) => `<li>${numHTML(k)} = ${clauseHTML(list[j])} ${originHTML(j, { name: renumbered, on: false })}</li>`).join('');
-    const tree = Render.proofHTML(Res.tree(work, empty), { decorate: () => ({ cls: 'done' }) });
+    const root = Res.tree(work, empty);
+    const tree = root ? `<div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: () => ({ cls: 'done' }) })}</div></div>`
+      : `<p class="rnote">${TREE_TOO_BIG}</p>`;
+    const exportButton = root ? `<div class="acts"><button type="button" class="btn ghost" data-act="export" title="Eksport: obrazek PNG/SVG albo LaTeX">${icon('download')}<span class="hide-sm">Eksport</span></button></div>` : '';
     return `<section class="card frag done rtree">
-      <div class="fhead"><span class="num">Rezolucyjny dowód sprzeczności</span><span class="pill ok">${icon('check')}zbiór jest sprzeczny</span><span class="sp"></span>
-        <div class="acts"><button type="button" class="btn ghost" data-act="export" title="Eksport: obrazek PNG/SVG albo LaTeX">${icon('download')}<span class="hide-sm">Eksport</span></button></div></div>
-      <div class="fbody"><div class="inner">${tree}</div></div>
-      <div class="rseq"><p>Jako ciąg klauzul z definicji 47 (tylko klauzule potrzebne do wyprowadzenia ${math('⊥')}):</p><ol>${seq}</ol></div>
+      <div class="fhead"><span class="num">Rezolucyjny dowód sprzeczności</span><span class="pill ok">${icon('check')}zbiór jest sprzeczny</span><span class="sp"></span>${exportButton}</div>
+      ${tree}
+      <div class="rseq"><p>Ten dowód jako ciąg klauzul (Def. 47), tylko z klauzulami potrzebnymi do wyprowadzenia ${math('⊥')}:</p><ol>${seq}</ol></div>
     </section>`;
   }
 
@@ -282,7 +285,7 @@
 
   function renderValuation() {
     const names = work ? Res.varsOf(work.initial) : [];
-    $('resValSub').textContent = work ? 'Kliknij T albo F przy zmiennej (ponownie — aby usunąć wartość). Przy klauzulach widać, czy są spełnione.'
+    $('resValSub').textContent = work ? 'Kliknij T albo F przy zmiennej (drugie kliknięcie usuwa wartość). Przy klauzulach widać, czy są spełnione.'
       : 'Tu ustawisz wartościowanie zmiennych zbioru klauzul.';
     const choice = (v, value) => {
       const on = work.valuation[v] === value;
@@ -297,8 +300,8 @@
     const state = solved();
     if (state === 'refuted') return '<b>Gotowe!</b> Wyprowadzono klauzulę pustą — zbiór jest sprzeczny. Lista klauzul to rezolucyjny dowód sprzeczności (Def. 47); klauzule niepotrzebne są wyszarzone.';
     if (state === 'satisfied') return '<b>Gotowe!</b> Wartościowanie z panelu po lewej spełnia wszystkie klauzule zbioru — zbiór nie jest sprzeczny.';
-    if (sel.length === 1) return 'Kliknij drugą klauzulę — na pasku na dole pojawią się ich rezolwenty.';
-    if (sel.length === 2) return 'Wybierz rezolwentę na pasku na dole — trafi na koniec listy.';
+    if (sel.length === 1) return 'Kliknij drugą klauzulę — na dolnym pasku pojawią się ich rezolwenty.';
+    if (sel.length === 2) return 'Wybierz rezolwentę z dolnego paska — trafi na koniec listy.';
     return `Rozstrzygnij, czy zbiór jest sprzeczny: kliknij <b>dwie klauzule</b>, aby dopisać ich rezolwentę (cel: klauzula pusta ${math('⊥')}), albo ustaw w panelu po lewej <b>wartościowanie</b>, które spełni wszystkie klauzule.`
       + (hintsAllowed() ? ' Utknąłeś? Naciśnij <b>Podpowiedź</b>.' : '');
   }
@@ -313,7 +316,9 @@
     let rules = '';
     if (sel.length === 2) {
       const rs = Res.resolvents(list[sel[0]], list[sel[1]]);
-      const hinted = r => !!hint && hint.kind === 'step' && hint.level === 2 && hint.on === r.on;
+      // podpowiedź dotyczy tej pary klauzul (w dowolnej kolejności) i tej zmiennej
+      const hintedPair = !!hint && hint.kind === 'step' && hint.level === 2 && sel.includes(hint.a) && sel.includes(hint.b);
+      const hinted = r => hintedPair && hint.on === r.on;
       rules = rs.length
         ? '<span class="grp">Rezolwenty</span>' + rs.map(r => `<button type="button" class="chip${hinted(r) ? ' hinted' : ''}" data-resolve="${r.on}" title="Rezolwenta względem ${F.plainName(r.on)}">`
           + `<span>względem ${math(F.htmlName(r.on))}: ${clauseHTML(r.clause)}</span></button>`).join('')
@@ -329,13 +334,18 @@
     if (hint) { box.className = 'dock-hint'; box.innerHTML = hintHTML(); }
   }
 
+  /** Fokus klawiatury po przerysowaniu: ten sam przycisk albo klauzula (po atrybutach), a gdy zniknął — najbliższy sensowny. */
+  const FOCUS_KEYS = ['ci', 'var', 'value', 'resolve', 'hintgo', 'op', 'act', 'ex'];
+  const FOCUS_FALLBACKS = ['#resWs .crow.sel', '#resWs .crow.fresh', '#dock [data-resolve]', '#resWs .crow'];
+
   function render() {
     if (!active()) return;
-    // fokus z klawiatury nie ginie, gdy lista klauzul się przerysowuje
-    const current = document.activeElement;
-    const focused = current && current.matches && current.matches('#resWs [data-ci]:focus-visible') ? current : null;
+    keepFocus(['resWs', 'resVars', 'dock'], FOCUS_KEYS, draw, FOCUS_FALLBACKS);
+    fresh = -1;
+  }
+
+  function draw() {
     $('resWs').innerHTML = work ? workHTML() : emptyHTML();
-    if (focused) { const el = $('resWs').querySelector(`[data-ci="${focused.dataset.ci}"]`); if (el) el.focus({ preventScroll: true }); }
     renderValuation();
     const info = infoHTML();
     $('resInfo').hidden = !info;
@@ -350,7 +360,6 @@
     $('resRedo').disabled = !history.canRedo();
     $('resReset').disabled = !work;
     renderDock();
-    fresh = -1;
   }
 
   function revealClause(i) {
@@ -362,7 +371,9 @@
 
   /* ---------- nowy zbiór klauzul ---------- */
 
-  const PALETTE = ['p', 'q', 'r', 's', 't', '¬', ' ∨ ', ', ', '⊥', '{', '}'];
+  /** Paleta okna nowego zbioru: wiersze [etykieta, symbole] (symbol wstawiany dosłownie). */
+  const PALETTE = [['zmienne', ['p', 'q', 'r', 's', 't']], ['symbole', ['¬', ' ∨ ', ', ', '⊥', '{', '}']]];
+  const SYMBOLS = PALETTE.flatMap(([, row]) => row);
 
   function previewSet() {
     const v = $('resAskInput').value, out = $('resAskPreview');
@@ -380,8 +391,15 @@
     return set;
   }
 
+  /** Bieżący zbiór jako wpis do pola: jak w skrypcie, a gdy się nie zmieści — zwięźlej (~p|q, …). */
+  function currentSetText() {
+    if (!work) return '';
+    const pretty = work.initial.map(Res.clauseText).join(', ');
+    return pretty.length <= Res.LIMITS.chars ? pretty : work.initial.map(Res.plainText).join(',');
+  }
+
   function askSet() {
-    $('resAskInput').value = work ? work.initial.map(Res.clauseText).join(', ') : '';
+    $('resAskInput').value = currentSetText();
     previewSet();
     Modal.open('resAskModal', { focus: $('resAskInput') });
   }
@@ -427,10 +445,14 @@
     return { ok: true, message: 'Wczytano zbiór klauzul z linku' };
   }
 
-  /** Dowód do eksportu: { title, root } albo null (gdy nie ma jeszcze klauzuli pustej). */
+  /**
+   * Dowód do eksportu: { title, root }, { problem } (drzewo za duże do narysowania)
+   * albo null (gdy nie ma jeszcze klauzuli pustej).
+   */
   function exportSource() {
     if (!work || !Res.refuted(work)) return null;
-    return { title: `𝓕 = {${work.initial.map(Res.clauseText).join(', ')}}`, root: Res.tree(work, Res.emptyIndex(work)) };
+    const root = Res.tree(work, Res.emptyIndex(work));
+    return root ? { title: `𝓕 = {${work.initial.map(Res.clauseText).join(', ')}}`, root } : { problem: 'Drzewo tego dowodu jest za duże, by je narysować' };
   }
 
   /* ---------- klawiatura i pasek akcji (zdarzenia przekazuje main.js) ---------- */
@@ -459,7 +481,9 @@
     try { restore(e.newValue); } catch (err) { return; }
     history.clear();
     render();
-    if (active()) toast('Wczytano zmiany z innej karty z tą aplikacją', { important: true });
+    if (!active()) return;
+    UI.exporter.sync();
+    toast('Wczytano zmiany wprowadzone w innej karcie', { important: true });
   }
 
   /** Odczyt na starcie (zapis i ewentualny link #r=…); komunikaty jak w store.load(). Zwraca wynik linku albo null. */
@@ -469,7 +493,7 @@
       try { restore(saved); } catch (e) {
         work = null;
         storage.set(KEYS.backup, saved);
-        toast('Nie udało się odczytać zapisanego zbioru klauzul — jego kopia została zachowana', { important: true });
+        toast('Nie udało się odczytać zapisanego zbioru klauzul — zachowano jego kopię zapasową', { important: true });
       }
     }
     const link = openLink(location.hash);
@@ -520,9 +544,10 @@
     });
     // okno nowego zbioru
     const pal = $('resAskPalette');
-    pal.innerHTML = `<div class="prow"><span class="plab">symbole</span><div class="pbtns">${PALETTE.map((s, i) => `<button type="button" data-ins="${i}">${/^[a-z]$/.test(s) ? `<i>${s}</i>` : Render.esc(s.trim())}</button>`).join('')}</div></div>`;
+    pal.innerHTML = PALETTE.map(([label, row]) => `<div class="prow"><span class="plab">${label}</span><div class="pbtns">${row.map(s =>
+      `<button type="button" data-ins="${SYMBOLS.indexOf(s)}">${/^[a-z]$/.test(s) ? `<i>${s}</i>` : Render.esc(s.trim())}</button>`).join('')}</div></div>`).join('');
     pal.addEventListener('mousedown', e => e.preventDefault());     // fokus zostaje w polu
-    pal.addEventListener('click', e => { const b = e.target.closest('[data-ins]'); if (b) insertSymbol(PALETTE[+b.dataset.ins]); });
+    pal.addEventListener('click', e => { const b = e.target.closest('[data-ins]'); if (b) insertSymbol(SYMBOLS[+b.dataset.ins]); });
     const input = $('resAskInput');
     input.maxLength = Res.LIMITS.chars;
     input.addEventListener('input', previewSet);

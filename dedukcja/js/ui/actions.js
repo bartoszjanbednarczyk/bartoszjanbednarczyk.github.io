@@ -137,6 +137,16 @@
   const paramContext = info => ({ cands: candidates(info), openGoals: openGoalFormulas(), hypothesesOf: n => Proof.openFormulas(n), terms: candidateTerms(info) });
   const dialogTitle = r => `${r.title} (${r.label.text})`;
 
+  /**
+   * Sprawdzenie parametru reguły w kreatorze: najpierw zgodność liczby argumentów symboli z resztą
+   * dowodu (fragmenty `roots`) — w jednym dowodzie p i p(a) to błąd — potem warunek samej reguły.
+   */
+  const paramCheck = (roots, check) => y => {
+    const n = F.arityClash([y, ...roots.flatMap(Proof.formulas)]);
+    if (n) return `Symbol ${F.plainName(n)} występuje w tym dowodzie z inną liczbą argumentów`;
+    return check ? check(y) : null;
+  };
+
   /* ---------- stosowanie reguł ---------- */
 
   function apply(id) {
@@ -175,7 +185,8 @@
     if (r.back.param) {
       const p = r.back.param;
       x = preset !== undefined ? preset : await UI.ask.ask({
-        title: dialogTitle(r), desc: p.desc(goal), kind: p.kind || 'formula', check: p.check ? y => p.check(y, goal) : null,
+        title: dialogTitle(r), desc: p.desc(goal), kind: p.kind || 'formula',
+        check: paramCheck([st.frags[info.fi]], p.check && (y => p.check(y, goal))),
         best: [...UI.hints.bestArgs(r.id, goalId), ...p.best(goal, paramContext(info))],
         sugg: otherSuggestions(p, info),
       });
@@ -197,7 +208,8 @@
     if (r.fwd.param) {
       const p = r.fwd.param;
       x = await UI.ask.ask({
-        title: dialogTitle(r), desc: p.desc(fs), kind: p.kind || 'formula', check: p.check ? y => p.check(y, fs, nodes) : null,
+        title: dialogTitle(r), desc: p.desc(fs), kind: p.kind || 'formula',
+        check: paramCheck(nodes, p.check && (y => p.check(y, fs, nodes))),
         best: p.best(fs, paramContext(null), nodes), sugg: otherSuggestions(p, null),
       });
       if (!x) { S.refresh(); return; }
@@ -205,8 +217,9 @@
     let rootId = null;
     S.commit(() => {
       if (!nodes.every(n => st.frags.includes(n))) return false;  // fragmenty zmieniły się w międzyczasie
-      const { f, prem } = r.fwd.build(fs, nodes, x, freshFor(nodes));
-      const root = Proof.node(f, r.id, Rules.enclose(prem));
+      const ctx = freshFor(nodes);
+      const { f, prem } = r.fwd.build(fs, nodes, x, ctx);
+      const root = Proof.node(f, r.id, Rules.enclose(prem, ctx));
       const at = nodes.length ? Math.min(...nodes.map(n => st.frags.indexOf(n))) : st.frags.length;
       st.frags = st.frags.filter(n => !nodes.includes(n));
       st.frags.splice(Math.min(at, st.frags.length), 0, root);
@@ -276,8 +289,8 @@
     else if (st.mode === 'fwd') toast(`Cofnięto krok ${label} — wniosek jest teraz hipotezą, a przesłanki osobnymi fragmentami`, { important: true });
     else {
       toast(`Cofnięto krok ${label}. ${kept.length === 1
-        ? 'Dowód przesłanki został zachowany jako osobny fragment — możesz go wstawić z powrotem albo usunąć.'
-        : 'Dowody przesłanek zostały zachowane jako osobne fragmenty — możesz je wstawić z powrotem albo usunąć.'}`, { important: true });
+        ? 'Dowód przesłanki zachowano jako osobny fragment — możesz go wstawić z powrotem albo usunąć.'
+        : 'Dowody przesłanek zachowano jako osobne fragmenty — możesz je wstawić z powrotem albo usunąć.'}`, { important: true });
     }
   }
 
@@ -313,6 +326,9 @@
       run({ goal, fragment }) {
         S.commit(() => {
           const source = fragment.fi;   // indeks przed podmianą (cel może być korzeniem innego fragmentu)
+          // zmienne okien wstawianego fragmentu muszą być świeże także względem okien i założeń wokół celu
+          const avoid = new Set([...goal.vars, ...goal.scope.flatMap(F.freeVars)]);
+          if (avoid.size) Rules.renameWindows(fragment.n, avoid, freshFor([st.frags[goal.fi], fragment.n]));
           Proof.replaceAt(st.frags, goal, fragment.n);
           st.frags.splice(source, 1);
           return true;
@@ -405,7 +421,8 @@
       // podsuwane formuły: podformuły założeń dostępnych w oknie, korzeni i otwartych celów
       const p = r.fwd.param, arranged = Rules.fwdArrange(r, fs, items).fs, here = { scope: at.scope, vars: at.vars };
       x = await UI.ask.ask({
-        title: dialogTitle(r), desc: p.desc(arranged), kind: p.kind || 'formula', check: p.check ? y => p.check(y, arranged, items.map(premiseOf)) : null,
+        title: dialogTitle(r), desc: p.desc(arranged), kind: p.kind || 'formula',
+        check: paramCheck([st.frags[at.fi]], p.check && (y => p.check(y, arranged, items.map(premiseOf)))),
         best: p.best(arranged, paramContext(here), items.map(premiseOf)), sugg: otherSuggestions(p, here),
       });
       if (!x) { S.refresh(); return; }
@@ -461,9 +478,9 @@
     const back = st.mode === 'back';
     const f = await UI.ask.ask({
       title: back ? 'Nowy cel' : 'Nowa przesłanka',
-      desc: back ? (S.logic() === 'fo' ? T`Formuła, którą chcesz udowodnić (prawo rachunku kwantyfikatorów, np. ∀x p(x) ⇒ ∃x p(x)). Pojawi się jako otwarty cel.`
-        : T`Formuła, którą chcesz udowodnić (np. tautologia). Pojawi się jako otwarty cel.`)
-        : T`Formuła-hipoteza. Pozostaje otwarta, dopóki nie zamkniesz jej w oknie regułą (⇒i), (¬i) lub (∨e).`,
+      desc: back ? (S.logic() === 'fo' ? T`Wpisz prawo rachunku kwantyfikatorów, które chcesz udowodnić (np. ∀x p(x) ⇒ ∃x p(x)). Pojawi się jako otwarty cel.`
+        : T`Wpisz formułę, którą chcesz udowodnić. Pojawi się jako otwarty cel.`)
+        : T`Wpisz hipotezę. Pozostanie otwarta, dopóki nie zamkniesz jej w oknie regułą (⇒i), (¬i) lub (∨e).`,
       sugg: st.frags.length ? candidates(null) : [],
       okLabel: back ? 'Dodaj cel' : 'Dodaj przesłankę',
     });

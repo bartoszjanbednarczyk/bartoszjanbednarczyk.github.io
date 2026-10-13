@@ -68,7 +68,7 @@ test('przełączanie działów zachowuje dowody i historię każdego rachunku os
   S.undo();
   assert.equal(st.frags.length, 0);
   S.setSystem('fo');
-  assert.deepEqual(st.frags.map(r => F.text(r.f)), ['∀x p(x) ⇒ p(a)']);
+  assert.deepEqual(st.frags.map(r => F.text(r.f)), ['(∀x p(x)) ⇒ p(a)']);
   assert.ok(memory.get('nd-fo-proof').includes('p(a)'));
   S.setSystem('prop');
 });
@@ -141,7 +141,7 @@ test('nieczytelny zapis trafia do kopii zapasowej zamiast przepaść', () => {
   const source = S.load();
   assert.equal(source, 'empty');
   assert.equal(memory.get('nd-proof-backup'), '[{"f":"p","r":"nieznana"}]');
-  assert.match(toasts.join(' '), /kopia/);
+  assert.match(toasts.join(' '), /kopię zapasową/);
 });
 
 test('łańcuchy z testów są poprawnymi (otwartymi) dowodami', () => {
@@ -244,9 +244,68 @@ test('zmiana zapisu w innej karcie jest przejmowana (zamiast nadpisania przy nas
   S.onStorageEvent({ key: 'nd-proof', newValue: other });
   assert.equal(st.frags.length, 2);
   assert.equal(S.canUndo(), false);
-  assert.match(toasts.join(' '), /innej karty/);
+  assert.match(toasts.join(' '), /innej karcie/);
   S.onStorageEvent({ key: 'nd-proof', newValue: '[{"f":"p","r":"nieznana"}]' });   // nieczytelny zapis — bez zmian
   assert.equal(st.frags.length, 2);
+});
+
+test('rachunek kwantyfikatorów: krok, po którym zapisu nie dałoby się odczytać, jest cofany', () => {
+  reset();
+  S.setSystem('fo');
+  try {
+    const FO = s => F.parse(s, { logic: 'fo' });
+    S.commit(() => { st.frags = [Proof.node(FO('p(a)'))]; return true; });
+    // (⇒e) z α = p dla celu p(a): przesłanka p ⇒ p(a) ma symbol p z różną liczbą argumentów
+    const before = Proof.serialize(st.frags);
+    assert.equal(S.commit(() => { const g = st.frags[0]; g.rule = 'impE'; g.prem = [Proof.node(F.ATOM('p')), Proof.node(F.IMP(F.ATOM('p'), g.f))]; return true; }), false);
+    assert.equal(Proof.serialize(st.frags), before);
+    assert.match(toasts.join(' '), /Symbol p miałby w jednym dowodzie różną liczbę argumentów/);
+    // kolizja w osobnych formułach jednego fragmentu też jest odrzucana: (∨e) z alternatywą p ∨ q dla celu p(a)
+    toasts.length = 0;
+    const orE = ND.Rules.get('orE');
+    assert.equal(S.commit(() => { const g = st.frags[0]; g.rule = 'orE'; g.prem = ND.Rules.materialize(orE.back.premises(g.f, F.OR(F.ATOM('p'), F.ATOM('q')))); return true; }), false);
+    assert.match(toasts.join(' '), /Symbol p/);
+    assert.equal(Proof.serialize(st.frags), before);
+    // formuła mieszcząca się w limicie węzłów, ale nie w limicie parsera (kwantyfikator to dwa symbole)
+    toasts.length = 0;
+    const deep = FO('Ax0 '.repeat(70) + 'p(x0)');
+    assert.equal(S.commit(() => { st.frags.push(Proof.node(F.AND(deep, deep))); return true; }), false);
+    assert.match(toasts.join(' '), /zbyt duża formuła/);
+    // wszystko, co zostało zapisane, daje się odczytać
+    assert.ok(Proof.deserialize(memory.get('nd-fo-proof'), ND.Rules.isRule, { logic: 'fo' }));
+  } finally { S.setSystem('prop'); }
+});
+
+test('starszy zapis z kolizją liczby argumentów wczytuje się, a kolejne kroki działają', () => {
+  reset();
+  S.onStorageEvent({ key: 'nd-fo-proof', newValue: '[{"f":"p>p(a)"}]' });   // odłożona praca zmieniona gdzie indziej
+  memory.set('nd-fo-proof', '[{"f":"p>p(a)"}]');
+  S.setSystem('fo');
+  try {
+    assert.equal(st.frags.length, 1);
+    assert.ok(S.commit(() => { st.frags.push(Proof.node(F.parse('q', { logic: 'fo' }))); return true; }));
+    S.undo();
+    assert.equal(st.frags.length, 1);
+  } finally { S.setSystem('prop'); }
+});
+
+test('link z danymi w złym formacie: komunikat o nieczytelnym linku (nie „za duży”)', () => {
+  reset();
+  for (const data of ['{"f":"p"}', 'null', '"x"']) {
+    const r = S.openLink('#d=' + b64(data));
+    assert.equal(r.ok, false);
+    assert.match(r.message, /Nie udało się odczytać/, data);
+  }
+});
+
+test('wynik zapisu osobno dla dedukcji i rezolucji', () => {
+  reset();
+  S.noteSaved(false, 'nd');
+  S.noteSaved(true, 'res');
+  assert.equal(S.persistent(), false);
+  assert.equal(S.persistent('res'), true);
+  S.noteSaved(true);
+  assert.equal(S.persistent(), true);
 });
 
 if (failures.length) {

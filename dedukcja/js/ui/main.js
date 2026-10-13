@@ -72,7 +72,7 @@
       const who = el.dataset.for.split(' ');
       el.hidden = !(who.includes(sys) || (nd && who.includes('nd')));
     });
-    $('share').title = sys === 'res' ? 'Kopiuj link z bieżącym zbiorem klauzul' : 'Kopiuj link z bieżącym dowodem';
+    $('share').title = sys === 'res' ? 'Kopiuj link do bieżącego zbioru klauzul' : 'Kopiuj link do bieżącego dowodu';
     if (UI.tutorial.isActive() && sys !== 'prop') UI.tutorial.stop();
     if (!nd) UI.res.render();
     syncBars();
@@ -154,20 +154,25 @@
   }
 
   /**
-   * Link z dowodem: po wczytaniu znika z adresu — chyba że przeglądarka nie zapisuje pracy,
-   * bo wtedy tylko link pozwoli ją odtworzyć po odświeżeniu. Nieczytelny link znika zawsze.
+   * Link z dowodem: po wczytaniu znika z adresu — chyba że przeglądarka nie zapisała pracy działu
+   * z linku, bo wtedy tylko link pozwoli ją odtworzyć po odświeżeniu. Nieczytelny link znika zawsze.
    */
-  const settleLinkHash = (ok, embedded) => { if (!ok || S.persistent()) forgetLinkHash(embedded); };
+  const settleLinkHash = (ok, embedded, sys) => { if (!ok || S.persistent(sys === 'res' ? 'res' : 'nd')) forgetLinkHash(embedded); };
 
-  /** Link otwarty, gdy aplikacja już działa (zmiana adresu w tej samej karcie). */
+  /**
+   * Link otwarty, gdy aplikacja już działa (zmiana adresu w tej samej karcie). Otwarte okna
+   * i prezentacja dotyczą poprzedniej pracy (np. eksport, kreator formuły) — zamykamy je.
+   */
   function initLinkNavigation(embedded) {
     window.addEventListener('hashchange', () => {
       const link = S.parseLink(location.hash);
       if (!link) return;
+      while (Modal.top()) Modal.close(Modal.top());
+      if (UI.present.isOpen()) UI.present.close();
       if (link.system === 'res') S.setSystem('res');
       const result = link.system === 'res' ? UI.res.openLink(location.hash) : S.openLink(location.hash);
       toast(result.message, { important: !result.ok });
-      settleLinkHash(result.ok, embedded);
+      settleLinkHash(result.ok, embedded, link.system);
     });
   }
 
@@ -257,7 +262,7 @@
     initOptions();
     const embedded = initEmbed();
     initShare(embedded);
-    if (hadLink) settleLinkHash(source === 'link' || !!(resLink && resLink.ok), embedded);
+    if (hadLink) settleLinkHash(source === 'link' || !!(resLink && resLink.ok), embedded, resLink ? 'res' : 'nd');
     initSystems();
     initDock();
     closeMenusOnOutsideClick();

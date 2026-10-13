@@ -9,7 +9,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { TOP, BOT, AND, NOT, IMP, META, VAR, key, eq, size, match, freeVars, isQuant, text, html, tex, plainName, htmlName, texName } = ND.F;
+  const { TOP, BOT, AND, NOT, IMP, META, VAR, key, eq, size, match, freeVars, isFree, isQuant, text, html, tex, plainName, htmlName, texName } = ND.F;
   const { T, list, rule, sym, val, m, strong, QED } = ND.Seg;
   const Rules = ND.Rules;
 
@@ -53,7 +53,7 @@
       }
       case 'allE': {
         const t = witness(x, f);
-        return t ? T`Cel wynika z ${x} — to jej szczególny przypadek: w miejsce ${VAR(x.x)} podstawiamy ${t}.`
+        return t ? T`Cel jest szczególnym przypadkiem formuły ${x}: w miejsce ${VAR(x.x)} podstawiamy ${t}.`
           : T`Cel wynika z ${x} (zmienna ${VAR(x.x)} nie występuje w nim wolno).`;
       }
       case 'exI': {
@@ -105,8 +105,8 @@
       case 'exI': return T`Cel zaczyna się od kwantyfikatora ${sym('∃')}. Wystarczy wskazać jeden element, dla którego formuła jest spełniona — który term się nada?`;
       case 'allE': return T`Cel jest szczególnym przypadkiem formuły z kwantyfikatorem ${sym('∀')}, którą da się uzyskać z założeń.${look}`;
       case 'exE': return pf.prem[0].rule === 'hyp'
-        ? T`Wśród założeń jest formuła ${pf.prem[0].f}. Nazwij świeżą zmienną element, o którego istnieniu mówi, i rozumuj o nim.`
-        : T`Z założeń łatwo otrzymać formułę ${pf.prem[0].f}. Nazwij świeżą zmienną element, o którego istnieniu mówi, i rozumuj o nim.`;
+        ? T`Wśród założeń jest formuła ${pf.prem[0].f}. Oznacz świeżą zmienną element, którego istnienie ona gwarantuje, i wnioskuj o nim dalej.`
+        : T`Z założeń łatwo otrzymać formułę ${pf.prem[0].f}. Oznacz świeżą zmienną element, którego istnienie ona gwarantuje, i wnioskuj o nim dalej.`;
       default: return [];
     }
   }
@@ -141,6 +141,7 @@
   /** Zamienniki słów otwierających, by kolejne zdania nie zaczynały się tak samo. */
   const OPENER_ALTERNATIVES = { Zatem: 'W rezultacie', Stąd: 'W takim razie', Wtedy: 'Wówczas' };
   const BY_CONJUNCTION = ' z definicji koniunkcji ';
+  const CHAINED = ', a stąd ';
   const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
 
   /** Elementy bez powtórzeń formuł (ta sama formuła wymieniona raz). */
@@ -211,8 +212,18 @@
       this.last = null;
     }
 
-    known(k) {
-      for (let i = this.scopes.length - 1; i >= 0; i--) if (this.scopes[i].has(k)) return this.scopes[i].get(k);
+    /**
+     * Jak ustalono wartość formuły ('hyp' | 'derived') albo undefined. Zasięg okna ze świeżą zmienną x
+     * (rachunek kwantyfikatorów) ma pole `fresh`: poza nim wartościowanie przypisuje x inną wartość,
+     * więc tamtejsza wiedza o formułach z wolnym x tu nie obowiązuje.
+     */
+    known(f) {
+      const k = key(f);
+      for (let i = this.scopes.length - 1; i >= 0; i--) {
+        const scope = this.scopes[i];
+        if (scope.has(k)) return scope.get(k);
+        if (scope.fresh && isFree(scope.fresh, f)) return undefined;
+      }
       return undefined;
     }
 
@@ -274,7 +285,7 @@
      */
     establish(n) {
       if (n.rule === 'hyp') return { kind: 'hyp', f: n.f, n };
-      const seen = this.skipKnown ? this.known(key(n.f)) : undefined;
+      const seen = this.skipKnown ? this.known(n.f) : undefined;
       if (seen) return { kind: seen === 'hyp' ? 'hyp' : 'known', f: n.f, n };
       this.derive(n);
       this.learn(n.f, 'derived');
@@ -310,6 +321,7 @@
     infer(n, refs, why, concl = this.outcome(n.f)) {
       const unique = uniqueBy(refs, r => r.f);
       const lead = unique.length > 1 && unique.every(r => this.isLastFact(r)) ? T`Zatem`
+        : unique.length > 1 && unique.every(r => this.isLastAssumption(r)) ? T`Wtedy`   // właśnie założone („Załóżmy więc, że …”)
         : unique.length === 1 ? this.leadFor(unique[0])
           : unique.every(r => r.kind === 'hyp') ? T`Skoro ${list(unique.map(r => this.is(r.f)), ' i ')} (z założeń), to`
             : T`Skoro ${list(unique.map(r => this.fact(r, { listed: true })), ' i ')}, to`;
@@ -351,9 +363,12 @@
       const same = !!pj && pj.mode === 'same' && ref.kind !== 'fresh' && pj.src === key(ref.f);
       const chained = !!pj && ref.kind === 'fresh' && eq(prev.concl, ref.f);
       if (this.merge && (same || chained)) {
-        pj.parts.push([chained ? ', a stąd ' : ' oraz ', part]);
+        pj.parts.push([chained ? CHAINED : ' oraz ', part]);
         if (chained) pj.mode = 'chain';
-        prev.segs = T`${pj.lead}${BY_CONJUNCTION}${pj.parts.map(([glue, p], i) => (i ? [glue, p] : p))}.`;
+        // dłuższy łańcuch: „kolejno σ̂(α) = T, σ̂(β) = T i σ̂(γ) = T” zamiast „…, a stąd …, a stąd …”
+        const long = pj.parts.length >= 3 && pj.parts.slice(1).every(([glue]) => glue === CHAINED);
+        prev.segs = long ? T`${pj.lead}${BY_CONJUNCTION}kolejno ${list(pj.parts.map(([, p]) => p), ' i ')}.`
+          : T`${pj.lead}${BY_CONJUNCTION}${pj.parts.map(([glue, p], i) => (i ? [glue, p] : p))}.`;
         prev.nodes.push(n);
         prev.concl = n.f;
         if (n.f.t === 'F') prev.contra = true;
@@ -368,7 +383,7 @@
 
     conjunction(n) {
       const [a, b] = n.prem;
-      const heavy = x => x.rule !== 'hyp' && !(this.skipKnown && this.known(key(x.f))) && workIn(x) >= 3;
+      const heavy = x => x.rule !== 'hyp' && !(this.skipKnown && this.known(x.f)) && workIn(x) >= 3;
       const announce = this.merge && heavy(a) && heavy(b);
       if (announce) this.announce(a.f, T`Pokażemy najpierw, że ${this.is(a.f)}.`);
       const ra = this.establish(a);
@@ -418,8 +433,8 @@
     explosion(n) {
       const ref = this.establish(n.prem[0]), concl = T`${this.is(n.f)}${rule('botE')}`;
       const sentence = ref.kind !== 'hyp' ? T`Ten przypadek jest więc niemożliwy, a zatem w szczególności ${concl}.`
-        : this.isLastAssumption(ref) ? T`To jednak niemożliwe, bo zawsze ${this.isNot(BOT)}, więc ten przypadek nie zachodzi — w szczególności ${concl}.`
-          : T`Założenie ${this.is(BOT)} nie może zachodzić (zawsze ${this.isNot(BOT)}), więc ten przypadek jest niemożliwy — w szczególności ${concl}.`;
+        : this.isLastAssumption(ref) ? T`Ten przypadek jest jednak niemożliwy, bo zawsze ${this.isNot(BOT)}, a zatem w szczególności ${concl}.`
+          : T`Założenie ${this.is(BOT)} jest sprzeczne (zawsze ${this.isNot(BOT)}), więc ten przypadek jest niemożliwy — w szczególności ${concl}.`;
       return this.say(sentence, { nodes: [n], concl: n.f });
     }
 
@@ -532,7 +547,10 @@
       if (this.merge && root.rule === 'impI') this.implicationChain(root);
       else if (this.merge && root.rule === 'notI') this.negation(root, true);
       else if (this.merge && isRAA(root)) this.byContradiction(root, true);
-      else this.establish(root);
+      else {
+        this.announced.add(key(root.f));   // „pokażmy, że …” padło już w zdaniu otwierającym
+        this.establish(root);
+      }
       this.say(this.closing(), { event: 'note' }).segs.push(' ', QED);
     }
 
@@ -548,12 +566,11 @@
       this.scopes.push(new Map());
       const single = chain.length === 1;
       this.say(single ? T`Rozważmy dwa przypadki. ${this.trivialCase(false)}` : this.trivialCase(true), { event: 'note' });
-      chain.forEach((c, i) => {
-        const a = c.prem[0].a, last = i === chain.length - 1;
-        const opening = i > 0 ? T`Załóżmy ponadto, że ${this.is(a)}` : single ? T`Załóżmy teraz, że ${this.is(a)}` : T`Załóżmy więc, że ${this.is(a)}`;
-        this.say(T`${opening}${last ? this.subgoal(goal) : []}.`, { event: 'assume', nodes: [c], box: 0, concl: a, how: 'assume' });
-        this.learn(a, 'hyp');
-      });
+      // wszystkie poprzedniki w jednym zdaniu: „Załóżmy więc, że σ̂(α₁) = T, σ̂(α₂) = T i σ̂(α₃) = T”
+      const assumed = uniqueBy(chain.map(c => c.prem[0].a), a => a);
+      this.say(T`${single ? 'Załóżmy teraz' : 'Załóżmy więc'}, że ${list(assumed.map(a => this.is(a)), ' i ')}${this.subgoal(goal)}.`,
+        { event: 'assume', nodes: chain, box: 0, concl: assumed[assumed.length - 1], how: 'assume' });
+      assumed.forEach(a => { this.learn(a, 'hyp'); this.last.keys.add(key(a)); });
       this.body(goal);
       const s = this.lastSentence(), contra = !!(s && s.contra), nodes = [...chain].reverse();
       const end = T`z definicji implikacji także w tym przypadku ${this.is(root.f)}${rule('impI')}`;
@@ -573,20 +590,39 @@
        • (∀e) i (∃i) — definicja kwantyfikatora i twierdzenie o podstawianiu (Twierdzenie 192),
        • świeża zmienna nie występuje wolno w założeniach ani we wniosku, więc zmiana jej wartości
          ich nie dotyczy (wartość formuły zależy tylko od wartości jej zmiennych wolnych).
-     Wartościowania wewnątrz okien to v₁, v₂, …, a wybrane elementy — a₁, a₂, …
+     Wartościowania wewnątrz okien to v₁, v₂, …, a wybrane elementy — a₁, a₂, … (gdy w dowodzie
+     są już zmienne v₁ albo stałe a₁ — inne litery, by nazwy się nie myliły).
      ===================================================================== */
 
-  const valName = k => (k ? 'v' + k : 'v');
-  const elemName = k => 'a' + k;
   const nameSeg = n => m(plainName(n), htmlName(n), texName(n));
   const elementIn = a => m(`${plainName(a)} ∈ A`, `${htmlName(a)} ∈ <i>A</i>`, `${texName(a)} \\in A`);
   const STRUCTURE = m('𝔄', '𝔄', '\\mathfrak{A}');
   const UNIVERSE = m('A', '<i>A</i>', 'A');
-  const VALUATION = m('v : V → A', '<i>v</i> : <i>V</i> → <i>A</i>', 'v \\colon V \\to A');
+  const valuationOf = v => m(`${v} : V → A`, `<i>${v}</i> : <i>V</i> → <i>A</i>`, `${v} \\colon V \\to A`);
+
+  /** Nazwy symboli użytych w dowodzie (zmienne, stałe, funkcje, relacje). */
+  function symbolNames(root) {
+    const out = new Set();
+    const rec = g => {
+      if (g.t === 'var' || g.t === 'fn' || g.t === 'v') out.add(g.n);
+      if (isQuant(g)) out.add(g.x);
+      if (g.args) g.args.forEach(rec);
+      if (g.a) rec(g.a);
+      if (g.b) rec(g.b);
+    };
+    ND.Proof.walk([root], n => {
+      rec(n.f);
+      n.prem.forEach(p => { if (p.box) { if (p.a) rec(p.a); if (p.x) out.add(p.x); } });
+    });
+    return out;
+  }
+
+  /** Pierwsza z liter, której nazwy z indeksami (v₁, v₂, …) nie występują wśród `names`. */
+  const freeLetter = (letters, names) => letters.find(l => ![...names].some(n => new RegExp(`^${l}\\d*$`).test(n))) || letters[0];
 
   /** v_{x}^{a} — wartościowanie v zmienione w punkcie x (Def. 188); w tekście bez indeksów: v[x ↦ a]. */
   function modified(v, x, a) {
-    const wrap = s => (v === valName(0) ? s : `(${s})`);   // indeksy przy v₁ — w nawiasach
+    const wrap = s => (/\d$/.test(v) ? `(${s})` : s);   // indeksy przy v₁ — w nawiasach
     return m(`${plainName(v)}[${plainName(x)} ↦ ${plainName(a)}]`,
       `${wrap(htmlName(v))}<span class="vm"><span>${htmlName(a)}</span><span>${htmlName(x)}</span></span>`,
       `{${wrap(texName(v))}}_{${texName(x)}}^{${texName(a)}}`);
@@ -606,8 +642,20 @@
   class FOProseWriter extends ProseWriter {
     constructor(opts) {
       super(opts);
-      this.vals = [valName(0)];
+      this.letters = { v: 'v', a: 'a' };
+      this.vals = [this.valName(0)];
       this.counter = 0;
+    }
+
+    /** Wartościowanie v, v₁, v₂, … i element a₁, a₂, … (litery dobrane do dowodu w proveRoot). */
+    valName(k) { return k ? this.letters.v + k : this.letters.v; }
+    elemName(k) { return this.letters.a + k; }
+
+    proveRoot(root) {
+      const names = symbolNames(root);
+      this.letters = { v: freeLetter(['v', 'w', 'u'], names), a: freeLetter(['a', 'b', 'c', 'd', 'e'], names) };
+      this.vals = [this.valName(0)];
+      super.proveRoot(root);
     }
 
     get v() { return this.vals[this.vals.length - 1]; }
@@ -615,10 +663,10 @@
     isNot(f) { return val(this.rename(f), false, this.v); }
 
     opening() {
-      return T`weźmy dowolną strukturę ${STRUCTURE} o uniwersum ${UNIVERSE} oraz dowolne wartościowanie ${VALUATION} i pokażmy, że ${this.is(this.phi)}.`;
+      return T`weźmy dowolną strukturę ${STRUCTURE} o uniwersum ${UNIVERSE} oraz dowolne wartościowanie ${valuationOf(this.valName(0))} i pokażmy, że ${this.is(this.phi)}.`;
     }
 
-    closing() { return T`Ponieważ struktura ${STRUCTURE} i wartościowanie ${nameSeg(valName(0))} były dowolne, formuła ${this.phi} jest tautologią.`; }
+    closing() { return T`Ponieważ struktura ${STRUCTURE} i wartościowanie ${nameSeg(this.valName(0))} były dowolne, formuła ${this.phi} jest tautologią.`; }
 
     trivialCase(many) {
       return many ? T`Przypadek, gdy któryś z poprzedników nie jest spełniony, jest trywialny.` : T`Przypadek, gdy poprzednik nie jest spełniony, jest trywialny.`;
@@ -637,7 +685,7 @@
     /* ---------- okna ze świeżą zmienną ---------- */
 
     /** Nazwa elementu, który wybierze najbliższe okno. */
-    nextElement() { return elemName(this.counter + 1); }
+    nextElement() { return this.elemName(this.counter + 1); }
 
     /**
      * Otwiera okno ze świeżą zmienną `x`: wcięty blok, nowy zasięg i wartościowanie v_k = v_{x}^{a_k}.
@@ -646,9 +694,9 @@
      */
     enter(x) {
       const carried = this.scopes.some(sc => [...sc.values()].includes('hyp'));
-      const k = ++this.counter, before = this.v, a = elemName(k), after = valName(k);
+      const k = ++this.counter, before = this.v, a = this.elemName(k), after = this.valName(k);
       this.open();
-      this.scopes.push(new Map());
+      this.scopes.push(Object.assign(new Map(), { fresh: x }));   // zob. known()
       this.vals.push(after);
       return { a, after, carried, def: T`${nameSeg(after)} = ${modified(before, x, a)}` };
     }

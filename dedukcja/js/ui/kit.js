@@ -55,18 +55,21 @@
 
   /* ---------- komunikaty ---------- */
   const TOAST_MS = 2600, IMPORTANT_MS = 6500;
-  let toastTimer = 0, importantUntil = 0, deferred = null;
+  /** Ile ważnych komunikatów naraz (dłuższa lista zasłoniłaby ekran telefonu). */
+  const TOAST_PARTS = 2;
+  let toastTimer = 0, importantUntil = 0, deferred = null, shown = [];
 
   /**
    * Krótki komunikat u góry ekranu. Ważne komunikaty (important: true — np. o utracie pracy)
    * są widoczne dłużej, a zwykłe pojawiają się dopiero po nich, zamiast je zasłonić;
-   * kolejny ważny komunikat dopisuje się do widocznego.
+   * kolejny ważny komunikat dopisuje się do widocznego (bez powtórzeń, najwyżej dwa naraz).
    */
   function toast(message, { important = false } = {}) {
     const busy = Date.now() < importantUntil;
     if (!important && busy) { deferred = message; return; }
     const t = $('toast'), ms = important ? IMPORTANT_MS : TOAST_MS;
-    t.textContent = important && busy ? `${t.textContent} · ${message}` : message;
+    shown = important && busy ? [...shown.filter(m => m !== message), message].slice(-TOAST_PARTS) : [message];
+    t.textContent = shown.join(' · ');
     t.classList.add('show');
     importantUntil = important ? Date.now() + ms : 0;
     clearTimeout(toastTimer);
@@ -218,6 +221,26 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1500);
   }
 
+  /** Czy element jest w dokumencie i widoczny (ukryty element z fokusem przeglądarka zaraz „gubi”). */
+  const isShown = el => !!el && el.isConnected && el.getClientRects().length > 0;
+
+  /**
+   * Przerysowanie bez gubienia fokusu klawiatury: element z fokusem (w jednym z kontenerów o id z `ids`)
+   * odnajdujemy po nowym narysowaniu po atrybutach data-… z listy `keys`; gdy zniknął albo jest ukryty,
+   * fokus trafia na pierwszy widoczny element z selektorów `fallbacks`.
+   */
+  function keepFocus(ids, keys, redraw, fallbacks = []) {
+    const active = document.activeElement;
+    const container = active && ids.map($).find(c => c && c.contains(active));
+    const attrs = container ? keys.filter(k => active.dataset[k] !== undefined) : [];
+    const selector = attrs.map(k => `[data-${k}="${CSS.escape(active.dataset[k])}"]`).join('');
+    redraw();
+    const now = document.activeElement;
+    if (!container || (now !== document.body && isShown(now))) return;
+    const el = [selector && container.querySelector(selector), ...fallbacks.map(s => document.querySelector(s))].find(isShown);
+    if (el) el.focus({ preventScroll: true });
+  }
+
   /** Wywołuje fn co najwyżej raz na klatkę animacji. */
   function perFrame(fn) {
     let queued = false;
@@ -298,7 +321,7 @@
 
   UI.kit = Object.freeze({
     $, icon, hydrateIcons, plural, toast, storage, createHistory, LINK_LIMIT, encodeLink, decodeLink,
-    theme, reducedMotion, syncBars, scrollToView, markChoice,
+    theme, reducedMotion, syncBars, scrollToView, markChoice, isShown, keepFocus,
     copyText, copyImage, download, perFrame, overlay, anyOverlay, watchOverlays, closeMenusOnOutsideClick, Modal,
   });
 })(globalThis.ND ||= {});

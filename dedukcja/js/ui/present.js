@@ -181,7 +181,7 @@
     markChoice('pvOrder', 'order', pv.order);
     document.querySelectorAll('#pvOrder button').forEach(b => {
       b.disabled = b.dataset.order === 'reading' && !pv.complete;
-      b.title = b.disabled ? 'Dostępne dla kompletnych dowodów' : b.dataset.title;
+      b.title = b.disabled ? 'Dostępne tylko dla kompletnych dowodów' : b.dataset.title;
     });
     pv.celebrated = false;
     pv.k = 0;

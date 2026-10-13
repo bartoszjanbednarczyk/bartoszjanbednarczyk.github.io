@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dedukcja naturalna</title>
-<meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań i rachunku kwantyfikatorów (dowody z oknami, podpowiedzi, dowód w języku naturalnym, prezentacja, eksport do PNG/SVG/LaTeX-a) oraz rezolucja dla rachunku zdań.">
+<meta name="description" content="Interaktywna dedukcja naturalna dla rachunku zdań i rachunku kwantyfikatorów (dowody z oknami, podpowiedzi, dowód w języku naturalnym, prezentacja, eksport do PNG/SVG/LaTeX-a) oraz rezolucja dla rachunku zdań.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20261013a">
+<link rel="stylesheet" href="css/app.css?v=20261014b">
 <script>
   /* motyw przed pierwszym malowaniem (bez mignięcia): zapisany wybór, domyślnie białe tło */
   (function () {
@@ -34,7 +34,7 @@
     <a class="btn icon hide-sm" id="homeBtn" href="../dedukcja.html" title="Wróć na stronę Bartosza Bednarczyka" aria-label="Strona główna" hidden><i data-ic="home"></i></a>
     <a class="btn icon hide-sm" id="fullBtn" href="index.html" target="_blank" rel="noopener" title="Otwórz na pełnym ekranie (w nowej karcie)" aria-label="Pełny ekran" hidden><i data-ic="expand"></i></a>
     <button type="button" class="btn ghost" id="exportOpen" title="Eksport: obrazek PNG/SVG albo kod LaTeX"><i data-ic="download"></i><span class="hide-sm">Eksport</span></button>
-    <button type="button" class="btn icon" id="share" title="Kopiuj link z bieżącym dowodem" aria-label="Udostępnij"><i data-ic="link"></i></button>
+    <button type="button" class="btn icon" id="share" title="Kopiuj link do bieżącego dowodu" aria-label="Udostępnij"><i data-ic="link"></i></button>
     <button type="button" class="btn icon" id="helpOpen" title="Pomoc i samouczek" aria-label="Pomoc"><i data-ic="help"></i></button>
     <span class="sep hide-sm"></span>
     <div class="tseg" id="themeSeg" role="radiogroup" aria-label="Tło">
@@ -144,7 +144,7 @@
     <input class="fin" id="askInput" autocomplete="off" spellcheck="false" placeholder="kliknij symbole poniżej…" aria-label="Formuła">
     <div class="prev" id="askPreview" aria-live="polite"></div>
     <div class="pal" id="askPalette"></div>
-    <div class="sugw" id="askSuggestWrap"><div class="lab">Podpowiedzi</div><div class="chips" id="askSuggest"></div></div>
+    <div class="sugw" id="askSuggestWrap"><div class="lab">Propozycje</div><div class="chips" id="askSuggest"></div></div>
     <div class="mfoot">
       <button type="button" class="btn" data-close>Anuluj</button>
       <button type="button" class="btn primary" id="askOk">Zatwierdź</button>
@@ -204,7 +204,7 @@
       </div>
     </div>
     <div id="expLatexPane" hidden>
-      <div class="desc">Kod używa pakietu <code>proof</code> (polecenie <code>\infer</code>) i makra <code>\okno</code>, które rysuje pudełko z założeniem. Kompiluje się pdflatex-em; dokument <code>standalone</code> daje przycięty obrazek dowodu.</div>
+      <div class="desc">Kod używa pakietu <code>proof</code> (polecenie <code>\infer</code>) i makra <code>\okno</code>, które rysuje pudełko z założeniem. Kompiluje się pdflatexem, a dokument <code>standalone</code> daje przycięty obrazek dowodu.</div>
       <label class="chk" style="margin-bottom:10px"><input type="checkbox" id="texFull"> pełny dokument (standalone)</label>
       <textarea id="tex" readonly spellcheck="false" aria-label="Kod LaTeX"></textarea>
       <div class="mfoot">
@@ -231,67 +231,69 @@
     </div>
     <h4 data-for="fo">Rachunek kwantyfikatorów (rozdz. 3.3)</h4>
     <ul data-for="fo">
-      <li>Formuły: <code>Ax p(x)</code> albo <code>∀x p(x)</code>, <code>Ex q(x, f(a))</code> albo <code>∃x …</code>. Kwantyfikator wiąże jak negacja: <span class="math">∀<i>x</i> <i>p</i>(<i>x</i>) ⇒ <i>q</i></span> to <span class="math">(∀<i>x</i> <i>p</i>(<i>x</i>)) ⇒ <i>q</i></span>; kropka rozciąga jego zasięg do końca: <code>Ax. p(x) -> q(x)</code> to <span class="math">∀<i>x</i> (<i>p</i>(<i>x</i>) ⇒ <i>q</i>(<i>x</i>))</span>.</li>
-      <li>Symbole jak w skrypcie: zmienne <i>u</i>–<i>z</i> (z indeksem: <code>x0</code> → <span class="math"><i>x</i><sub>0</sub></span>), stałe <i>a</i>–<i>e</i>, symbole funkcyjne <i>f</i>–<i>h</i> (z argumentami, np. <code>f(x, a)</code>), symbole relacyjne <i>p</i>–<i>t</i> oraz <i>φ</i>, <i>ψ</i> — schematy z zadań zapisujemy jako <span class="math"><i>φ</i>(<i>x</i>)</span>.</li>
+      <li>Formuły: <code>Ax p(x)</code> albo <code>∀x p(x)</code>, <code>Ex q(x, f(a))</code> albo <code>∃x …</code>. Przy wpisywaniu kwantyfikator wiąże jak negacja: <code>Ax p(x) -> q</code> to <span class="math">(∀<i>x</i> <i>p</i>(<i>x</i>)) ⇒ <i>q</i></span>; kropka rozciąga jego zasięg do końca: <code>Ax. p(x) -> q(x)</code> to <span class="math">∀<i>x</i> (<i>p</i>(<i>x</i>) ⇒ <i>q</i>(<i>x</i>))</span>.</li>
+      <li>Na kolokwiach i egzaminach kwantyfikator obejmuje zwykle wszystko aż do nawiasu zamykającego, dlatego aplikacja dopisuje nawiasy wszędzie tam, gdzie po kwantyfikatorze coś jeszcze stoi — np. <span class="math">(∃<i>x</i> <i>p</i>(<i>x</i>)) ⇒ ¬∀<i>x</i> ¬<i>p</i>(<i>x</i>)</span>.</li>
+      <li>Symbole jak w skrypcie: zmienne <i>u</i>–<i>z</i> (z indeksem: <code>x0</code> → <span class="math"><i>x</i><sub>0</sub></span>), stałe <i>a</i>–<i>e</i> i liczby (<code>0</code>, <code>42</code>), symbole funkcyjne <i>f</i>–<i>h</i> (z argumentami, np. <code>f(x, a)</code>), symbole relacyjne <i>p</i>–<i>t</i>, <i>P</i>–<i>S</i> oraz <i>φ</i>, <i>ψ</i> — schematy z zadań zapisujemy jako <span class="math"><i>φ</i>(<i>x</i>)</span>.</li>
+      <li>Relacje dwuargumentowe można pisać między argumentami: <code>f(x) = y</code>, <code>f(x) &gt; 0</code>, <code>x &lt; y</code>, <code>x &lt;= y</code> → <span class="math"><i>x</i> ≤ <i>y</i></span>, <code>x &gt;= y</code> → <span class="math"><i>x</i> ≥ <i>y</i></span>, <code>x != y</code> → <span class="math">¬(<i>x</i> = <i>y</i>)</span>. To zwykłe symbole relacyjne — równość nie ma tu osobnych reguł. W rachunku kwantyfikatorów cyfry są stałymi, więc ⊤ i ⊥ wpisuje się jako <code>T</code> i <code>F</code>.</li>
       <li>Reguły (∀i) i (∃e) otwierają okno ze <b>świeżą zmienną</b> <span class="math"><i>x</i><sub>0</sub></span> — aplikacja dobiera ją sama, tak by nie występowała w pozostałej części dowodu, i pilnuje, by nie była wolna w założeniach ani we wniosku. Reguła (∀e) pyta o formułę <span class="math">∀<i>x</i> <i>α</i></span>, z której wynika cel, a (∃i) — o term-świadka <span class="math"><i>t</i></span>; podstawienie <span class="math"><i>α</i>[<i>x</i>/<i>t</i>]</span> musi być dopuszczalne (Def. 52).</li>
-      <li>Dowód w języku naturalnym rozumuje na strukturach (rozdz. 13.1): dla dowolnej struktury <span class="math">𝔄</span> i wartościowania <span class="math"><i>v</i></span> pokazuje, że <span class="math">𝔄 ⊨ <i>φ</i>[<i>v</i>]</span>; okno ze świeżą zmienną to wybór elementu uniwersum.</li>
-      <li>Podpowiedzi działają we wszystkich przykładach z menu <b>Przykłady</b> (dla własnych formuł — nie). Aplikacja zakłada, że dowodzisz praw rachunku kwantyfikatorów.</li>
+      <li>Dowód w języku naturalnym jest rozumowaniem na strukturach (rozdz. 13.1): dla dowolnej struktury <span class="math">𝔄</span> i wartościowania <span class="math"><i>v</i></span> pokazuje, że <span class="math">𝔄 ⊨ <i>φ</i>[<i>v</i>]</span>; oknu ze świeżą zmienną odpowiada wybór elementu uniwersum.</li>
+      <li>Podpowiedzi działają tylko w <b>zadaniach przykładowych</b> na górze menu <b>Przykłady</b> — to zadania z kolokwiów i egzaminów, do których opublikowano rozwiązania. Pozostałe zadania z kolokwiów i egzaminów, zadania ze skryptu i własne formuły rozwiązujesz samodzielnie. Podpowiedzi zakładają, że dowodzona formuła jest prawem rachunku kwantyfikatorów — nie szukają kontrprzykładów.</li>
     </ul>
     <h4 data-for="res">Rezolucja (rozdz. 2.7)</h4>
     <ul data-for="res">
       <li>Zadanie: rozstrzygnij, czy zbiór klauzul jest sprzeczny. Jeśli tak — wyprowadź klauzulę pustą <span class="math">⊥</span> (rezolucyjny dowód sprzeczności, Def. 47); jeśli nie — wskaż wartościowanie <span class="math">σ</span>, które spełnia wszystkie klauzule.</li>
-      <li>Kliknij dwie klauzule: pasek na dole pokaże ich rezolwenty — po jednej dla każdej zmiennej <span class="math"><i>p</i></span>, która w jednej klauzuli występuje jako <span class="math"><i>p</i></span>, a w drugiej jako <span class="math">¬<i>p</i></span>. Kliknięta rezolwenta trafia na koniec listy. Gdy pojawi się <span class="math">⊥</span>, pod listą zobaczysz drzewo dowodu (jak na str. 43) i ciąg <span class="math"><i>C</i><sub>0</sub>, …, <i>C<sub>n</sub></i></span>.</li>
-      <li>Wartościowanie ustawiasz w panelu z lewej (<b>T</b> albo <b>F</b> przy każdej zmiennej); przy klauzulach widać, czy są spełnione.</li>
+      <li>Kliknij dwie klauzule: dolny pasek pokaże ich rezolwenty — po jednej dla każdej zmiennej <span class="math"><i>p</i></span>, która w jednej klauzuli występuje jako <span class="math"><i>p</i></span>, a w drugiej jako <span class="math">¬<i>p</i></span>. Kliknięta rezolwenta trafia na koniec listy. Gdy pojawi się <span class="math">⊥</span>, pod listą zobaczysz drzewo dowodu (jak na str. 43) i ciąg <span class="math"><i>C</i><sub>0</sub>, …, <i>C<sub>n</sub></i></span>.</li>
+      <li>Wartościowanie ustawiasz w panelu po lewej (<b>T</b> albo <b>F</b> przy każdej zmiennej); przy klauzulach widać, czy są spełnione.</li>
       <li>Klauzule wpisuj jak w skrypcie: <code>{¬p ∨ q, p, ¬q}</code> albo <code>~p | q, p, ~q</code>. Klauzule <span class="math"><i>p</i> ∨ <i>q</i></span> i <span class="math"><i>q</i> ∨ <i>p</i></span> (oraz <span class="math"><i>p</i> ∨ <i>p</i></span> i <span class="math"><i>p</i></span>) to ta sama klauzula.</li>
       <li>Zaznaczoną rezolwentę usuniesz klawiszem <span class="kbd">Delete</span> (razem z rezolwentami, które z niej powstały); <span class="kbd">Ctrl+Z</span> cofa ostatnią zmianę.</li>
-      <li>Podpowiedzi (<span class="kbd">H</span>) działają tylko w zbiorach z grupy „z podpowiedziami”.</li>
+      <li>Podpowiedzi (<span class="kbd">H</span>) działają tylko w <b>zbiorach przykładowych</b> na górze menu <b>Przykłady</b> — z kolokwiów i egzaminów, do których opublikowano rozwiązania. Pozostałe zbiory z kolokwiów, egzaminów i ze skryptu rozwiązujesz samodzielnie.</li>
     </ul>
     <h4 data-for="nd">Dwa tryby</h4>
     <ul data-for="nd">
       <li><b>↑ Od celu.</b> Dodaj cel, kliknij go i wybierz regułę. Nad celem pojawią się przesłanki, a dla (⇒i), (¬i) i (∨e) — okna z założeniami. Powtarzaj, aż nie zostanie żaden otwarty cel.</li>
       <li><b>↓ Od przesłanek.</b> Dodaj przesłanki (hipotezy), zaznacz formuły na dole fragmentów i wybierz regułę — pod spodem pojawi się wniosek. Kolejność kliknięć ma znaczenie, np. dla (∧i) i (∨e). Reguły z oknem zamykają w nim wszystkie hipotezy równe założeniu.</li>
-      <li>Tryby można łączyć: gotowy fragment wstawisz w otwarty cel o tej samej formule (<i>Wstaw fragment w cel</i>), a poddrzewo możesz odłączyć jako osobny fragment.</li>
+      <li>Tryby można łączyć: gotowy fragment wstawisz w otwarty cel z tą samą formułą (<i>Wstaw fragment w cel</i>), a poddrzewo możesz odłączyć jako osobny fragment.</li>
     </ul>
     <h4 data-for="nd">Założenia są lokalne</h4>
     <ul data-for="nd">
-      <li>Założenia wolno używać tylko wewnątrz jego okna — reguła <i>założenie</i> jest dostępna tylko tam.</li>
+      <li>Z założenia wolno korzystać wyłącznie wewnątrz jego okna — tylko tam działa reguła <i>założenie</i>.</li>
       <li>Otwarte cele to po prostu niezamknięte hipotezy. W trybie „od przesłanek” nagłówek fragmentu pokazuje sekwent <span class="math">Γ ⊢ φ</span>, gdzie Γ to te hipotezy. Dowód jest kompletny, gdy Γ jest puste — wtedy nagłówek pokazuje <span class="math">⊢ φ</span>.</li>
     </ul>
     <h4 data-for="nd">Wnioski z założeń</h4>
     <ul data-for="nd">
-      <li>Kliknij <b>założenie w nagłówku okna</b> i wybierz regułę na pasku na dole — pod założeniem pojawi się <b>wniosek</b>. Np. z <span class="math"><i>p</i> ∧ <i>q</i></span> regułami (∧e<sub>1</sub>) i (∧e<sub>2</sub>) dostaniesz <span class="math"><i>p</i></span> oraz <span class="math"><i>q</i></span>.</li>
+      <li>Kliknij <b>założenie w nagłówku okna</b> i wybierz regułę na dolnym pasku — pod założeniem pojawi się <b>wniosek</b>. Np. z <span class="math"><i>p</i> ∧ <i>q</i></span> regułami (∧e<sub>1</sub>) i (∧e<sub>2</sub>) dostaniesz <span class="math"><i>p</i></span> oraz <span class="math"><i>q</i></span>.</li>
       <li>Z wniosków można wyciągać kolejne: kliknij jeden albo dwa (np. <span class="math"><i>p</i></span> i <span class="math"><i>p</i> ⇒ <i>q</i></span> dla (⇒e)). Działają reguły eliminacji oraz (∧i) i (∨i); wolno łączyć założenia okna z założeniami okien, które je otaczają.</li>
       <li>Wnioski działają jak założenia: cel w tym oknie równy wnioskowi zamyka się sam (albo regułą <i>założenie</i>), a do dowodu trafia pełne wyprowadzenie — np. <span class="math">(∧e<sub>1</sub>)</span> nad założeniem. Zaznaczony wniosek usuniesz klawiszem <span class="kbd">Delete</span>.</li>
     </ul>
     <h4 data-for="nd">Cofanie kroków</h4>
     <ul data-for="nd">
-      <li><b>Cofnij krok</b> (<span class="kbd">Delete</span>): zaznacz uzasadnioną formułę albo kliknij nazwę reguły przy kresce — reguła zostanie cofnięta, a formuła znów będzie otwartym celem. Kroki wykonane nad przesłankami nie giną: zostają jako osobne fragmenty, które wstawisz z powrotem (zaznacz otwarty cel i wybierz <i>Wstaw fragment</i>) albo usuniesz. Przy zaznaczonym otwartym celu cofa się krok, z którego ten cel powstał.</li>
+      <li><b>Cofnij krok</b> (<span class="kbd">Delete</span>): zaznacz uzasadnioną formułę albo kliknij nazwę reguły przy kresce — reguła zostanie cofnięta, a formuła znów będzie otwartym celem. Kroki wykonane nad przesłankami nie giną: zostają jako osobne fragmenty, które wstawisz z powrotem (zaznacz otwarty cel i wybierz <i>Wstaw fragment w cel</i>) albo usuniesz. Przy zaznaczonym otwartym celu cofa się krok, z którego ten cel powstał.</li>
       <li><b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>) usuwa wszystko nad formułą. Gdy najedziesz na któryś z tych przycisków, rysunek pokaże, co zostanie cofnięte.</li>
       <li>W trybie „od przesłanek” cofnięcie kroku na dole fragmentu rozdziela go z powrotem na przesłanki.</li>
-      <li>Przycisk <b>↶</b> na górze (<span class="kbd">Ctrl+Z</span>) cofa po prostu ostatnią zmianę dowolnego rodzaju — także samo cofnięcie kroku; <b>↷</b> (<span class="kbd">Ctrl+Y</span>) ją ponawia.</li>
+      <li>Przycisk <b>↶</b> na górze (<span class="kbd">Ctrl+Z</span>) cofa ostatnią zmianę, jakakolwiek by była — także cofnięcie kroku; <b>↷</b> (<span class="kbd">Ctrl+Y</span>) ją przywraca.</li>
     </ul>
     <h4 data-for="nd">Gotowy dowód</h4>
     <ul data-for="nd">
-      <li data-for="prop">Pod kompletnym dowodem pojawia się <b>dowód w języku naturalnym</b> — rozumowanie na wartościowaniach, jak w rozdz. 2 skryptu: dla dowolnego wartościowania <span class="math">σ</span> pokazuje, że <span class="math">σ̂(φ) = <span class="tv">T</span></span>, a okna stają się przypadkami (wcięte akapity). Nazwy reguł można dopisać przełącznikiem; tekst skopiujesz jako zwykły tekst albo LaTeX.</li>
-      <li><b>Odtwórz</b> (skrót <span class="kbd">P</span>) pokazuje dowód krok po kroku w trybie prezentacji z dużą czcionką — „od celu” albo „od przesłanek”. Strzałki przewijają kroki, <span class="kbd">F</span> włącza pełny ekran.</li>
+      <li data-for="prop">Pod kompletnym dowodem pojawia się <b>dowód w języku naturalnym</b> — rozumowanie na wartościowaniach, jak w rozdz. 2 skryptu: dla dowolnego wartościowania <span class="math">σ</span> pokazuje, że <span class="math">σ̂(φ) = <span class="tv">T</span></span>, a okna stają się przypadkami (wcięte akapity). Nazwy reguł można dopisać przełącznikiem, a całość skopiować jako zwykły tekst albo kod LaTeX.</li>
+      <li><b>Odtwórz</b> (skrót <span class="kbd">P</span>) pokazuje dowód krok po kroku w trybie prezentacji z dużą czcionką — „od celu” albo „od przesłanek”. Strzałkami przechodzisz między krokami, a <span class="kbd">F</span> włącza pełny ekran.</li>
       <li><b>Eksport</b> zapisuje dowód jako obrazek PNG lub SVG (np. do notatek albo na Discorda — <i>Kopiuj PNG</i> i wklej) albo jako kod LaTeX.</li>
     </ul>
     <h4 data-for="nd">Wpisywanie formuł</h4>
     <ul data-for="nd">
-      <li>Klikaj symbole w kreatorze albo pisz: <code>~ ! -</code> → ¬, <code>&amp; /\</code> → ∧, <code>| \/</code> → ∨, <code>-&gt; =&gt;</code> → ⇒, <code>T 1</code> → ⊤, <code>F 0</code> → ⊥.</li>
-      <li>Kolejność wiązania: ¬, ∧, ∨, ⇒; ∧ i ∨ łączą w lewo, ⇒ w prawo (np. <span class="math"><i>p</i> ⇒ <i>q</i> ⇒ <i>r</i></span> to <span class="math"><i>p</i> ⇒ (<i>q</i> ⇒ <i>r</i>)</span>).</li>
+      <li>Klikaj symbole w kreatorze albo pisz: <code>~ ! -</code> → ¬, <code>&amp; /\</code> → ∧, <code>| \/</code> → ∨, <code>-&gt; =&gt;</code> → ⇒, <code>T 1</code> → ⊤, <code>F 0</code> → ⊥ (w rachunku kwantyfikatorów tylko <code>T</code>, <code>F</code> — cyfry są tam stałymi).</li>
+      <li>Najsilniej wiąże ¬, potem ∧, ∨ i ⇒; ∧ i ∨ są łączne lewostronnie, a ⇒ — prawostronnie (np. <span class="math"><i>p</i> ⇒ <i>q</i> ⇒ <i>r</i></span> to <span class="math"><i>p</i> ⇒ (<i>q</i> ⇒ <i>r</i>)</span>).</li>
     </ul>
     <h4 data-for="nd">Skróty</h4>
     <ul data-for="nd">
-      <li><span class="kbd">Shift</span>/<span class="kbd">Ctrl</span>/<span class="kbd">⌘</span> + klik — dodaj do zaznaczenia (w trybie „od przesłanek” każdy klik dodaje).</li>
+      <li><span class="kbd">Shift</span>/<span class="kbd">Ctrl</span>/<span class="kbd">⌘</span> + klik — dodaj do zaznaczenia (w trybie „od przesłanek” wystarczy zwykłe kliknięcie).</li>
       <li><span class="kbd">N</span> następny otwarty cel · <span class="kbd">H</span> podpowiedź · <span class="kbd">P</span> prezentacja · <span class="kbd">Delete</span> cofnij krok · <span class="kbd">Shift+Delete</span> cofnij całe poddrzewo · <span class="kbd">Esc</span> odznacz · <span class="kbd">Ctrl+Z</span> / <span class="kbd">Ctrl+Y</span> cofnij / ponów.</li>
     </ul>
     <h4 data-for="nd">Podpowiedzi</h4>
     <ul data-for="nd">
-      <li data-for="prop">Podpowiedzi działają tylko w <b>zadaniach przykładowych</b> — to dziesięć zadań z kolokwiów i egzaminów na górze menu <b>Przykłady</b>. Zadania ze skryptu i własne formuły rozwiązujesz samodzielnie.</li>
+      <li data-for="prop">Podpowiedzi działają tylko w <b>zadaniach przykładowych</b> na górze menu <b>Przykłady</b> — to zadania z kolokwiów, do których opublikowano rozwiązania. Pozostałe zadania z kolokwiów i egzaminów, zadania ze skryptu i własne formuły rozwiązujesz samodzielnie.</li>
       <li>Przycisk <b>Podpowiedź</b> działa dla zaznaczonego celu, a gdy nic nie jest zaznaczone — dla następnego otwartego celu.</li>
       <li>Kolejne naciśnięcia odsłaniają coraz więcej: <b>1.</b> wskazówka, od czego zacząć; <b>2.</b> konkretna reguła z parametrem (pulsuje na pasku i w tabeli); <b>3.</b> wykonanie tego kroku.</li>
-      <li data-for="prop">Jeśli cel w danym miejscu <b>nie wynika</b> z dostępnych założeń, podpowiedź pokaże kontrprzykład (wartościowanie) i wskaże krok, w którym dowód skręcił w ślepy zaułek — można go cofnąć jednym kliknięciem.</li>
+      <li data-for="prop">Jeśli cel w danym miejscu <b>nie wynika</b> z dostępnych założeń, podpowiedź pokaże kontrprzykład (wartościowanie) i wskaże krok, w którym dowód zabrnął w ślepy zaułek — można go cofnąć jednym kliknięciem.</li>
     </ul>
     <h4>Zapis i udostępnianie</h4>
     <ul>
@@ -307,8 +309,8 @@
     <div class="pv-title" id="pvTitle"></div>
     <span class="sp"></span>
     <div class="tseg" id="pvOrder" role="radiogroup" aria-label="Kolejność kroków">
-      <button type="button" data-order="goal" role="radio" title="Tak, jak szuka się dowodu: od celu do założeń">↑ Od celu</button>
-      <button type="button" data-order="reading" role="radio" title="Tak, jak czyta się dowód: od założeń do wniosku">↓ Od przesłanek</button>
+      <button type="button" data-order="goal" role="radio" title="W kolejności szukania dowodu: od celu do założeń">↑ Od celu</button>
+      <button type="button" data-order="reading" role="radio" title="W kolejności czytania dowodu: od założeń do wniosku">↓ Od przesłanek</button>
     </div>
     <button type="button" class="btn icon" id="pvFull" title="Pełny ekran (F)" aria-label="Pełny ekran"><i data-ic="expand"></i></button>
     <button type="button" class="btn icon" id="pvClose" title="Zamknij (Esc)" aria-label="Zamknij prezentację"><i data-ic="x"></i></button>
@@ -336,28 +338,28 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/formula.js?v=20261013a"></script>
-<script src="js/text.js?v=20261013a"></script>
-<script src="js/proof.js?v=20261013a"></script>
-<script src="js/rules.js?v=20261013a"></script>
-<script src="js/prover.js?v=20261013a"></script>
-<script src="js/prover-fo.js?v=20261013a"></script>
-<script src="js/explain.js?v=20261013a"></script>
-<script src="js/render.js?v=20261013a"></script>
-<script src="js/export.js?v=20261013a"></script>
-<script src="js/resolution.js?v=20261013a"></script>
-<script src="js/examples.js?v=20261013a"></script>
-<script src="js/ui/kit.js?v=20261013a"></script>
-<script src="js/ui/store.js?v=20261013a"></script>
-<script src="js/ui/ask.js?v=20261013a"></script>
-<script src="js/ui/hints.js?v=20261013a"></script>
-<script src="js/ui/actions.js?v=20261013a"></script>
-<script src="js/ui/workspace.js?v=20261013a"></script>
-<script src="js/ui/exporter.js?v=20261013a"></script>
-<script src="js/ui/present.js?v=20261013a"></script>
-<script src="js/ui/tutorial.js?v=20261013a"></script>
-<script src="js/ui/fireworks.js?v=20261013a"></script>
-<script src="js/ui/res.js?v=20261013a"></script>
-<script src="js/ui/main.js?v=20261013a"></script>
+<script src="js/formula.js?v=20261014b"></script>
+<script src="js/text.js?v=20261014b"></script>
+<script src="js/proof.js?v=20261014b"></script>
+<script src="js/rules.js?v=20261014b"></script>
+<script src="js/prover.js?v=20261014b"></script>
+<script src="js/prover-fo.js?v=20261014b"></script>
+<script src="js/explain.js?v=20261014b"></script>
+<script src="js/render.js?v=20261014b"></script>
+<script src="js/export.js?v=20261014b"></script>
+<script src="js/resolution.js?v=20261014b"></script>
+<script src="js/examples.js?v=20261014b"></script>
+<script src="js/ui/kit.js?v=20261014b"></script>
+<script src="js/ui/store.js?v=20261014b"></script>
+<script src="js/ui/ask.js?v=20261014b"></script>
+<script src="js/ui/hints.js?v=20261014b"></script>
+<script src="js/ui/actions.js?v=20261014b"></script>
+<script src="js/ui/workspace.js?v=20261014b"></script>
+<script src="js/ui/exporter.js?v=20261014b"></script>
+<script src="js/ui/present.js?v=20261014b"></script>
+<script src="js/ui/tutorial.js?v=20261014b"></script>
+<script src="js/ui/fireworks.js?v=20261014b"></script>
+<script src="js/ui/res.js?v=20261014b"></script>
+<script src="js/ui/main.js?v=20261014b"></script>
 </body>
 </html>

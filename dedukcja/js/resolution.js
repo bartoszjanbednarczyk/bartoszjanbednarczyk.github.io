@@ -61,6 +61,9 @@
 
   const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
   const symbolAt = (s, i) => `„${String.fromCodePoint(s.codePointAt(i))}”`;
+  /** Zmienna: mała litera i najwyżej dwie cyfry indeksu (także ₀–₉ albo _0 — jak w wypisanych klauzulach). */
+  const VARIABLE = /^([a-z])((?:_?[0-9₀-₉]){0,2})/u;
+  const digitsOf = s => [...s].filter(c => c !== '_').map(c => (c >= '₀' && c <= '₉' ? String(c.codePointAt(0) - 0x2080) : c)).join('');
 
   /** Jedna klauzula, np. „¬p ∨ q” albo „⊥”; `where` — początek komunikatu błędu (np. „Klauzula 2: ”). */
   function parseClause(src, where = '') {
@@ -75,9 +78,9 @@
       skip();
       let neg = false;
       while (i < s.length && NEG.includes(s[i])) { neg = !neg; i++; skip(); }
-      const m = /^([a-z])(\d{0,2})/.exec(s.slice(i));
+      const m = VARIABLE.exec(s.slice(i));
       if (!m) throw fail(`oczekiwano zmiennej (małej litery, np. p), a jest ${i < s.length ? symbolAt(s, i) : 'koniec'}`);
-      lits.push(lit(m[0], neg));
+      lits.push(lit(m[1] + digitsOf(m[2]), neg));
       i += m[0].length;
       skip();
       if (i >= s.length) break;
@@ -108,13 +111,19 @@
     return out;
   }
 
-  /** Zapis klauzuli do linku/pamięci: „~p|q”, pusta — „F”. */
+  /** Zapis klauzuli do linku/pamięci (i zwięzły wpis do pola tekstowego): „~p|q”, pusta — „F”. */
   const toPlain = c => (c.lits.length ? c.lits.map(litKey).join('|') : 'F');
 
   /* ---------- rezolwenty ---------- */
 
-  /** Rezolwenta C i D względem zmiennej v (bez sprawdzania, czy v występuje przeciwnie). */
-  const resolve = (C, D, v) => clause([...C.lits.filter(l => l.v !== v), ...D.lits.filter(l => l.v !== v)]);
+  /**
+   * Rezolwenta C i D względem zmiennej v: usuwamy parę przeciwnych literałów (v z jednej klauzuli,
+   * ¬v z drugiej) — i tylko ją, bo klauzula może zawierać zarówno v, jak i ¬v (np. p ∨ ¬p ∨ q).
+   */
+  const resolve = (C, D, v) => {
+    const pos = has(C, lit(v)) && has(D, lit(v, true));     // v ∈ C i ¬v ∈ D (w przeciwnym razie ¬v ∈ C i v ∈ D)
+    return clause([...C.lits.filter(l => !(l.v === v && l.neg !== pos)), ...D.lits.filter(l => !(l.v === v && l.neg === pos))]);
+  };
 
   /** Czy `on` jest poprawną zmienną rezolucji C i D (w jednej klauzuli p, w drugiej ¬p). */
   const canResolve = (C, D, on) => (has(C, lit(on)) && has(D, lit(on, true))) || (has(C, lit(on, true)) && has(D, lit(on)));
@@ -245,10 +254,33 @@
   }
 
   /**
+   * Największe drzewo dowodu, jakie rysujemy. Kroki tworzą graf (rezolwenta bywa użyta wiele razy),
+   * a drzewo powtarza wspólne części — przy złośliwie dobranym zbiorze rośnie wykładniczo.
+   */
+  const TREE_LIMITS = Object.freeze({ nodes: 400, depth: 50 });
+
+  /** Liczba węzłów i głębokość drzewa dowodu klauzuli nr `i` — bez budowania drzewa. */
+  function treeSize(work, i) {
+    const n0 = work.initial.length, memo = new Map();
+    const rec = j => {
+      if (j < n0) return { nodes: 1, depth: 1 };
+      if (!memo.has(j)) {
+        const s = work.steps[j - n0], a = rec(s.a), b = rec(s.b);
+        memo.set(j, { nodes: 1 + a.nodes + b.nodes, depth: 1 + Math.max(a.depth, b.depth) });
+      }
+      return memo.get(j);
+    };
+    return rec(i);
+  }
+
+  /**
    * Drzewo dowodu klauzuli nr `i` (jak na rysunku w skrypcie): węzły { id, f, rule, prem } —
    * liście to klauzule zbioru 𝓕 (rule null), pozostałe — rezolwenty (rule 'res').
+   * null, gdy drzewo przekracza TREE_LIMITS (dowodem pozostaje ciąg klauzul z Def. 47).
    */
   function tree(work, i) {
+    const size = treeSize(work, i);
+    if (size.nodes > TREE_LIMITS.nodes || size.depth > TREE_LIMITS.depth) return null;
     const n0 = work.initial.length, all = allClauses(work);
     let id = 0;
     const rec = j => {
@@ -346,7 +378,7 @@
   }
 
   ND.Res = Object.freeze({
-    LIMITS, ResError, key, setKey, isEmpty, isTautology, formula, clauseText, clauseHTML, varsOf,
+    LIMITS, TREE_LIMITS, ResError, key, setKey, isEmpty, isTautology, formula, clauseText, clauseHTML, plainText: toPlain, varsOf,
     parseClause, parseClauses, resolvents, resolve, canResolve, valueOf, satisfying, satisfiable, refutation,
     allClauses, indexOf, emptyIndex, refuted, satisfied, withoutResolvent, tree, usedIn, hint, serialize, deserialize,
   });

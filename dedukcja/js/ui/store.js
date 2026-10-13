@@ -26,7 +26,8 @@
   const SYSTEMS = Object.freeze(Object.keys(LINK_TAGS));
   let logic = 'prop', system = 'prop';
   const keys = () => LOGICS[logic];
-  const UNSAVED = 'Ta przeglądarka nie pozwala zapisać pracy — po zamknięciu karty zniknie; zachowaj ją linkiem (przycisk z łańcuchem)';
+  const UNSAVED = 'Ta przeglądarka nie pozwala zapisać pracy — zniknie ona po zamknięciu karty. Aby ją zachować, skopiuj link (przycisk z łańcuchem)';
+  const UNREADABLE = 'Nie udało się odczytać zapisanej pracy — zachowano jej kopię zapasową';
 
   const state = {
     frags: [],          // korzenie fragmentów
@@ -173,28 +174,59 @@
     markSeen();
   }
 
+  const TOO_BIG = 'Powstałaby zbyt duża formuła — ten krok cofnięto';
+
   function limitViolation() {
     if (state.frags.length > Proof.LIMITS.fragments) return `Za dużo fragmentów (maks. ${Proof.LIMITS.fragments}) — usuń niepotrzebne`;
     const s = Proof.stats(state.frags);
     if (s.nodes > Proof.LIMITS.nodes) return 'Dowód byłby za duży — ten krok cofnięto';
     if (s.depth > Proof.LIMITS.depth) return 'Dowód byłby za głęboki — ten krok cofnięto';
-    if (s.formula > F.LIMITS.size) return 'Powstałaby zbyt duża formuła — ten krok cofnięto';
+    if (s.formula > F.LIMITS.size) return TOO_BIG;
     return null;
+  }
+
+  /* ---------- czy zapis da się odczytać ---------- */
+
+  const allFormulas = () => state.frags.flatMap(Proof.formulas);
+  /** Symbole, które w którymś fragmencie mają różną liczbę argumentów (np. p i p(a)). */
+  const clashingSymbols = () => new Set(state.frags.map(r => F.arityClash(Proof.formulas(r))).filter(Boolean));
+  /** Stan przed zmianą: klucze formuł i symbole z kolizjami (starsze zapisy bywają nimi obciążone). */
+  const readability = () => ({ keys: new Set(allFormulas().map(F.key)), clashes: clashingSymbols() });
+
+  /**
+   * Zapis musi się dać odczytać (z localStorage i z linku czyta się go ściśle): każda nowa formuła
+   * przechodzi ścisły odczyt (limity parsera, stała liczba argumentów symboli), a w żadnym fragmencie
+   * nie pojawia się nowa kolizja liczby argumentów. Zwraca komunikat albo null.
+   */
+  function unreadableChange(before) {
+    const arity = n => `Symbol ${F.plainName(n)} miałby w jednym dowodzie różną liczbę argumentów — ten krok cofnięto`;
+    for (const f of allFormulas()) {
+      const k = F.key(f);
+      if (before.keys.has(k)) continue;
+      try { F.parse(k, { logic }); } catch (e) {
+        const n = F.arityClash([f]);
+        return n ? arity(n) : TOO_BIG;
+      }
+    }
+    const fresh = [...clashingSymbols()].find(n => !before.clashes.has(n));
+    return fresh ? arity(fresh) : null;
   }
 
   /* ---------- zapis i powiadamianie ---------- */
 
-  let persistent = true, warned = false;
+  /** Czy ostatni zapis się udał — osobno dla dedukcji naturalnej ('nd') i rezolucji ('res'). */
+  const saved = { nd: true, res: true };
+  let warned = false;
 
   /** Zapisuje pracę; zwraca, czy się udało (tryb prywatny, brak miejsca…). */
   function save(json = snapshot()) {
-    persistent = storage.set(keys().proof, json) && storage.set(keys().mode, state.mode);
-    return persistent;
+    saved.nd = storage.set(keys().proof, json) && storage.set(keys().mode, state.mode);
+    return saved.nd;
   }
 
-  /** Wynik zapisu po zmianie (także w dziale rezolucji) — z jednorazowym ostrzeżeniem, gdy się nie udał. */
-  function noteSaved(ok) {
-    persistent = ok;
+  /** Wynik zapisu po zmianie (channel: 'nd' albo 'res') — z jednorazowym ostrzeżeniem, gdy się nie udał. */
+  function noteSaved(ok, channel = 'nd') {
+    saved[channel] = ok;
     if (!ok && !warned) {
       warned = true;
       toast(UNSAVED, { important: true });
@@ -242,7 +274,7 @@
    * Przekroczenie limitów lub wyjątek cofa zmianę. Zwraca true, jeśli dowód się zmienił.
    */
   function commit(fn, { celebrate = false, select = null } = {}) {
-    const before = snapshot();
+    const before = snapshot(), readableBefore = readability();
     const doneBefore = celebrate ? completeKeys() : null;
     let result;
     try {
@@ -254,7 +286,7 @@
     }
     if (result === false) { refresh(); return false; }
     normalize();
-    const violation = limitViolation();
+    const violation = limitViolation() || unreadableChange(readableBefore);
     if (violation) {
       restore(before);
       toast(violation);
@@ -328,9 +360,11 @@
     try {
       restore(p ? p.proof : storage.get(keys().proof) || '[]', { trusted: !!p });
     } catch (e) {
+      // odłożona kopia czyta się zawsze (trusted), więc tu trafia tylko nieczytelny zapis z przeglądarki
       storage.set(keys().backup, storage.get(keys().proof) || '');
       state.frags = [];
       reindex();
+      toast(UNREADABLE, { important: true });
     }
   }
 
@@ -396,7 +430,7 @@
     if (!total) return 'Link nie zawiera dowodu';
     const parts = [];
     if (added) parts.push('Wczytano dowód z linku');
-    else if (duplicates) parts.push('Dowód z linku jest już w obszarze roboczym');
+    else if (duplicates) parts.push('Dowód z linku jest już otwarty');
     if (skipped) {
       parts.push(`${skipped} ${plural(skipped, 'fragment się nie zmieścił', 'fragmenty się nie zmieściły', 'fragmentów się nie zmieściło')}`
         + ' — usuń niepotrzebne i otwórz link ponownie');
@@ -458,7 +492,7 @@
     history.clear();
     notify();
     emit('external');
-    toast('Wczytano zmiany z innej karty z tą aplikacją', { important: true });
+    toast('Wczytano zmiany wprowadzone w innej karcie', { important: true });
   }
 
   /* ---------- start ---------- */
@@ -487,7 +521,7 @@
         storage.set(keys().backup, saved);
         state.frags = [];
         reindex();
-        messages.push('Nie udało się odczytać zapisanej pracy — jej kopia została zachowana');
+        messages.push(UNREADABLE);
       }
     }
     const imported = importHash(location.hash);
@@ -506,7 +540,7 @@
     status, completeNodes, isFresh,
     commit, refresh, select, pick, resolvePick, setMode,
     undo, redo, canUndo: history.canUndo, canRedo: history.canRedo,
-    load, save, noteSaved, persistent: () => persistent,
+    load, save, noteSaved, persistent: (channel = 'nd') => saved[channel],
     linkHash, shareHash, parseLink, isLinkHash, openLink, onStorageEvent,
   });
 })(globalThis.ND ||= {});

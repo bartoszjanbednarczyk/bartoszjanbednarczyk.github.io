@@ -81,11 +81,29 @@ test('spełnialność: wartościowanie spełnia wszystkie klauzule; zgodność z
   assert.equal(Res.valueOf(C('p ∨ q'), { p: false, q: false }), false);
 });
 
+const byTitle = t => Examples.RES.LIST.find(e => e.title === t);
+
 test('zadanie 133: zbiory 1 i 2 są sprzeczne, zbiór 3 — nie', () => {
-  const kinds = Examples.RES.LIST.filter(e => e.group === 'r133').map(e => Res.satisfiable(set(e.clauses)));
+  const kinds = Examples.RES.LIST.filter(e => e.title.startsWith('Zadanie 133')).map(e => Res.satisfiable(set(e.clauses)));
   assert.deepEqual(kinds, [false, false, true]);
   // przykład ze str. 43: dowód z trzech kroków
-  assert.equal(Res.refutation(set(Examples.RES.LIST[0].clauses)).length, 3);
+  assert.equal(Res.refutation(set(byTitle('Przykład ze str. 43').clauses)).length, 3);
+});
+
+test('zbiory z kolokwiów i egzaminów: odpowiedzi zgodne z opublikowanymi rozwiązaniami, bez powtórzeń', () => {
+  const sat = (title, note) => Res.satisfiable(set(Examples.RES.LIST.find(e => e.title === title && e.note.startsWith(note)).clauses));
+  // rozwiązania z folderu wybrane_rozwiazania: wartościowanie (spełnialny) albo dowód sprzeczności
+  const answers = [
+    ['Egzamin 2011', 'zad. 11', false], ['Poprawka 2011', 'zad. 19', true], ['Egzamin 2017', 'zad. 7', true],
+    ['Egzamin 2020', 'zad. 7', false], ['Poprawka 2020', 'zad. 7', true], ['Egzamin 2023', 'zad. 2', true],
+    ['Poprawka 2023', 'zad. 2', false], ['Kolokwium 1, 2014 (A)', 'zad. 3', false], ['Kolokwium 1, 2014 (C)', 'zad. 2', true],
+    ['Kolokwium 1, 2015 (A)', 'zad. 3', true], ['Kolokwium 1, 2022 (A)', 'zad. 5 (a)', false], ['Kolokwium 1, 2022 (A)', 'zad. 5 (b)', true],
+    ['Kolokwium 1, 2022 (D)', 'zad. 5 (a)', true], ['Kolokwium 1, 2022 (D)', 'zad. 5 (b)', false], ['Kolokwium 1, 2023 (A)', 'zad. 5 (a)', false],
+    ['Kolokwium 1, 2023 (A)', 'zad. 5 (b)', true], ['Kolokwium 1, 2024 (A)', 'zad. 1', true], ['Kolokwium 1, 2024 (D)', 'zad. 3', true],
+  ];
+  for (const [title, note, expected] of answers) assert.equal(sat(title, note), expected, `${title} ${note}`);
+  const keys = Examples.RES.LIST.map(e => Res.setKey(set(e.clauses)));
+  assert.equal(new Set(keys).size, keys.length);
 });
 
 test('praca nad zadaniem: drzewo dowodu, ciąg z Def. 47, zapis i ścisły odczyt', () => {
@@ -162,9 +180,55 @@ test('eksport drzewa rezolucji: bez etykiet reguł, LaTeX bez ostrzeżeń', () =
   assert.ok(!L.items.some(i => i.type === 'text' && i.runs.some(r => r.t.startsWith('('))));
 });
 
-test('przykłady z podpowiedziami: tylko grupa „z podpowiedziami”', () => {
+test('podpowiedzi tylko w 5–10 zbiorach przykładowych z kolokwiów i egzaminów — i prowadzą do rozwiązania', () => {
+  const samples = Examples.RES.LIST.filter(e => e.group === 'rprzyk');
+  assert.equal(Examples.RES.GROUPS[0].id, 'rprzyk');
+  assert.ok(samples.length >= 5 && samples.length <= 10);
+  samples.forEach(e => assert.match(e.title, /^(Kolokwium 1,|Egzamin|Poprawka) /, e.title));
   for (const e of Examples.RES.LIST) assert.equal(Examples.RES.isSample(set(e.clauses)), e.group === 'rprzyk', e.title);
-  assert.ok(Examples.RES.isSample(set('{¬p ∨ ¬q, p ∨ ¬q, ¬p ∨ q, q ∨ p}')));   // kolejność nie ma znaczenia
+  assert.ok(Examples.RES.isSample(set('{¬r, ¬r ∨ q, ¬p ∨ ¬q, p ∨ r}')));          // kolejność nie ma znaczenia
+  // same podpowiedzi rozwiązują każdy zbiór przykładowy (dowód sprzeczności albo wartościowanie)
+  for (const e of samples) {
+    const work = { initial: set(e.clauses), steps: [], valuation: {} };
+    for (let k = 0; k < 60 && !Res.refuted(work) && !Res.satisfied(work); k++) {
+      const h = Res.hint(work);
+      if (h.kind === 'step') work.steps.push({ a: h.a, b: h.b, on: h.on, clause: h.clause });
+      else if (h.kind === 'reset') work.valuation = {};
+      else work.valuation[h.v] = h.value;
+    }
+    assert.ok(Res.refuted(work) || Res.satisfied(work), e.title);
+  }
+});
+
+test('poprawki: klauzula z p i ¬p, indeksy ₀–₉ we wpisie, drzewo za duże do narysowania', () => {
+  // rezolwenta usuwa tylko parę przeciwnych literałów — {p ∨ ¬p, p} jest spełnialny i nie ma dowodu sprzeczności
+  assert.equal(txt(Res.resolve(C('p ∨ ¬p ∨ q'), C('p ∨ r'), 'p')), 'p ∨ q ∨ r');
+  const taut = set('{p ∨ ¬p, p}');
+  assert.ok(!Res.isEmpty(Res.resolve(taut[0], taut[1], 'p')));
+  assert.equal(Res.refutation(taut), null);
+  // wypisany zbiór (z indeksami dolnymi) da się wczytać z powrotem
+  const indexed = set('{p1 ∨ ¬q12, ¬p1, q12}');
+  assert.equal(Res.setKey(set(indexed.map(Res.clauseText).join(', '))), Res.setKey(indexed));
+  assert.equal(Res.setKey(set(indexed.map(Res.plainText).join(','))), Res.setKey(indexed));
+  // dowód, którego drzewo rośnie wykładniczo (rezolwenty używane wielokrotnie): drzewa nie budujemy
+  const L = 9, cl = ['p1'];
+  for (let k = 1; k <= L; k++) for (const A of ['a', '~a']) for (const B of ['b', '~b']) cl.push(`~p${k}|${A}|${B}|p${k + 1}`);
+  cl.push(`~p${L + 1}`);
+  const o = { c: cl, d: [] }, idx = new Map(cl.map((c, i) => [c, i]));
+  let n = cl.length, pk = 0;
+  const add = (a, b, on) => { o.d.push([a, b, on]); return n++; };
+  for (let k = 1; k <= L; k++) {
+    const r = {};
+    for (const A of ['a', '~a']) for (const B of ['b', '~b']) r[A + B] = add(pk, idx.get(`~p${k}|${A}|${B}|p${k + 1}`), `p${k}`);
+    pk = add(add(r.ab, r['a~b'], 'b'), add(r['~ab'], r['~a~b'], 'b'), 'a');
+  }
+  add(pk, idx.get(`~p${L + 1}`), `p${L + 1}`);
+  const big = Res.deserialize(o);
+  assert.ok(Res.refuted(big));
+  const t0 = Date.now();
+  assert.equal(Res.tree(big, Res.emptyIndex(big)), null);
+  assert.ok(Date.now() - t0 < 100);
+  assert.ok(Res.usedIn(big, Res.emptyIndex(big)).length <= big.initial.length + big.steps.length);
 });
 
 if (failures.length) {

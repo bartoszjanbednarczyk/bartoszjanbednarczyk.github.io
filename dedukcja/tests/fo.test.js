@@ -29,7 +29,8 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 10139
 function randomTerm(rand, depth) {
   const k = rand();
   if (depth <= 0 || k < 0.45) return F.VAR(['x', 'y', 'z', 'x0'][Math.floor(rand() * 4)]);
-  if (k < 0.65) return F.FN(['a', 'b', 'c'][Math.floor(rand() * 3)]);
+  if (k < 0.55) return F.FN(['a', 'b', 'c'][Math.floor(rand() * 3)]);
+  if (k < 0.65) return F.FN(['0', '1', '42'][Math.floor(rand() * 3)]);
   return F.FN(rand() < 0.5 ? 'f' : 'g', [randomTerm(rand, depth - 1)]);
 }
 function randomFormula(rand, depth) {
@@ -38,6 +39,8 @@ function randomFormula(rand, depth) {
     if (k < 0.1) return F.TOP;
     if (k < 0.2) return F.BOT;
     if (k < 0.3) return F.ATOM('φ');
+    if (k < 0.45) return F.ATOM(['=', '<', '>', '≤', '≥'][Math.floor(rand() * 5)], [randomTerm(rand, 1), randomTerm(rand, 1)]);
+    if (k < 0.5) return F.ATOM('R', [randomTerm(rand, 1), randomTerm(rand, 1)]);
     return F.ATOM(rand() < 0.5 ? 'p' : 'r', rand() < 0.5 ? [randomTerm(rand, 2)] : [randomTerm(rand, 1), randomTerm(rand, 1)]).args.length === 2
       ? F.ATOM('r', [randomTerm(rand, 1), randomTerm(rand, 1)]) : F.ATOM('p', [randomTerm(rand, 2)]);
   }
@@ -50,22 +53,64 @@ function randomFormula(rand, depth) {
 
 /* ---------- składnia ---------- */
 
-test('wypisywanie i ponowne czytanie daje tę samą formułę (losowe formuły z kwantyfikatorami)', () => {
+test('wypisywanie i ponowne czytanie daje tę samą formułę (losowe formuły z kwantyfikatorami i relacjami)', () => {
   const rand = rng(7);
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 2000; i++) {
     const f = randomFormula(rand, 5);
     assert.ok(F.eq(P(F.text(f)), f), F.text(f));
     assert.ok(F.eq(P(F.key(f)), f), F.key(f));
+    assert.ok(!/<(?!\/?(i|sub)>)/.test(F.html(f)), F.html(f));          // w HTML tylko znaczniki <i> i <sub>
   }
 });
 
 test('kwantyfikator wiąże jak negacja, kropka rozciąga zasięg', () => {
+  // kwantyfikator, po którym coś jeszcze stoi, wypisujemy w nawiasach — na kolokwiach zasięg sięga do nawiasu
   const cases = {
-    'Ax p(x) -> q': '∀x p(x) ⇒ q', 'Ax (p(x) -> q)': '∀x (p(x) ⇒ q)', 'Ax. p(x) -> q': '∀x (p(x) ⇒ q)',
+    'Ax p(x) -> q': '(∀x p(x)) ⇒ q', 'Ax (p(x) -> q)': '∀x (p(x) ⇒ q)', 'Ax. p(x) -> q': '∀x (p(x) ⇒ q)',
     '∀x∃y r(x, y)': '∀x ∃y r(x, y)', 'forall x exists y r(x,y)': '∀x ∃y r(x, y)', '~Ax ~p(x)': '¬∀x ¬p(x)',
     'p(f(a), x_0) & q(x₁)': 'p(f(a), x₀) ∧ q(x₁)', 'φ(x) | ψ': 'φ(x) ∨ ψ',
+    '~Ax p(x) & q': '¬(∀x p(x)) ∧ q', 'q -> Ax p(x)': 'q ⇒ ∀x p(x)', 'p & Ax q(x) -> r': 'p ∧ (∀x q(x)) ⇒ r',
+    '(Ex p(x)) -> ~Ax ~p(x)': '(∃x p(x)) ⇒ ¬∀x ¬p(x)', 'Ax Ay r(x, y) -> Ax Ey r(x, y)': '(∀x ∀y r(x, y)) ⇒ ∀x ∃y r(x, y)',
   };
   for (const [src, out] of Object.entries(cases)) assert.equal(F.text(P(src)), out, src);
+  // klucz (zapis i linki) pozostaje zwięzły — bez dodatkowych nawiasów
+  assert.equal(F.key(P('Ax p(x) -> q')), 'Ax p(x)>q');
+});
+
+test('relacje między termami, stałe liczbowe i duże litery (jak w zadaniach z kolokwiów)', () => {
+  const cases = {
+    'f(x) > 0 -> g(x) > 0': 'f(x) > 0 ⇒ g(x) > 0', 'f(x)>0⇒g(x)>0': 'f(x) > 0 ⇒ g(x) > 0', 'x = y': 'x = y',
+    'x != y': '¬(x = y)', 'x ≠ y': '¬(x = y)', 'x <= 42 & y >= 007': 'x ≤ 42 ∧ y ≥ 7', 'x < y | x ≤ y': 'x < y ∨ x ≤ y',
+    '~(f(z) = y)': '¬(f(z) = y)', 'Ex f(x) = y': '∃x f(x) = y', 'R(x, x) -> S(x)': 'R(x, x) ⇒ S(x)', 'P & Q(a)': 'P ∧ Q(a)',
+    'p > q': 'p ⇒ q', 'x > y > q': 'x > y ⇒ q', 'p(0, 1)': 'p(0, 1)', 'T & ~F': '⊤ ∧ ¬⊥',
+  };
+  for (const [src, out] of Object.entries(cases)) {
+    const f = P(src);
+    assert.equal(F.text(f), out, src);
+    assert.ok(F.eq(P(F.key(f)), f), `klucz: ${src}`);
+    assert.ok(F.eq(P(F.text(f)), f), `tekst: ${src}`);
+  }
+  // ≠ to skrót: ¬(x = y)
+  assert.ok(F.eq(P('x != y'), F.NOT(P('x = y'))));
+  // HTML bezpieczny, LaTeX z \leq, \geq; liczby prosto (bez indeksu i kursywy)
+  assert.equal(F.html(P('x < 10')), '<i>x</i> &lt; 10');
+  assert.equal(F.tex(P('x <= 1 & y >= 0')), 'x \\leq 1 \\land y \\geq 0');
+  assert.deepEqual(F.runs(P('f(x) > 10 & R(x)')).map(r => [r.t, r.italic]), [['f', true], ['(', false], ['x', true], [') > 10 ∧ ', false], ['R', true], ['(', false], ['x', true], [')', false]]);
+  // błędy
+  const bad = { '1234567890 = x': /Za długa liczba/, 'x = ': /Oczekiwano termu/, 'x = y = z': /Nieoczekiwany symbol/, '42': /jest stałą, a nie formułą/, 'T(x)': /Nieoczekiwany/ };
+  for (const [src, re] of Object.entries(bad)) assert.throws(() => P(src), re, src);
+  // w rachunku zdań bez zmian: 0 i 1 to ⊥ i ⊤, „=” nie jest symbolem
+  assert.equal(F.text(F.parse('p > 0')), 'p ⇒ ⊥');
+  assert.throws(() => F.parse('p = q'), F.ParseError);
+});
+
+test('stała liczba argumentów symboli: w formule i w całym dowodzie (arityClash)', () => {
+  assert.equal(F.arityClash([P('p(a)'), P('q')]), null);
+  assert.equal(F.arityClash([P('p(a)'), P('p')]), 'p');
+  assert.equal(F.arityClash([P('f(a) = b'), P('q(f(a, b))')]), 'f');
+  assert.throws(() => P('p & p(x)'), /różną liczbą argumentów/);
+  // odczyt z zapisu nie sprawdza liczby argumentów (starsze wersje przepuszczały takie formuły)
+  assert.ok(Proof.deserialize('[{"f":"p>p(a)"}]', Rules.isRule, fo)[0]);
 });
 
 test('błędy składni mają zrozumiałe komunikaty', () => {
@@ -162,15 +207,25 @@ test('reguły dla kwantyfikatorów „od przesłanek” budują poprawne wnioski
 
 /* ---------- przykłady, dowodzący, dowód słowny ---------- */
 
-test('każdy przykład z rozdz. 3.3 ma dowód, który przechodzi weryfikację', () => {
+test('każdy przykład (kolokwia, egzaminy, skrypt) ma dowód, który przechodzi weryfikację', () => {
   for (const e of Examples.FO.LIST) {
     const root = proofOf(P(e.formula));
     assert.ok(root, e.title);
     assert.equal(Rules.verify([root]).size, 0, e.title);
     assert.equal(Proof.openLeaves(root).length, 0, e.title);
-    assert.ok(Examples.FO.isSample(root.f), e.title);
   }
+});
+
+test('podpowiedzi tylko w 5–10 zadaniach przykładowych z kolokwiów i egzaminów (z opublikowanymi rozwiązaniami)', () => {
+  const samples = Examples.FO.LIST.filter(e => e.group === 'qprzyk');
+  assert.equal(Examples.FO.GROUPS[0].id, 'qprzyk');
+  assert.ok(samples.length >= 5 && samples.length <= 10);
+  assert.equal(Examples.FO.SAMPLES.length, samples.length);
+  samples.forEach(e => assert.match(e.title, /^(Kolokwium 2,|Egzamin|Poprawka) /, e.title));
+  for (const e of Examples.FO.LIST) assert.equal(Examples.FO.isSample(P(e.formula)), e.group === 'qprzyk', e.title);
   assert.ok(!Examples.FO.isSample(P('Ax q(x) -> q(a)')));
+  // każda formuła występuje w menu raz
+  assert.equal(new Set(Examples.FO.LIST.map(e => F.key(P(e.formula)))).size, Examples.FO.LIST.length);
 });
 
 test('dowodzący działa także w środku dowodu (założenia i świeże zmienne okien)', () => {
@@ -185,7 +240,7 @@ test('dowodzący działa także w środku dowodu (założenia i świeże zmienne
 test('świeże zmienne dowodzącego są takie jak w aplikacji: x₀, x₁, …', () => {
   for (const e of Examples.FO.LIST) {
     const root = proofOf(P(e.formula));
-    Proof.walk([root], n => n.prem.forEach(p => { if (p.x) assert.match(p.x, /^[xy][01]$/, e.title); }));
+    Proof.walk([root], n => n.prem.forEach(p => { if (p.x) assert.match(p.x, /^[xyz][01]$/, e.title); }));
   }
 });
 
@@ -275,6 +330,67 @@ test('podpowiedzi „od przesłanek”: uogólnienia dla (∃i) i (∀i) są pop
   assert.deepEqual(al.best([inst.f], {}, [inst]).map(F.text), ['∀y p(y)']);
   // każda podpowiedź dla (∃i) przechodzi sprawdzenie reguły
   for (const g of Rules.get('exI').fwd.param.best([A], { openGoals: [] })) assert.equal(Rules.get('exI').fwd.param.check(g, [A]), null);
+});
+
+/* ---------- poprawki błędów (testy regresji) ---------- */
+
+test('(∃e) „od celu”: zmienna okna jest świeża także względem wpisanej formuły ∃x α', () => {
+  const goal = Proof.node(P('q')), D = P('Ex r(x, x0)');
+  goal.rule = 'exE';
+  goal.prem = Rules.materialize(Rules.get('exE').back.premises(goal.f, D, Rules.freshContext(Rules.usedVars(goal))));
+  assert.equal(goal.prem[1].x, 'x1');
+  assert.equal(F.text(goal.prem[1].a), 'r(x₁, x₀)');
+  assert.ok(check(goal));
+});
+
+test('dowód słowny nie przenosi wartości formuł z wolną zmienną okna spoza okna', () => {
+  const json = '[{"f":"(Ax p(x)) > (Ez p(z)) & Ay p(y)","r":"impI","p":[{"a":"Ax p(x)","b":{"f":"(Ez p(z)) & Ay p(y)","r":"andI","p":[{"f":"Ez p(z)","r":"exI","p":[{"f":"p(y0)","r":"allE","p":[{"f":"Ax p(x)","r":"hyp"}]}]},{"f":"Ay p(y)","r":"allI","p":[{"x":"y0","b":{"f":"p(y0)","r":"allE","p":[{"f":"Ax p(x)","r":"hyp"}]}}]}]}}]}]';
+  const [root] = Proof.deserialize(json, Rules.isRule, fo);
+  assert.equal(Rules.verify([root]).size, 0);
+  const text = Render.proseText(Explain.prose(root, fo));
+  assert.doesNotMatch(text, /Jak już wiemy, 𝔄 ⊨ p\(y₀\)\[v₁\]/);
+  assert.match(text, /𝔄 ⊨ p\(y₀\)\[v₁\]/);                                   // pokazane od nowa w oknie
+});
+
+test('dowód słowny korzenia (∀i) nie zapowiada celu dwa razy', () => {
+  const text = Render.proseText(Explain.prose(proofOf(P('Ax (p(x) -> p(x))')), fo));
+  assert.doesNotMatch(text, /pokażmy, że 𝔄 ⊨ φ\[v\]\. Pokażemy, że 𝔄 ⊨ φ\[v\]\./);
+});
+
+test('dowód słowny: relacja między termami w nawiasach („𝔄 ⊨ (f(x₀) = y)[v₁]”), nazwy bez kolizji', () => {
+  const text = Render.proseText(Explain.prose(proofOf(P('(Ex f(x) = y) -> ~Az ~(f(z) = y)')), fo));
+  assert.match(text, /𝔄 ⊨ \(f\([xz]₀\) = y\)\[v₁\]/);
+  assert.doesNotMatch(text, /undefined|\[object/);
+  // zmienne v, v₁ i stała a₁ w dowodzie: wartościowania i elementy dostają inne litery
+  const clash = Render.proseText(Explain.prose(proofOf(P('(Av p(v, a1)) -> Ev1 p(v1, a1)')), fo));
+  assert.match(clash, /dowolne wartościowanie w : V → A/);
+  assert.doesNotMatch(clash, /wartościowanie v /);
+});
+
+test('dowodzący: (∀e) także bez termów w formule; nazwy świeżych zmiennych jak w aplikacji', () => {
+  for (const s of ['Ax q -> q', '(Ax φ) -> φ', 'Ax (q & s) -> s', '(Ax q) -> Ex q']) assert.ok(proofOf(P(s)), s);
+  const scope = [P('Ex p(x)'), P('Ex q(x)')], goal = P('Ey q(y)');
+  const used = Rules.usedVars(Proof.node(P('(Ex p(x)) & (Ex q(x)) -> Ey q(y)')));
+  const pf = ProverFO.prove(scope, goal, { used, terms: [] });
+  const app = Rules.get('exE').back.premises(goal, Rules.paramOf(pf), Rules.freshContext(new Set(used)));
+  assert.equal(pf.prem[1].x, app[1].fresh);
+});
+
+test('wstawienie fragmentu i nowe okno „od przesłanek”: zmienne okien wewnątrz zostają świeże', () => {
+  // fragment z oknem (∀i) o zmiennej x₀ trafia do okna, które też ma zmienną x₀
+  const inner = proofOf(P('(Ax (q(x) & r(x))) -> Ax q(x)'));
+  assert.ok(JSON.stringify(Proof.toPlain(inner)).includes('"x":"x0"'));
+  const outer = Proof.node(P('Ax ((Ax (q(x) & r(x))) -> Ax q(x))'), 'allI', [Proof.box(null, Proof.node(P('(Ax (q(x) & r(x))) -> Ax q(x)')), [], 'x0')]);
+  Rules.renameWindows(inner, new Set(['x0']), Rules.freshContext(Rules.usedVars(outer, Rules.usedVars(inner))));
+  outer.prem[0].body = inner;
+  assert.equal(Rules.verify([outer]).size, 0);
+  assert.ok(!JSON.stringify(Proof.toPlain(inner)).includes('"x":"x0"'));
+  // (⇒i) „od przesłanek” z założeniem, w którym jest wolna zmienna okna z wnętrza fragmentu
+  const m = proofOf(P('Ax (p(x) -> p(x))'));                                   // okno ze zmienną x₀
+  const ctx = Rules.freshContext(Rules.usedVars(m));
+  const r = Rules.get('impI'), { f, prem } = r.fwd.build([m.f], [m], P('q(x0)'), ctx);
+  const root = Proof.node(f, 'impI', Rules.enclose(prem, ctx));
+  assert.equal(Rules.verify([root]).size, 0);
 });
 
 if (failures.length) {

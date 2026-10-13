@@ -113,6 +113,33 @@
   /** Kontekst świeżych zmiennych dla zbioru zajętych nazw. */
   const freshContext = used => ({ used, fresh: base => { const y = freshVar(base, used); used.add(y); return y; } });
 
+  /**
+   * Przemianowanie zmiennych okien (w miejscu): okna drzewa `root`, których świeża zmienna należy
+   * do `avoid`, dostają nową zmienną z kontekstu `ctx` — razem z jej wolnymi wystąpieniami w oknie
+   * (w założeniu, dowodzie i wnioskach). Potrzebne, gdy fragment trafia w nowe otoczenie (wstawienie
+   * w cel, nowe okno „od przesłanek”): zmienna okna musi być świeża także względem okien i założeń,
+   * które go teraz otaczają.
+   */
+  function renameWindows(root, avoid, ctx) {
+    const rename = (f, ren) => [...ren].reduce((g, [x, y]) => subst(g, x, VAR(y)) || g, f);
+    const rec = (n, ren) => {
+      if (ren.size) n.f = rename(n.f, ren);
+      n.prem.forEach(p => {
+        if (!p.box) { rec(p, ren); return; }
+        let inner = ren;
+        if (p.x && avoid.has(p.x)) {
+          const y = ctx.fresh(p.x);
+          inner = new Map(ren).set(p.x, y);
+          p.x = y;
+        }
+        if (p.a && inner.size) p.a = rename(p.a, inner);
+        rec(p.body, inner);
+        P.factsOf(p).forEach(w => rec(w, inner));
+      });
+    };
+    rec(root, new Map());
+  }
+
   /** α z t zastąpionym zmienną x (poza miejscami, gdzie zmienna termu t jest związana). */
   function abstract(f, t, x) {
     const k = key(t), tv = freeVars(t);
@@ -378,6 +405,7 @@
         },
         build: ([A], [m], g, ctx) => {
           const r = match(g.a, g.x, A);
+          allVars(g, ctx.used);
           const y = r.t ? r.t.n : ctx.fresh(g.x);
           return { f: g, prem: [{ assume: null, fresh: y, sub: m }] };
         },
@@ -457,7 +485,8 @@
           best: (f, ctx) => ctx.cands.filter(c => c.t === 'ex'),
           onlyBest: true,
         },
-        premises: (f, D, ctx) => { const y = ctx.fresh(D.x); return [D, boxed(subst(D.a, D.x, VAR(y)), f, y)]; },
+        // zmienna okna nie może występować w D (wpisanym przez użytkownika, więc spoza fragmentu)
+        premises: (f, D, ctx) => { allVars(D, ctx.used); const y = ctx.fresh(D.x); return [D, boxed(subst(D.a, D.x, VAR(y)), f, y)]; },
         paramOf: n => { const c = firstFormula(n); return c && c.t === 'ex' ? c : null; },
       },
       verify(n, ctx) {
@@ -543,9 +572,18 @@
     return { fs: ord.map(i => fs[i]), nodes: ord.map(i => nodes[i]) };
   }
 
-  /** Zamienia przesłanki { assume, fresh, sub } na okna, zamykając w nich hipotezy równe założeniu. */
-  const enclose = prem => prem.map(p => {
+  /**
+   * Zamienia przesłanki { assume, fresh, sub } na okna, zamykając w nich hipotezy równe założeniu.
+   * Z kontekstem `ctx` okna wewnątrz fragmentu, których zmienna przestałaby być świeża (to zmienna
+   * nowego okna albo zmienna wolna w jego założeniu), dostają nową zmienną.
+   */
+  const enclose = (prem, ctx = null) => prem.map(p => {
     if (!p.sub) return p;
+    if (ctx) {
+      const avoid = new Set(p.assume ? freeVars(p.assume) : []);
+      if (p.fresh) avoid.add(p.fresh);
+      if (avoid.size) renameWindows(p.sub, avoid, ctx);
+    }
     if (p.assume) P.discharge(p.sub, p.assume);
     return P.box(p.assume || null, p.sub, [], p.fresh || null);
   });
@@ -621,6 +659,6 @@
     ALL, forLogic, get, isRule,
     backBlocked, materialize, fwdBlocked, fwdArrange, enclose,
     paramOf, checkNode, verify, FACT_RULES, factBlocked, buildFact, validFact,
-    usedVars, freshContext,
+    usedVars, freshContext, renameWindows,
   });
 })(globalThis.ND ||= {});

@@ -7,7 +7,7 @@
   'use strict';
   const { F, Proof, Rules, Render, Explain } = ND;
   const UI = (ND.UI ||= {});
-  const { $, icon, plural, scrollToView, markChoice } = UI.kit;
+  const { $, icon, plural, scrollToView, markChoice, isShown } = UI.kit;
   const S = UI.store, st = S.state;
   const A = UI.actions;
 
@@ -106,15 +106,18 @@
     </section>`;
   }
 
+  /** Grupy przykładów ze skryptu podsuwane na pustym ekranie. */
+  const CHIP_GROUPS = { prop: ['s29'], fo: ['q33', 'q149'] };
+
   function emptyHTML() {
     const fo = S.logic() === 'fo', list = A.examples().LIST;
-    const chips = list.map((e, i) => [e, i]).filter(([e]) => e.group === (fo ? 'q33' : 's29')).slice(0, 6)
+    const chips = list.map((e, i) => [e, i]).filter(([e]) => CHIP_GROUPS[S.logic()].includes(e.group)).slice(0, 6)
       .map(([e, i]) => `<button type="button" data-ex="${i}" title="${Render.esc(`${e.title} — ${e.note}`)}">${F.html(A.parse(e.formula))}</button>`).join('');
     return `<div class="card empty">
       <div class="big">${fo ? '⊢ ∀x φ' : '⊢ φ'}</div>
       <h2>Co chcesz udowodnić?</h2>
-      <p>${fo ? 'Wpisz formułę rachunku kwantyfikatorów (np. <code>Ax p(x) -> Ex p(x)</code>) i buduj jej dowód regułami dedukcji naturalnej z rozdz. 3.3 — z oknami ze świeżymi zmiennymi dla (∀i) i (∃e).'
-        : 'Wpisz formułę rachunku zdań i buduj jej dowód, klikając reguły dedukcji naturalnej.'} Aplikacja pilnuje poprawności każdego kroku i rysuje dowód z oknami, tak jak w skrypcie.</p>
+      <p>${fo ? 'Wpisz formułę rachunku kwantyfikatorów (np. <code>Ax p(x) -> Ex p(x)</code>) i zbuduj jej dowód za pomocą reguł dedukcji naturalnej z rozdz. 3.3 — reguły (∀i) i (∃e) otwierają okna ze świeżą zmienną.'
+        : 'Wpisz formułę rachunku zdań i zbuduj jej dowód, klikając kolejne reguły dedukcji naturalnej.'} Aplikacja pilnuje poprawności każdego kroku i rysuje dowód z oknami, tak jak w skrypcie.</p>
       <div class="cta">
         <button type="button" class="btn primary lg" data-act="new">${icon('plus')}Wpisz formułę</button>
         ${fo ? '' : `<button type="button" class="btn lg" data-act="tutorial">${icon('play')}Samouczek (1 min)</button>`}
@@ -134,23 +137,24 @@
 
   /** Gdzie był fokus przed przerysowaniem: kontener i selektor elementu (po atrybutach data-…). */
   function focusTarget(el) {
-    const container = el && ['ws', 'dock'].map($).find(c => c.contains(el));
+    const container = el && ['ws', 'dock', 'status'].map($).find(c => c.contains(el));
     if (!container) return null;
     const attr = DATA_KEYS.find(a => el.dataset[a] !== undefined);
     const frag = el.closest('[data-root]');
-    const selector = attr && `${frag ? `[data-root="${frag.dataset.root}"] ` : ''}[data-${attr}="${el.dataset[attr]}"]`;
+    const selector = attr && `${frag ? `[data-root="${frag.dataset.root}"] ` : ''}[data-${attr}="${CSS.escape(el.dataset[attr])}"]`;
     return { container, selector, inDock: container.id === 'dock' };
   }
 
   /**
-   * Przywraca fokus po przerysowaniu (innerHTML usuwa element z fokusem). Po kroku dowodu
-   * wykonanym z paska akcji fokus trafia na nowo zaznaczony cel, a nie „w próżnię”.
+   * Przywraca fokus po przerysowaniu (innerHTML usuwa element z fokusem, a ukryty element — np. wiersz
+   * podpowiedzi po wykonaniu kroku — przeglądarka zaraz gubi). Po kroku dowodu wykonanym z paska akcji
+   * fokus trafia na nowo zaznaczony cel, a nie „w próżnię”.
    */
   function restoreFocus(target, selectionChanged) {
     const active = document.activeElement;
-    if (!target || (active && active !== document.body && document.contains(active))) return;
+    if (!target || (active !== document.body && isShown(active))) return;
     const same = target.selector && !(target.inDock && selectionChanged) ? target.container.querySelector(target.selector) : null;
-    const el = same || document.querySelector('#ws .fm.sel') || (target.inDock && !$('dock').hidden ? $('dock').querySelector('button') : null);
+    const el = [same, document.querySelector('#ws .fm.sel'), target.inDock && !$('dock').hidden ? $('dock').querySelector('button') : null].find(isShown);
     if (el) el.focus({ preventScroll: true });
   }
 
@@ -182,8 +186,8 @@
       c.title = `(${r.label.text}) ${r.name}` + (why && anySelected ? ` — ${why}` : '');
     });
     $('rulesSub').textContent = anySelected
-      ? (usable ? (st.picks.length ? `Reguły, którymi można wyciągnąć wniosek z zaznaczonych formuł (${usable}), są obramowane.`
-        : `Reguły, które da się tu zastosować (${usable}), są obramowane — którą wybrać, zdecyduj sam.`)
+      ? (usable ? (st.picks.length ? `Obramowane są reguły, którymi można wyciągnąć wniosek z zaznaczonych formuł (${usable}).`
+        : `Obramowane są reguły, które da się tu zastosować (${usable}) — wybierz jedną z nich.`)
         : 'Żadna reguła nie pasuje do tego zaznaczenia.')
       : (st.mode === 'back' ? 'Zaznacz otwarty cel, a podświetlą się reguły, które można do niego zastosować.' : 'Zaznacz formuły na dole fragmentów, a podświetlą się pasujące reguły.');
   }
@@ -269,16 +273,16 @@
 
   function infoText() {
     const infos = A.selection();
-    if (st.errors.size) return 'Część reguł jest zastosowana błędnie (formuły w czerwonej ramce) — zaznacz taką formułę, cofnij krok (<span class="kbd">Delete</span>) i spróbuj ponownie.';
+    if (st.errors.size) return 'Niektóre reguły zastosowano błędnie (formuły w czerwonej ramce) — zaznacz taką formułę, cofnij krok (<span class="kbd">Delete</span>) i spróbuj jeszcze raz.';
     if (st.mode === 'fwd') {
-      return infos.length ? 'Możesz zaznaczyć kolejne formuły albo wybrać regułę z paska na dole ekranu.'
+      return infos.length ? 'Możesz zaznaczyć kolejne formuły albo wybrać regułę z dolnego paska.'
         : 'Zaznacz <b>formuły na dole fragmentów</b> (kolejność kliknięć ma znaczenie) i wybierz regułę — pod spodem pojawi się wniosek. Przesłanki dodasz przyciskiem <b>Nowa przesłanka</b>.';
     }
     if (!st.frags.some(r => Proof.openLeaves(r).length)) {
       return '<b>Gotowe!</b> Wszystkie cele są zamknięte. Pod dowodem znajdziesz jego wersję słowną, przycisk <b>Odtwórz</b> pokaże go krok po kroku, a <b>Eksport</b> zapisze go jako obrazek lub kod LaTeX.';
     }
     if (st.picks.length) {
-      return 'Wybierz regułę na pasku na dole: wniosek pojawi się pod założeniem okna i zamknie cele równe tej formule.'
+      return 'Wybierz regułę z dolnego paska: wniosek pojawi się pod założeniem okna i zamknie cele równe tej formule.'
         + ' Dla reguł z dwiema przesłankami (np. <span class="math">(⇒e)</span>) kliknij też drugą formułę.';
     }
     if (!infos.length) {
@@ -289,12 +293,12 @@
       const info = infos[0];
       if (Proof.inScope(info.scope, info.n.f)) return 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.';
       if (Proof.factFor(info.boxes, info.n.f)) return 'Ten cel jest wnioskiem wyciągniętym w otaczającym oknie — zamknij go regułą <b>założenie</b>.';
-      return 'Wybierz regułę z paska na dole ekranu albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.'
+      return 'Wybierz regułę z dolnego paska albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.'
         + (info.scope.length ? ' Możesz też <b>kliknąć założenie okna</b> (nad celem) i wyciągać z niego wnioski, np. z <span class="math">p ∧ q</span> — <span class="math">p</span> oraz <span class="math">q</span>.' : '');
     }
     const ops = new Set(A.offeredOps().map(op => op.name));
     const undo = [ops.has('step') && '<b>Cofnij krok</b> (<span class="kbd">Delete</span>)', ops.has('clear') && '<b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>)'].filter(Boolean);
-    return 'Kliknij <b>otwarty cel</b>, aby kontynuować.' + (undo.length ? ` Krok przy zaznaczonej formule cofniesz z paska na dole: ${undo.join(' albo ')}.` : '');
+    return 'Kliknij <b>otwarty cel</b>, aby kontynuować.' + (undo.length ? ` Aby cofnąć krok przy zaznaczonej formule, kliknij na dolnym pasku ${undo.join(' albo ')}.` : '');
   }
 
   function renderInfo() {

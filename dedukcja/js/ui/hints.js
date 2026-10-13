@@ -2,10 +2,11 @@
    Podpowiedzi: trzy poziomy (wskazówka → reguła → wykonanie kroku),
    a gdy cel nie wynika z założeń — kontrprzykład i wskazanie kroku,
    który zaprowadził w ślepy zaułek. Podpowiedzi działają tylko w zadaniach
-   przykładowych (Examples.PROP.isSample) i w dowodzie z samouczka — zadania ze
-   skryptu i pozostałe formuły trzeba rozwiązywać samodzielnie. W rachunku
-   kwantyfikatorów działają we wszystkich przykładach (Examples.FO), a źródłem
-   jest dowodzący ND.ProverFO (bez kontrprzykładów — rachunek jest nierozstrzygalny).
+   przykładowych — kilku zadaniach z kolokwiów i egzaminów z opublikowanymi
+   rozwiązaniami (Examples.PROP/FO.isSample) — i w dowodzie z samouczka; zadania
+   ze skryptu i pozostałe formuły trzeba rozwiązywać samodzielnie. W rachunku
+   kwantyfikatorów źródłem podpowiedzi jest dowodzący ND.ProverFO (bez
+   kontrprzykładów — rachunek jest nierozstrzygalny).
      stan: { goalId, level, step: { rule, arg }, idea, next }
          | { goalId, dead: true, valuation, culprit } | { goalId, fail: true }
    ===================================================================== */
@@ -19,10 +20,8 @@
 
   /* ---------- gdzie wolno podpowiadać ---------- */
 
-  const LOCKED_PROP = 'Podpowiedzi działają tylko w zadaniach przykładowych — wybierz je z menu „Przykłady”';
-  const LOCKED_FO = 'Podpowiedzi działają tylko w przykładach z menu „Przykłady” — własne formuły dowodzisz samodzielnie';
+  const LOCKED = 'Podpowiedzi działają tylko w zadaniach przykładowych z kolokwiów i egzaminów — znajdziesz je na górze menu „Przykłady”';
   const fo = () => S.logic() === 'fo';
-  const lockedMessage = () => (fo() ? LOCKED_FO : LOCKED_PROP);
 
   /** Czy we fragmencie o tym korzeniu działają podpowiedzi (zadanie przykładowe albo dowód z samouczka). */
   const allowedRoot = root => !!root && (Examples.forLogic(S.logic()).isSample(root.f)
@@ -140,10 +139,10 @@
   function press() {
     if (anyOverlay()) return;
     if (!st.frags.length) { toast('Najpierw dodaj cel do udowodnienia'); return; }
-    if (target() === 'locked') { st.hint = null; S.refresh(); toast(lockedMessage()); return; }
-    if (st.mode === 'fwd') { S.setMode('back'); toast('Podpowiedzi działają w trybie „od celu” — przełączono'); }
+    if (target() === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
+    if (st.mode === 'fwd') { S.setMode('back'); toast('Podpowiedzi działają w trybie „od celu” — włączono ten tryb'); }
     const t = target();
-    if (t === 'locked') { st.hint = null; S.refresh(); toast(lockedMessage()); return; }
+    if (t === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
     if (!t) { st.hint = null; S.refresh(); toast('Wszystkie cele są zamknięte — dowód jest kompletny'); return; }
     const h = st.hint;
     if (h && h.goalId === t.n.id && st.sel.length === 1 && st.sel[0] === t.n.id) {
@@ -153,6 +152,7 @@
       return;
     }
     st.sel = [t.n.id];
+    st.picks = [];            // zaznaczone założenie okna zasłoniłoby wiersz podpowiedzi na pasku
     st.hint = compute(t);
     S.refresh();
     UI.workspace.reveal(t.n.id);
@@ -193,7 +193,7 @@
     const on = available();
     b.classList.toggle('off', !on);
     b.setAttribute('aria-disabled', String(!on));
-    b.title = on ? 'Podpowiedź dla zaznaczonego lub następnego celu (H)' : lockedMessage();
+    b.title = on ? 'Podpowiedź dla zaznaczonego lub następnego celu (H)' : LOCKED;
   }
 
   /** Klasy formuły węzła wynikające z podpowiedzi. */
@@ -232,7 +232,7 @@
       let buttons = '';
       if (h.culprit !== null) {
         const c = st.idx.get(h.culprit);
-        text += ` Błąd nastąpił wcześniej: ${labelled(T`reguła ${rule(c.n.rule)} zastosowana do ${c.n.f} dała przesłankę nie do udowodnienia.`)}`;
+        text += ` Błąd popełniono wcześniej: ${labelled(T`reguła ${rule(c.n.rule)} zastosowana do ${c.n.f} dała przesłankę nie do udowodnienia.`)}`;
         buttons = `<button type="button" class="btn" data-hintgo="undo">${icon('undo')}Cofnij ten krok</button>`;
       } else text += ' Ta formuła nie jest tautologią, więc nie ma dowodu.';
       return { cls: 'dock-hint dead', html: `${icon('alert')}<div class="htext">${text}</div><div class="hbtns">${buttons}</div>` };

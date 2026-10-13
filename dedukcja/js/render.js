@@ -19,7 +19,8 @@
   const truth = value => (value ? 'T' : 'F');
   /** Rachunek kwantyfikatorów: „𝔄 ⊨ α[v]” (Def. 190 skryptu); formuła złożona w nawiasach, jak w skrypcie. */
   const FRAK = '𝔄';
-  const atomic = f => ['v', 'T', 'F', 'meta'].includes(f.t);
+  /** Formuła bez nawiasów w „𝔄 ⊨ α[v]” — ale relacja między termami w nawiasach: 𝔄 ⊨ (x = y)[v]. */
+  const atomic = f => ['v', 'T', 'F', 'meta'].includes(f.t) && !F.isInfix(f);
   const sat = (fmt, f, v, value) => `${fmt.frak} ${value ? fmt.models : fmt.notModels} ${atomic(f) ? fmt.f(f) : `(${fmt.f(f)})`}[${fmt.name(v)}]`;
   /** Wartościowanie: nazwa (v, v₁, …) albo gotowy zapis — segment m (np. v z indeksami, v_x^a). */
   const valuation = (name, format) => v => (typeof v === 'string' ? name(v) : v.m[format]);

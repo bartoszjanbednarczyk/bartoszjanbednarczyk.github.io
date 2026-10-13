@@ -3,12 +3,14 @@
    drzewo składniowe, termy, wypisywanie, parser, podstawienia, semantyka
    rachunku zdań. Moduł czysty (bez DOM) — działa też w Node (testy).
 
-   Węzły formuł:  { t: 'v', n, args? }        — zmienna zdaniowa / formuła atomowa p(t₁, …, tₙ)
+   Węzły formuł:  { t: 'v', n, args? }        — zmienna zdaniowa / formuła atomowa p(t₁, …, tₙ);
+                                                relacje =, <, >, ≤, ≥ to symbole o takich nazwach (x = y)
                   { t: 'T' } | { t: 'F' }       — ⊤, ⊥
                   { t: 'not', a } | { t: 'and' | 'or' | 'imp', a, b }
                   { t: 'all' | 'ex', x, a }     — ∀x α, ∃x α (x — nazwa zmiennej)
                   { t: 'meta', n } | { t: 'msub', a, x, s }   — tylko w schematach reguł: α, α[x/t]
    Termy:         { t: 'var', n } | { t: 'fn', n, args }     — stała to symbol funkcyjny bez argumentów
+                                                               (także liczba: 0, 42)
    Nazwy z cyframi (x0, f1) są wypisywane z indeksem dolnym (x₀).
    ===================================================================== */
 (function (ND) {
@@ -20,19 +22,26 @@
 
   /**
    * Rachunek kwantyfikatorów: rodzaj symbolu wynika z pierwszej litery nazwy (jak w skrypcie):
-   * zmienne u–z, stałe a–e, symbole funkcyjne f–h, symbole relacyjne p–t oraz φ, ψ, χ.
-   * Po literze mogą stać cyfry (indeks dolny): x0, x₀, x_0 to ta sama zmienna.
+   * zmienne u–z, stałe a–e i liczby (0, 42), symbole funkcyjne f–h, symbole relacyjne p–t, P–S
+   * oraz φ, ψ, χ. Po literze mogą stać cyfry (indeks dolny): x0, x₀, x_0 to ta sama zmienna.
    */
-  const FO_CLASSES = Object.freeze({ var: 'uvwxyz', const: 'abcde', fn: 'fgh', rel: 'pqrstφψχ' });
+  const FO_CLASSES = Object.freeze({ var: 'uvwxyz', const: 'abcde0123456789', fn: 'fgh', rel: 'pqrstPQRSφψχ' });
   const FO = Object.freeze({
     vars: ['x', 'y', 'z'], consts: ['a', 'b', 'c'], fns: ['f', 'g'], rels: ['p', 'q', 'r', 'φ', 'ψ'],
+    infix: ['=', '≠', '<', '>', '≤', '≥'],
   });
   const classOf = name => Object.keys(FO_CLASSES).find(k => FO_CLASSES[k].includes(name[0])) || null;
+  /** Liczba w roli stałej (0, 42) — wypisywana prosto, bez indeksu dolnego. */
+  const isNumeral = n => /^\d+$/.test(n);
   /** Czy napis jest nazwą zmiennej rachunku kwantyfikatorów (np. x, y₀ zapisane jako y0) — jak w parserze. */
   const isVarName = n => typeof n === 'string' && /^[a-z]\d*$/.test(n) && classOf(n) === 'var';
 
-  /** Limity chroniące aplikację przed formułami-potworami (wpisanymi, z linku albo z reguł). */
-  const LIMITS = Object.freeze({ chars: 600, size: 150 });
+  /**
+   * Limity chroniące aplikację przed formułami-potworami (wpisanymi, z linku albo z reguł).
+   * Własne kopie aplikacji (historia zmian) czytamy z luźniejszymi — byle parser się nie przepełnił.
+   */
+  const LIMITS = Object.freeze({ chars: 600, size: 150, numeral: 9 });
+  const RELAXED = Object.freeze({ chars: 6000, size: 1000 });
 
   /* ---------- konstruktory ---------- */
 
@@ -83,6 +92,16 @@
   /** Siła wiązania: ¬ i kwantyfikatory najsilniej, potem ∧, ∨, ⇒. */
   const PREC = { imp: 1, or: 2, and: 3, not: 4, all: 4, ex: 4, v: 5, meta: 5, msub: 5, T: 5, F: 5 };
 
+  /** Relacje pisane między argumentami (x = y, f(x) > 0) — zapis w każdym formacie; x ≠ y to skrót ¬(x = y). */
+  const INFIX = Object.freeze({
+    '=': Object.freeze({ text: '=', html: '=', tex: '=' }),
+    '<': Object.freeze({ text: '<', html: '&lt;', tex: '<' }),
+    '>': Object.freeze({ text: '>', html: '&gt;', tex: '>' }),
+    '≤': Object.freeze({ text: '≤', html: '≤', tex: '\\leq' }),
+    '≥': Object.freeze({ text: '≥', html: '≥', tex: '\\geq' }),
+  });
+  const isInfix = f => f.t === 'v' && Object.hasOwn(INFIX, f.n) && !!f.args && f.args.length === 2;
+
   /** Nazwa z cyframi na końcu: { base, digits } (x0 → x, 0). */
   const splitName = n => { const m = /^(.*?)(\d*)$/.exec(n); return { base: m[1], digits: m[2] }; };
   const SUBSCRIPT_DIGITS = '₀₁₂₃₄₅₆₇₈₉';
@@ -90,38 +109,49 @@
 
   /**
    * Tworzy funkcję wypisującą formułę (albo term) dla danego zestawu symboli.
-   * ∧ i ∨ łączą w lewo, ⇒ w prawo — nawiasy tylko tam, gdzie są potrzebne.
+   * ∧ i ∨ łączą w lewo, ⇒ w prawo — nawiasy tylko tam, gdzie są potrzebne. Z opcją `clear`
+   * kwantyfikator, po którym w formule coś jeszcze stoi, dostaje nawiasy: (∀x p(x)) ⇒ q.
+   * Na kolokwiach i egzaminach zasięg kwantyfikatora sięga do nawiasu zamykającego — bez nawiasów
+   * zapis ∀x p(x) ⇒ q zostałby przeczytany jako ∀x (p(x) ⇒ q).
    */
-  function printer(sym) {
-    const args = xs => sym.lp + xs.map(go).join(sym.comma) + sym.rp;
-    const go = f => {
+  function printer(sym, { clear = false } = {}) {
+    const args = xs => sym.lp + xs.map(x => go(x)).join(sym.comma) + sym.rp;
+    /** tail — czy po formule nic już nie stoi (aż do nawiasu zamykającego albo do końca). */
+    const go = (f, tail = true) => {
       switch (f.t) {
-        case 'v': return sym.name(f.n) + (f.args && f.args.length ? args(f.args) : '');
+        case 'v':
+          if (isInfix(f)) return go(f.args[0]) + sym.rel(f.n) + go(f.args[1]);
+          return sym.name(f.n) + (f.args && f.args.length ? args(f.args) : '');
         case 'var': return sym.name(f.n);
         case 'fn': return sym.name(f.n) + (f.args.length ? args(f.args) : '');
         case 'meta': return sym.meta(f.n);
         case 'msub': return wrap(f.a, PREC[f.a.t] < PREC.msub) + sym.subst(sym.name(f.x), go(f.s));
         case 'T': return sym.T;
         case 'F': return sym.F;
-        case 'not': return sym.not + wrap(f.a, PREC[f.a.t] < PREC.not);
-        case 'all': case 'ex': return sym[f.t] + sym.name(f.x) + sym.qsep + wrap(f.a, PREC[f.a.t] < PREC.not);
+        // ¬(x = y), a nie ¬x = y
+        case 'not': return sym.not + wrap(f.a, PREC[f.a.t] < PREC.not || isInfix(f.a), tail);
+        case 'all': case 'ex': {
+          const q = sym[f.t] + sym.name(f.x) + sym.qsep + wrap(f.a, PREC[f.a.t] < PREC.not);
+          return clear && !tail ? sym.lp + q + sym.rp : q;
+        }
         default: {
           const p = PREC[f.t];
           const left = PREC[f.a.t] < p || (f.t === 'imp' && PREC[f.a.t] === p);
           const right = PREC[f.b.t] < p || (f.t !== 'imp' && PREC[f.b.t] === p);
-          return wrap(f.a, left) + sym[f.t] + wrap(f.b, right);
+          return wrap(f.a, left, false) + sym[f.t] + wrap(f.b, right, tail);
         }
       }
     };
-    const wrap = (g, paren) => (paren ? sym.lp + go(g) + sym.rp : go(g));
-    return go;
+    const wrap = (g, paren, tail = true) => (paren ? sym.lp + go(g) + sym.rp : go(g, tail));
+    return f => go(f);
   }
 
-  const TEX_GREEK = { α: '\\alpha', β: '\\beta', γ: '\\gamma', φ: '\\phi', ψ: '\\psi', χ: '\\chi', θ: '\\theta' };
+  const TEX_GREEK = { α: '\\alpha', β: '\\beta', γ: '\\gamma', φ: '\\phi', ψ: '\\psi', χ: '\\chi', θ: '\\theta', ϑ: '\\vartheta' };
   const UNICODE = { T: '⊤', F: '⊥', not: '¬', and: ' ∧ ', or: ' ∨ ', imp: ' ⇒ ', all: '∀', ex: '∃', qsep: ' ', lp: '(', rp: ')', comma: ', ' };
-  const plainName = n => { const { base, digits } = splitName(n); return base + subDigits(digits); };
-  const htmlName = n => { const { base, digits } = splitName(n); return `<i>${base}</i>${digits ? `<sub>${digits}</sub>` : ''}`; };
+  const plainName = n => { if (isNumeral(n)) return n; const { base, digits } = splitName(n); return base + subDigits(digits); };
+  const htmlName = n => { if (isNumeral(n)) return n; const { base, digits } = splitName(n); return `<i>${base}</i>${digits ? `<sub>${digits}</sub>` : ''}`; };
   const texName = n => {
+    if (isNumeral(n)) return n;
     const { base, digits } = splitName(n);
     const b = TEX_GREEK[base] || base;
     return b + (digits ? (digits.length > 1 ? `_{${digits}}` : '_' + digits) : '');
@@ -130,22 +160,22 @@
   /** Klucz: zwarta, jednoznaczna postać — do porównań, map i zapisu (zgodna ze starszymi linkami). */
   const key = memo(printer({
     name: n => n, meta: n => '?' + n, T: 'T', F: 'F', not: '~', and: '&', or: '|', imp: '>', all: 'A', ex: 'E', qsep: ' ',
-    lp: '(', rp: ')', comma: ',', subst: (x, t) => `[${x}/${t}]`,
+    lp: '(', rp: ')', comma: ',', subst: (x, t) => `[${x}/${t}]`, rel: n => n,
   }));
   /** Zwykły tekst (Unicode). */
-  const text = printer({ ...UNICODE, name: plainName, meta: n => n, subst: (x, t) => `[${x}/${t}]` });
+  const text = printer({ ...UNICODE, name: plainName, meta: n => n, subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].text} ` }, { clear: true });
   /** HTML: nazwy kursywą. Bezpieczne — nazwy pochodzą z białej listy parsera. */
-  const html = printer({ ...UNICODE, name: htmlName, meta: n => `<i>${n}</i>`, subst: (x, t) => `[${x}/${t}]` });
+  const html = printer({ ...UNICODE, name: htmlName, meta: n => `<i>${n}</i>`, subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].html} ` }, { clear: true });
   /** LaTeX (tryb matematyczny). */
   const tex = printer({
     name: texName, meta: n => TEX_GREEK[n] || n, T: '\\top', F: '\\bot', not: '\\neg ',
     and: ' \\land ', or: ' \\lor ', imp: ' \\Rightarrow ', all: '\\forall ', ex: '\\exists ', qsep: '\\, ',
-    lp: '(', rp: ')', comma: ', ', subst: (x, t) => `[${x}/${t}]`,
-  });
+    lp: '(', rp: ')', comma: ', ', subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].tex} `,
+  }, { clear: true });
 
-  /** Formuła jako fragmenty tekstu z informacją o kursywie (do rysowania SVG/PNG). */
-  const runs = f => text(f).match(/[a-zα-ω]+|[^a-zα-ω]+/g)
-    .map(t => ({ t, italic: /^[a-zα-ω]/.test(t) }));
+  /** Formuła jako fragmenty tekstu z informacją o kursywie (do rysowania SVG/PNG): litery kursywą, liczby prosto. */
+  const runs = f => text(f).match(/[a-zA-Zα-ω]+|[^a-zA-Zα-ω]+/g)
+    .map(t => ({ t, italic: /^[a-zA-Zα-ω]/.test(t) }));
 
   const eq = (a, b) => key(a) === key(b);
 
@@ -160,24 +190,45 @@
     ['¬', 'not'], ['~', 'not'], ['!', 'not'], ['-', 'not'],
     ['⊤', 'T'], ['⊥', 'F'], ['(', 'lp'], [')', 'rp'],
   ];
-  const FO_TOKENS = [['∀', 'all'], ['∃', 'ex'], [',', 'comma'], ['.', 'dot']];
+  /** Rachunek kwantyfikatorów — sprawdzane przed TOKENS („!=” przed „!”, „>=” przed „>”). */
+  const FO_TOKENS = [
+    ['∀', 'all'], ['∃', 'ex'], [',', 'comma'], ['.', 'dot'],
+    ['<=', 'le'], ['>=', 'ge'], ['!=', 'ne'], ['≤', 'le'], ['≥', 'ge'], ['≠', 'ne'],
+  ];
+  /**
+   * Sprawdzane po TOKENS, by „=>” zostało implikacją. Znak „>” jest tokenem implikacji (tak zapisuje
+   * ją też klucz formuły) — dopiero parser czyta go jako relację, gdy stoi po termie (x > 0).
+   */
+  const FO_LATE_TOKENS = [['=', 'eq'], ['<', 'lt']];
+  /** Relacje między termami: token → nazwa symbolu (≠ — skrót negacji równości). */
+  const RELATION_TOKENS = { eq: '=', lt: '<', le: '≤', ge: '≥', ne: '≠' };
   const CONSTANTS = { T: 'T', 1: 'T', F: 'F', 0: 'F' };
   /** Równoważności nie ma wśród spójników systemu (rozdz. 2.9 traktuje ją jako skrót). */
   const IFF = ['<->', '<=>', '⇔', '↔'];
   const SUB_INPUT = { '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4', '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9' };
+  const FO_SYMBOLS = 'zmienne to u–z, stałe a–e i liczby, symbole funkcyjne f–h, relacyjne p–t, P–S, φ, ψ oraz =, <, >, ≤, ≥, ≠';
 
   /** Nazwa w rachunku kwantyfikatorów: litera, a po niej cyfry (także ₀–₉ albo _0). */
   function readName(src, i) {
-    const m = /^([a-zφψχ])((?:_?[0-9₀-₉])*)/u.exec(src.slice(i));
+    const m = /^([a-zφψχPQRS])((?:_?[0-9₀-₉])*)/u.exec(src.slice(i));
     if (!m) return null;
     const digits = [...m[2]].filter(c => c !== '_').map(c => SUB_INPUT[c] || c).join('');
     return { name: m[1] + digits, len: m[0].length };
+  }
+
+  /** Liczba w rachunku kwantyfikatorów (stała): bez zer wiodących, najwyżej LIMITS.numeral cyfr. */
+  function readNumeral(src, i) {
+    const m = /^\d+/.exec(src.slice(i));
+    if (!m) return null;
+    if (m[0].length > LIMITS.numeral) throw new ParseError(`Za długa liczba (maks. ${LIMITS.numeral} cyfr)`);
+    return { name: String(Number(m[0])), len: m[0].length };
   }
 
   const keywordAt = (src, i, word) => src.startsWith(word, i) && !/[a-z0-9]/i.test(src[i + word.length] || '');
 
   function tokenize(src, fo) {
     const out = [];
+    const literal = (list, i) => list.find(([lit]) => src.startsWith(lit, i));
     for (let i = 0; i < src.length;) {
       const c = src[i];
       if (/\s/.test(c)) { i++; continue; }
@@ -188,50 +239,67 @@
         const q = keywordAt(src, i, 'forall') ? ['all', 6] : keywordAt(src, i, 'exists') ? ['ex', 6]
           : c === 'A' ? ['all', 1] : c === 'E' ? ['ex', 1] : null;
         if (q) { out.push({ t: q[0] }); i += q[1]; continue; }
-        const hit = FO_TOKENS.find(([lit]) => src.startsWith(lit, i));
-        if (hit) { out.push({ t: hit[1] }); i += hit[0].length; continue; }
       }
-      const hit = TOKENS.find(([lit]) => src.startsWith(lit, i));
-      if (hit) { out.push({ t: hit[1] }); i += hit[0].length; continue; }
+      const hit = (fo && literal(FO_TOKENS, i)) || literal(TOKENS, i) || (fo && literal(FO_LATE_TOKENS, i));
+      if (hit) { out.push({ t: hit[1], lit: hit[0] }); i += hit[0].length; continue; }
       if (fo) {
-        const nm = readName(src, i);
+        const nm = readName(src, i) || readNumeral(src, i);
         if (nm) { out.push({ t: 'id', n: nm.name }); i += nm.len; continue; }
       } else if (ALL_VARS.includes(c)) { out.push({ t: 'v', n: c }); i++; continue; }
       if (CONSTANTS[c]) { out.push({ t: CONSTANTS[c] }); i++; continue; }
       const shown = String.fromCodePoint(src.codePointAt(i));
       throw new ParseError(fo
-        ? `Niedozwolony znak „${shown}” — zmienne to u–z, stałe a–e, symbole funkcyjne f–h, relacyjne p–t, φ, ψ`
+        ? `Niedozwolony znak „${shown}” — ${FO_SYMBOLS}`
         : `Niedozwolony znak „${shown}” — dostępne zmienne to ${ALL_VARS.join(', ')}`);
     }
     return out;
   }
 
-  /** Sprawdza, że każdy symbol ma w całej formule tę samą liczbę argumentów. */
-  function checkArities(f) {
+  /**
+   * Symbol, który w formułach `fs` występuje z różną liczbą argumentów (jego nazwa), albo null.
+   * W jednym dowodzie każdy symbol ma stałą liczbę argumentów — jak w sygnaturze (rozdz. 3).
+   */
+  function arityClash(fs) {
     const seen = new Map();
-    const note = (n, k) => {
-      if (!seen.has(n)) seen.set(n, k);
-      else if (seen.get(n) !== k) throw new ParseError(`Symbol ${plainName(n)} występuje w formule z różną liczbą argumentów`);
-    };
+    let clash = null;
     const rec = g => {
-      if (g.t === 'v') note(g.n, (g.args || []).length);
-      if (g.t === 'fn') note(g.n, g.args.length);
+      if (clash) return;
+      if (g.t === 'v' || g.t === 'fn') {
+        const k = (g.args || []).length;
+        if (!seen.has(g.n)) seen.set(g.n, k);
+        else if (seen.get(g.n) !== k) { clash = g.n; return; }
+      }
       if (g.args) g.args.forEach(rec);
       if (g.a) rec(g.a);
       if (g.b) rec(g.b);
     };
-    rec(f);
+    fs.forEach(rec);
+    return clash;
+  }
+
+  /** Sprawdza, że każdy symbol ma w całej formule tę samą liczbę argumentów. */
+  function checkArities(f) {
+    const n = arityClash([f]);
+    if (n) throw new ParseError(`Symbol ${plainName(n)} występuje w formule z różną liczbą argumentów`);
   }
 
   /**
    * Parser rekurencyjny. Wariant `fo` (rachunek kwantyfikatorów) przyjmuje termy, formuły
    * atomowe z argumentami i kwantyfikatory: ∀x α, ∃x α (także A x, E x, forall, exists);
    * kwantyfikator wiąże jak negacja, a kropka (∀x. α) rozciąga jego zasięg maksymalnie w prawo.
+   * Relacje =, <, >, ≤, ≥ (i ≠ jako ¬(x = y)) pisze się między termami: f(x) > 0.
    */
   function makeParser(toks, fo) {
     let k = 0;
     const peek = () => toks[k];
     const eat = t => (toks[k] && toks[k].t === t ? toks[k++] : null);
+    /** Relacja po termie (x = y, f(x) > 0): nazwa symbolu albo null. „>” przychodzi jako token implikacji. */
+    function relation() {
+      const x = toks[k];
+      const op = !x ? null : x.t === 'imp' ? (x.lit === '>' ? '>' : null) : RELATION_TOKENS[x.t] || null;
+      if (op) k++;
+      return op;
+    }
     const imp = () => { const a = or(); return eat('imp') ? IMP(a, imp()) : a; };
     const or = () => { let a = and(); while (eat('or')) a = OR(a, and()); return a; };
     const and = () => { let a = unary(); while (eat('and')) a = AND(a, unary()); return a; };
@@ -284,13 +352,16 @@
       if (x.t === 'F') { k++; return BOT; }
       if (x.t === 'id') {
         const cls = classOf(x.n);
-        if (cls !== 'rel') {
-          const what = { var: 'zmienną', const: 'stałą', fn: 'symbolem funkcyjnym' }[cls];
-          throw new ParseError(what ? `${plainName(x.n)} jest ${what}, a nie formułą — formuła atomowa zaczyna się od symbolu relacyjnego (p–t, φ, ψ), np. p(${plainName(x.n)}${cls === 'fn' ? '(x)' : ''})`
-            : `Nieznany symbol ${plainName(x.n)} — zmienne to u–z, stałe a–e, symbole funkcyjne f–h, relacyjne p–t, φ, ψ`);
+        if (cls === 'rel') { k++; return ATOM(x.n, termList()); }
+        if (!cls) throw new ParseError(`Nieznany symbol ${plainName(x.n)} — ${FO_SYMBOLS}`);
+        // term na początku formuły atomowej: relacja między termami (x = y, f(x) > 0)
+        const left = term(), op = relation();
+        if (!op) {
+          const what = { var: 'zmienną', const: 'stałą', fn: 'symbolem funkcyjnym' }[cls], t = text(left);
+          throw new ParseError(`${plainName(x.n)} jest ${what}, a nie formułą — formuła atomowa to np. p(${t}) albo ${t} = y`);
         }
-        k++;
-        return ATOM(x.n, termList());
+        const right = term();
+        return op === '≠' ? NOT(ATOM('=', [left, right])) : ATOM(op, [left, right]);
       }
       if (x.t === 'lp') {
         k++;
@@ -302,36 +373,39 @@
     }
     const done = () => {
       if (k < toks.length) {
-        throw new ParseError(toks[k].t === 'rp' ? 'Nadmiarowy nawias zamykający' : 'Nieoczekiwany symbol — może brakuje spójnika?');
+        throw new ParseError(toks[k].t === 'rp' ? 'Zbędny nawias zamykający' : 'Nieoczekiwany symbol — może brakuje spójnika?');
       }
     };
     return { formula: () => { const f = imp(); done(); return f; }, term: () => { const t = term(); done(); return t; } };
   }
 
-  function prepare(src) {
+  function prepare(src, limits = LIMITS) {
     if (typeof src !== 'string') throw new ParseError('Niepoprawna formuła');
-    if (src.length > LIMITS.chars) throw new ParseError(`Formuła jest za długa (maks. ${LIMITS.chars} znaków)`);
+    if (src.length > limits.chars) throw new ParseError(`Formuła jest za długa (maks. ${limits.chars} znaków)`);
   }
 
-  function checkSize(toks) {
+  function checkSize(toks, limits = LIMITS) {
     if (!toks.length) throw new ParseError('Pusta formuła');
     // Każdy token daje co najwyżej jeden węzeł, więc ten limit ogranicza też głębokość rekurencji.
-    if (toks.filter(t => !['lp', 'rp', 'comma', 'dot'].includes(t.t)).length > LIMITS.size) {
-      throw new ParseError(`Formuła jest za duża (maks. ${LIMITS.size} symboli)`);
+    if (toks.filter(t => !['lp', 'rp', 'comma', 'dot'].includes(t.t)).length > limits.size) {
+      throw new ParseError(`Formuła jest za duża (maks. ${limits.size} symboli)`);
     }
   }
 
   /**
    * Czyta formułę; rzuca ParseError z komunikatem po polsku. Pilnuje limitów rozmiaru.
-   * logic: 'prop' (rachunek zdań, domyślnie) albo 'fo' (rachunek kwantyfikatorów).
+   * logic: 'prop' (rachunek zdań, domyślnie) albo 'fo' (rachunek kwantyfikatorów);
+   * trusted — własna kopia aplikacji (np. z historii zmian): luźniejsze limity (odczyt kopii nie może
+   * się nie udać); arities — czy pilnować stałej liczby argumentów symboli (domyślnie tak).
    */
-  function parse(src, { logic = 'prop' } = {}) {
-    prepare(src);
+  function parse(src, { logic = 'prop', trusted = false, arities = true } = {}) {
+    const limits = trusted ? RELAXED : LIMITS;
+    prepare(src, limits);
     const fo = logic === 'fo';
     const toks = tokenize(src, fo);
-    checkSize(toks);
+    checkSize(toks, limits);
     const f = makeParser(toks, fo).formula();
-    if (fo) checkArities(f);
+    if (fo && arities) checkArities(f);
     return f;
   }
 
@@ -513,8 +587,8 @@
 
   ND.F = Object.freeze({
     VARS, ALL_VARS, FO, LIMITS, TOP, BOT, V, ATOM, META, NOT, AND, OR, IMP, ALL, EX, VAR, FN, MSUB,
-    isFormula, isTerm, isPrintable, isQuant, size, key, text, html, tex, runs, eq, plainName, htmlName, texName,
-    ParseError, parse, parseTerm, classOf,
+    isFormula, isTerm, isPrintable, isQuant, isInfix, isNumeral, size, key, text, html, tex, runs, eq, plainName, htmlName, texName,
+    ParseError, parse, parseTerm, classOf, arityClash,
     freeVars, isFree, allVars, subst, match, freshVar, termsOf, isVarName,
     subformulas, vars, evaluate, countermodel, entails,
   });

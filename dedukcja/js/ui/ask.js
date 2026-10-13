@@ -24,8 +24,10 @@
   ]];
   const TERMS = [
     ['zmienne', [...F.FO.vars.map(v => italic(v, v, `zmienna ${v}`)), sym('₀', '<i>x</i>₀', 'indeks dolny 0 (np. x₀)')]],
-    ['stałe i funkcje', [...F.FO.consts.map(c => italic(c, c, `stała ${c}`)), ...F.FO.fns.map(f => italic(f + '(', f, `symbol funkcyjny ${f}`)), sym(', ', ',', 'przecinek między argumentami')]],
+    ['stałe i funkcje', [...F.FO.consts.map(c => italic(c, c, `stała ${c}`)), sym('0', '0', 'stała liczbowa (np. 0, 42)'),
+      ...F.FO.fns.map(f => italic(f + '(', f, `symbol funkcyjny ${f}`)), sym(', ', ',', 'przecinek między argumentami')]],
   ];
+  const RELATION_TITLES = { '=': 'równość', '≠': 'różne — skrót ¬(x = y)', '<': 'mniejsze', '>': 'większe', '≤': 'mniejsze lub równe', '≥': 'większe lub równe' };
   const PALETTES = {
     prop: [
       ['zmienne', F.VARS.map(v => italic(v, v, v))],
@@ -34,12 +36,15 @@
     ],
     fo: [
       ['relacje', F.FO.rels.map(r => italic(r + '(', r, `symbol relacyjny ${r}`))],
+      ['porównania', F.FO.infix.map(s => sym(s, Render.esc(s), RELATION_TITLES[s]))],
       ...TERMS,
       ['spójniki', ['∀', '∃', '¬', '∧', '∨', '⇒', '⊤', '⊥'].map(s => sym(s))],
       EDIT,
     ],
     term: [...TERMS, EDIT],
   };
+  /** Symbole wstawiane ze spacjami po obu stronach (spójniki dwuargumentowe i relacje). */
+  const SPACED = /^[∧∨⇒=≠<>≤≥]$/;
 
   let pending = null;   // { resolve, check, kind }
   let palette = null;   // nazwa narysowanej palety
@@ -81,13 +86,13 @@
       case 'back':
         if (a !== z) inp.value = v.slice(0, a) + v.slice(z);
         else if (a > 0) {
-          const cut = / [∧∨⇒] $/.test(v.slice(0, a)) ? 3 : 1;   // spójnik wstawiony ze spacjami
+          const cut = / [∧∨⇒=≠<>≤≥] $/.test(v.slice(0, a)) ? 3 : 1;   // symbol wstawiony ze spacjami
           inp.value = v.slice(0, a - cut) + v.slice(a);
           a -= cut;
         }
         break;
       default: {
-        const text = /[∧∨⇒]/.test(item.insert) ? ` ${item.insert} ` : item.insert;
+        const text = SPACED.test(item.insert) ? ` ${item.insert} ` : item.insert;
         if (v.length - (z - a) + text.length > F.LIMITS.chars) return;
         inp.value = v.slice(0, a) + text + v.slice(z);
         a += text.length;

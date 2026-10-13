@@ -87,6 +87,17 @@
     return out;
   }
 
+  /** Wszystkie formuły fragmentu: węzłów, założeń okien i wyprowadzeń wniosków okien. */
+  function formulas(root) {
+    const out = [];
+    const rec = r => walk([r], n => {
+      out.push(n.f);
+      n.prem.forEach(p => { if (p.box) { if (p.a) out.push(p.a); factsOf(p).forEach(rec); } });
+    });
+    rec(root);
+    return out;
+  }
+
   /** Formuły otwartych liści bez powtórzeń (np. hipotezy Γ w sekwencie Γ ⊢ φ). */
   function openFormulas(root) {
     const m = new Map();
@@ -186,15 +197,18 @@
   /**
    * Odczyt ze ścisłą kontrolą typów i nazw reguł (isRule pochodzi z modułu reguł).
    * Dane z zewnątrz (link, localStorage) podlegają też limitom rozmiaru; własne kopie
-   * z historii zmian (trusted) — nie, bo powstały z poprawnego stanu.
+   * z historii zmian (trusted) — nie, bo powstały z poprawnego stanu (ich odczyt nie może się nie udać).
    * logic — składnia formuł: 'prop' (rachunek zdań) albo 'fo' (rachunek kwantyfikatorów).
    */
   function fromPlain(list, isRule, { trusted = false, logic = 'prop' } = {}) {
-    if (!Array.isArray(list) || (!trusted && list.length > LIMITS.fragments)) throw new FormatError('fragmenty');
+    if (!Array.isArray(list)) throw new FormatError('format');
+    if (!trusted && list.length > LIMITS.fragments) throw new FormatError('fragmenty');
     let nodes = 0;
+    // bez sprawdzania liczby argumentów symboli: zapis pochodzi z aplikacji, a starsze wersje
+    // przepuszczały takie formuły — praca ma się wczytać (nowe kroki pilnuje store.commit)
     const formula = s => {
       if (typeof s !== 'string') throw new FormatError('formuła');
-      return parse(s, { logic });
+      return parse(s, { logic, trusted, arities: false });
     };
     const variable = x => {
       if (logic !== 'fo' || !isVarName(x)) throw new FormatError('zmienna');
@@ -223,7 +237,7 @@
   const deserialize = (json, isRule, opts) => fromPlain(JSON.parse(json), isRule, opts);
 
   ND.Proof = Object.freeze({
-    LIMITS, node, box, within, factsOf, latestId, isOpen, isBareLeaf, children, walk, index, boxIndex, factFor, openLeaves, openFormulas,
+    LIMITS, node, box, within, factsOf, latestId, isOpen, isBareLeaf, children, walk, index, boxIndex, factFor, formulas, openLeaves, openFormulas,
     completeSubtrees, stats, inScope, replaceAt, discharge, clone, closeByFact, closeByScope, reopenStrayHyps,
     toPlain, fromPlain, serialize, deserialize, FormatError,
   });
