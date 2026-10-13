@@ -40,7 +40,7 @@ const proofOf = formula => {
   const pf = Prover.prove([], formula);
   return pf && Proof.fromPlain([Proof.toPlain(pf)], Rules.isRule)[0];
 };
-const exampleRoots = () => Examples.LIST.map(ex => (ex.proof ? ex.proof() : proofOf(F.parse(ex.formula))));
+const exampleRoots = () => Examples.PROP.LIST.map(ex => (ex.proof ? ex.proof() : proofOf(F.parse(ex.formula))));
 
 /* ---------- formuły ---------- */
 
@@ -113,7 +113,7 @@ test('weryfikacja wykrywa każdą zepsutą przesłankę', () => {
 test('stosowanie wstecz: przesłanki z reguły zawsze przechodzą weryfikację', () => {
   const goals = ['p & q', 'p | q', 'T', 'p -> q', '~p', 'F'].map(F.parse);
   const x = F.parse('r | s');
-  for (const r of Rules.ALL) {
+  for (const r of Rules.ALL.filter(rule => !rule.fo)) {   // reguły dla kwantyfikatorów: tests/fo.test.js
     for (const goal of goals) {
       if (Rules.backBlocked(r, goal)) continue;
       const param = r.back.param ? (r.back.param.check ? x : F.parse('r')) : undefined;
@@ -255,7 +255,7 @@ test('dowód słowny: przy każdym (⇒i) zaznaczony trywialny przypadek fałszy
   assert.doesNotMatch(nested, /trywialny:/);
   assert.match(text('p & q -> (p -> q) | r'), /Pokażemy, że σ̂\(p ⇒ q\) = T\. Rozważmy dwa przypadki\. Przypadek, gdy poprzednik jest fałszywy, jest trywialny\./);
   // każdy kompletny dowód z (⇒i) — z przykładów — zawiera to zdanie
-  for (const e of Examples.LIST) {
+  for (const e of Examples.PROP.LIST) {
     const pf = e.proof ? e.proof() : proofOf(F.parse(e.formula));
     let imp = false;
     Proof.walk([pf], n => { if (n.rule === 'impI') imp = true; });

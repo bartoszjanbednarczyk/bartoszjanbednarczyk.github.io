@@ -13,7 +13,9 @@
   let fi = 0;
   let measurer = null;
 
-  const root = () => st.frags[fi];
+  /** Dział rezolucji eksportuje drzewo dowodu sprzeczności (ui/res.js), pozostałe — fragmenty dowodów. */
+  const res = () => S.system() === 'res';
+  const root = () => (res() ? (UI.res.exportSource() || {}).root : st.frags[fi]);
   const background = () => S.prefs.exportBg || theme();
   /** Fonty formuł — te same co w aplikacji (zmienna --math w CSS). */
   const mathFont = () => getComputedStyle(document.documentElement).getPropertyValue('--math').trim() || Export.MATH_FONT;
@@ -32,7 +34,7 @@
   }
 
   const pngScale = L => Export.fitScale(L, S.prefs.exportScale);
-  const fileName = ext => `dowod-${fi + 1}.${ext}`;
+  const fileName = ext => (res() ? `rezolucja.${ext}` : `dowod-${fi + 1}.${ext}`);
   const decimal = x => x.toFixed(1).replace('.', ',');
 
   /** PNG jako obietnica Bloba (skala dopasowana do limitów płótna). */
@@ -49,6 +51,7 @@
 
   /** Uwagi o eksportowanym dowodzie: niekompletny, z błędami, (dla LaTeX-a) bardzo głęboki. */
   function problemsNote({ tex = false } = {}) {
+    if (res()) return '';
     const w = Export.warnings(root());
     return [
       w.open ? `Dowód nie jest jeszcze kompletny (otwarte cele: ${w.open}).` : '',
@@ -68,7 +71,7 @@
     $('expNote').textContent = [problemsNote(), sizeNote].filter(Boolean).join(' ');
   }
 
-  const latexCode = () => Export.latex(root(), { standalone: S.prefs.texStandalone });
+  const latexCode = () => Export.latex(root(), { standalone: S.prefs.texStandalone, check: !res() });
 
   function renderLatex() {
     $('tex').value = latexCode();
@@ -82,10 +85,16 @@
     $('expLatexPane').hidden = tab !== 'latex';
     const select = $('expFrag');
     const mark = r => { const s = S.status(r); return s.errors ? ' (błędy)' : s.open ? ' (niekompletny)' : ''; };
-    select.innerHTML = st.frags.map((r, i) => `<option value="${i}">${st.frags.length > 1 ? (i + 1) + '. ' : ''}${Render.esc(F.text(r.f))}`
-      + `${mark(r)}</option>`).join('');
-    select.value = String(fi);
-    select.hidden = st.frags.length < 2;
+    if (res()) {
+      select.innerHTML = '';
+      select.hidden = true;
+    } else {
+      select.innerHTML = st.frags.map((r, i) => `<option value="${i}">${st.frags.length > 1 ? (i + 1) + '. ' : ''}${Render.esc(F.text(r.f))}`
+        + `${mark(r)}</option>`).join('');
+      select.value = String(fi);
+      select.hidden = st.frags.length < 2;
+    }
+    $('exportTitle').textContent = res() ? 'Eksport dowodu sprzeczności' : 'Eksport dowodu';
     $('expBg').value = background();
     $('expScale').value = String(S.prefs.exportScale);
     $('texFull').checked = S.prefs.texStandalone;
@@ -93,6 +102,12 @@
   }
 
   function open(i) {
+    if (res()) {
+      if (!UI.res.exportSource()) { toast('Eksportuje się drzewo dowodu sprzeczności — najpierw wyprowadź klauzulę pustą ⊥'); return; }
+      render();
+      Modal.open('exportModal');
+      return;
+    }
     if (!st.frags.length) { toast('Najpierw zbuduj dowód'); return; }
     fi = UI.actions.targetFragment(i);
     render();
@@ -119,7 +134,7 @@
     $('texCopy').addEventListener('click', () => copyText($('tex').value, 'Skopiowano kod LaTeX'));
     // praca zmieniona w innej karcie: okno pokazuje bieżący stan albo się zamyka, gdy fragmentu już nie ma
     S.on('external', () => {
-      if (!Modal.isOpen('exportModal')) return;
+      if (!Modal.isOpen('exportModal') || res()) return;
       if (st.frags[fi]) render(); else Modal.close('exportModal');
     });
     $('texDownload').addEventListener('click', () => {

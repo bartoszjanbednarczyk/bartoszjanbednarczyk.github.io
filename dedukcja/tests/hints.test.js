@@ -43,7 +43,7 @@ function test(name, fn) {
 }
 
 const LOCKED = /tylko w zadaniach przykładowych/;
-const byGroup = g => Examples.LIST.map((e, i) => [e, i]).filter(([e]) => e.group === g);
+const byGroup = g => Examples.PROP.LIST.map((e, i) => [e, i]).filter(([e]) => e.group === g);
 const SAMPLES = byGroup('przyk');
 
 function reset({ mode = 'back', autoHyp = true } = {}) {
@@ -72,8 +72,8 @@ function solveWithHints(limit = 400) {
 
 test('jest dokładnie 10 zadań przykładowych, a ich grupa jest pierwsza w menu', () => {
   assert.equal(SAMPLES.length, 10);
-  assert.equal(Examples.GROUPS[0].id, 'przyk');
-  assert.equal(Examples.SAMPLES.length, 10);
+  assert.equal(Examples.PROP.GROUPS[0].id, 'przyk');
+  assert.equal(Examples.PROP.SAMPLES.length, 10);
 });
 
 test('zadania przykładowe pochodzą z kolokwiów i egzaminów', () => {
@@ -83,8 +83,8 @@ test('zadania przykładowe pochodzą z kolokwiów i egzaminów', () => {
 test('zadania przykładowe są różne, nie powtarzają się w innych grupach i nie są zadaniami ze skryptu', () => {
   const keys = SAMPLES.map(([e]) => F.key(F.parse(e.formula)));
   assert.equal(new Set(keys).size, 10);
-  Examples.LIST.filter(e => e.group !== 'przyk').forEach(e => {
-    assert.equal(Examples.isSample(F.parse(e.formula)), false, `${e.title} (${e.group}) nie może mieć podpowiedzi`);
+  Examples.PROP.LIST.filter(e => e.group !== 'przyk').forEach(e => {
+    assert.equal(Examples.PROP.isSample(F.parse(e.formula)), false, `${e.title} (${e.group}) nie może mieć podpowiedzi`);
   });
 });
 

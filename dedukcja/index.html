@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dedukcja naturalna</title>
-<meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań: dowody z oknami (pudełkami), podpowiedzi, dowód w języku naturalnym, prezentacja krok po kroku i eksport do PNG/SVG/LaTeX-a.">
+<meta name="description" content="Interaktywny system dedukcji naturalnej dla rachunku zdań i rachunku kwantyfikatorów (dowody z oknami, podpowiedzi, dowód w języku naturalnym, prezentacja, eksport do PNG/SVG/LaTeX-a) oraz rezolucja dla rachunku zdań.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20261007g">
+<link rel="stylesheet" href="css/app.css?v=20261013a">
 <script>
   /* motyw przed pierwszym malowaniem (bez mignięcia): zapisany wybór, domyślnie białe tło */
   (function () {
@@ -23,7 +23,7 @@
 <header class="top" data-background>
   <div class="brand">
     <div class="logo" aria-hidden="true">⊢</div>
-    <div><h1>Dedukcja naturalna</h1><p>rachunek zdań · dowody z oknami, jak w rozdz. 2.9 skryptu</p></div>
+    <div><h1 id="appTitle">Dedukcja naturalna</h1><p id="appSub">rachunek zdań · dowody z oknami, jak w rozdz. 2.9 skryptu</p></div>
   </div>
   <div class="seg" id="modeSeg" role="radiogroup" aria-label="Tryb budowania">
     <button type="button" data-mode="back" role="radio"><b>↑ Od celu</b><small>reguła dopisuje przesłanki</small></button>
@@ -42,9 +42,14 @@
       <button type="button" data-theme-choice="dark" role="radio" title="Czarne tło"><i data-ic="moon"></i><span class="hide-sm">Czarne</span></button>
     </div>
   </div>
+  <nav class="systems" id="sysTabs" role="tablist" aria-label="Dział">
+    <button type="button" role="tab" data-sys="prop" aria-controls="ndApp" title="Dedukcja naturalna dla rachunku zdań (rozdz. 2.9)"><span class="hide-sm">Rachunek zdań</span><span class="show-sm">Zdania</span></button>
+    <button type="button" role="tab" data-sys="fo" aria-controls="ndApp" title="Dedukcja naturalna dla rachunku kwantyfikatorów (rozdz. 3.3)"><span class="hide-sm">Rachunek kwantyfikatorów</span><span class="show-sm">Kwantyfikatory</span></button>
+    <button type="button" role="tab" data-sys="res" aria-controls="resApp" title="Rezolucja dla rachunku zdań (rozdz. 2.7)">Rezolucja</button>
+  </nav>
 </header>
 
-<div class="app" data-background>
+<div class="app" id="ndApp" role="tabpanel" data-background>
   <aside class="card" id="rulesPanel" aria-label="Reguły">
     <div class="rules-head">
       <h2>Reguły</h2>
@@ -71,12 +76,52 @@
       <button type="button" class="btn icon" id="undo" title="Cofnij (Ctrl+Z)" aria-label="Cofnij"><i data-ic="undo"></i></button>
       <button type="button" class="btn icon" id="redo" title="Ponów (Ctrl+Y)" aria-label="Ponów"><i data-ic="redo"></i></button>
       <span class="vsep hide-sm hide-md"></span>
-      <button type="button" class="btn icon hide-sm" id="zoomOut" title="Pomniejsz" aria-label="Pomniejsz"><i data-ic="zoomout"></i></button>
-      <button type="button" class="btn icon hide-sm" id="zoomIn" title="Powiększ" aria-label="Powiększ"><i data-ic="zoomin"></i></button>
+      <button type="button" class="btn icon hide-sm" data-zoom="-1" title="Pomniejsz" aria-label="Pomniejsz"><i data-ic="zoomout"></i></button>
+      <button type="button" class="btn icon hide-sm" data-zoom="1" title="Powiększ" aria-label="Powiększ"><i data-ic="zoomin"></i></button>
       <button type="button" class="btn icon danger hide-sm" id="reset" title="Usuń wszystko" aria-label="Usuń wszystko"><i data-ic="trash"></i></button>
     </div>
     <div class="info" id="info"></div>
     <div class="ws" id="ws"></div>
+  </main>
+</div>
+
+<!-- rezolucja (rozdz. 2.7) -->
+<div class="app" id="resApp" role="tabpanel" data-background hidden>
+  <aside class="card" id="resPanel" aria-label="Reguła rezolucji i wartościowanie">
+    <div class="rules-head">
+      <h2>Reguła rezolucji</h2>
+      <p>Z klauzul <span class="math"><i>C</i> ∨ <i>p</i></span> i <span class="math"><i>D</i> ∨ ¬<i>p</i></span> wynika ich rezolwenta <span class="math"><i>C</i> ∨ <i>D</i></span> (Def. 47).</p>
+    </div>
+    <div class="res-rule">
+      <div class="rcard static"><div class="inf"><div class="prem"><span class="math"><i>C</i> ∨ <i>p</i></span><span class="math"><i>D</i> ∨ ¬<i>p</i></span></div><div class="bar"></div><div class="concl"><span class="math"><i>C</i> ∨ <i>D</i></span></div></div></div>
+    </div>
+    <div class="res-val">
+      <div class="rules-head">
+        <h2>Wartościowanie <span class="math">σ</span></h2>
+        <p id="resValSub"></p>
+      </div>
+      <div class="res-vars" id="resVars"></div>
+    </div>
+  </aside>
+  <main>
+    <div class="wsbar">
+      <button type="button" class="btn primary" id="resNew"><i data-ic="plus"></i><span>Nowy zbiór<span class="hide-sm hide-md"> klauzul</span></span></button>
+      <details class="menu" id="resExMenu">
+        <summary class="btn" title="Przykładowe zbiory klauzul"><i data-ic="book"></i><span class="hide-sm hide-md">Przykłady</span></summary>
+        <div class="menu-list" id="resExList"></div>
+      </details>
+      <span class="status" id="resStatus"></span>
+      <button type="button" class="btn hintb" id="resHint" title="Podpowiedź (H)"><i data-ic="bulb"></i><span class="hide-sm">Podpowiedź</span></button>
+      <span class="sp"></span>
+      <button type="button" class="btn icon" id="resUndo" title="Cofnij (Ctrl+Z)" aria-label="Cofnij"><i data-ic="undo"></i></button>
+      <button type="button" class="btn icon" id="resRedo" title="Ponów (Ctrl+Y)" aria-label="Ponów"><i data-ic="redo"></i></button>
+      <span class="vsep hide-sm hide-md"></span>
+      <button type="button" class="btn icon hide-sm" data-zoom="-1" title="Pomniejsz" aria-label="Pomniejsz"><i data-ic="zoomout"></i></button>
+      <button type="button" class="btn icon hide-sm" data-zoom="1" title="Powiększ" aria-label="Powiększ"><i data-ic="zoomin"></i></button>
+      <button type="button" class="btn icon danger hide-sm" id="resReset" title="Usuń zbiór klauzul" aria-label="Usuń zbiór klauzul"><i data-ic="trash"></i></button>
+    </div>
+    <div class="info" id="resInfo"></div>
+    <div class="ws" id="resWs"></div>
   </main>
 </div>
 
@@ -103,6 +148,21 @@
     <div class="mfoot">
       <button type="button" class="btn" data-close>Anuluj</button>
       <button type="button" class="btn primary" id="askOk">Zatwierdź</button>
+    </div>
+  </div>
+</div>
+
+<!-- nowy zbiór klauzul (rezolucja) -->
+<div class="modal-bg" id="resAskModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resAskTitle">
+    <div class="mhead"><h3 id="resAskTitle">Nowy zbiór klauzul</h3><button type="button" class="btn icon" data-close aria-label="Zamknij"><i data-ic="x"></i></button></div>
+    <div class="desc">Klauzule oddziel przecinkami albo nowymi wierszami (Shift+Enter), literały — znakiem <span class="math">∨</span>. Np. <code>{¬p ∨ q, p, ¬q}</code> albo <code>~p | q, p, ~q</code>; klauzulę pustą zapisz jako ⊥.</div>
+    <textarea class="fin" id="resAskInput" rows="3" spellcheck="false" aria-label="Zbiór klauzul" placeholder="{¬p ∨ q, ¬q ∨ r, p, ¬r}"></textarea>
+    <div class="prev" id="resAskPreview" aria-live="polite"></div>
+    <div class="pal" id="resAskPalette"></div>
+    <div class="mfoot">
+      <button type="button" class="btn" data-close>Anuluj</button>
+      <button type="button" class="btn primary" id="resAskOk">Zatwierdź</button>
     </div>
   </div>
 </div>
@@ -160,66 +220,83 @@
 <div class="modal-bg" id="helpModal">
   <div class="modal wide help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <div class="mhead"><h3 id="helpTitle">Jak korzystać</h3><button type="button" class="btn icon" data-close aria-label="Zamknij"><i data-ic="x"></i></button></div>
-    <div class="mfoot" style="justify-content:flex-start;margin:2px 0 8px">
+    <div class="mfoot" style="justify-content:flex-start;margin:2px 0 8px" data-for="prop">
       <button type="button" class="btn primary" id="tutorialStart"><i data-ic="play"></i>Uruchom samouczek (1 min)</button>
     </div>
-    <div class="legend">
+    <div class="legend" data-for="nd">
       <span><span class="fm open">φ</span> otwarty cel / niezamknięta hipoteza</span>
       <span><span class="fm done">φ</span> formuła z kompletnym poddowodem</span>
       <span><span class="fm sel">φ</span> zaznaczenie</span>
       <span><span class="box math">α&nbsp;&nbsp;założenie</span> okno z założeniem</span>
     </div>
-    <h4>Dwa tryby</h4>
-    <ul>
+    <h4 data-for="fo">Rachunek kwantyfikatorów (rozdz. 3.3)</h4>
+    <ul data-for="fo">
+      <li>Formuły: <code>Ax p(x)</code> albo <code>∀x p(x)</code>, <code>Ex q(x, f(a))</code> albo <code>∃x …</code>. Kwantyfikator wiąże jak negacja: <span class="math">∀<i>x</i> <i>p</i>(<i>x</i>) ⇒ <i>q</i></span> to <span class="math">(∀<i>x</i> <i>p</i>(<i>x</i>)) ⇒ <i>q</i></span>; kropka rozciąga jego zasięg do końca: <code>Ax. p(x) -> q(x)</code> to <span class="math">∀<i>x</i> (<i>p</i>(<i>x</i>) ⇒ <i>q</i>(<i>x</i>))</span>.</li>
+      <li>Symbole jak w skrypcie: zmienne <i>u</i>–<i>z</i> (z indeksem: <code>x0</code> → <span class="math"><i>x</i><sub>0</sub></span>), stałe <i>a</i>–<i>e</i>, symbole funkcyjne <i>f</i>–<i>h</i> (z argumentami, np. <code>f(x, a)</code>), symbole relacyjne <i>p</i>–<i>t</i> oraz <i>φ</i>, <i>ψ</i> — schematy z zadań zapisujemy jako <span class="math"><i>φ</i>(<i>x</i>)</span>.</li>
+      <li>Reguły (∀i) i (∃e) otwierają okno ze <b>świeżą zmienną</b> <span class="math"><i>x</i><sub>0</sub></span> — aplikacja dobiera ją sama, tak by nie występowała w pozostałej części dowodu, i pilnuje, by nie była wolna w założeniach ani we wniosku. Reguła (∀e) pyta o formułę <span class="math">∀<i>x</i> <i>α</i></span>, z której wynika cel, a (∃i) — o term-świadka <span class="math"><i>t</i></span>; podstawienie <span class="math"><i>α</i>[<i>x</i>/<i>t</i>]</span> musi być dopuszczalne (Def. 52).</li>
+      <li>Dowód w języku naturalnym rozumuje na strukturach (rozdz. 13.1): dla dowolnej struktury <span class="math">𝔄</span> i wartościowania <span class="math"><i>v</i></span> pokazuje, że <span class="math">𝔄 ⊨ <i>φ</i>[<i>v</i>]</span>; okno ze świeżą zmienną to wybór elementu uniwersum.</li>
+      <li>Podpowiedzi działają we wszystkich przykładach z menu <b>Przykłady</b> (dla własnych formuł — nie). Aplikacja zakłada, że dowodzisz praw rachunku kwantyfikatorów.</li>
+    </ul>
+    <h4 data-for="res">Rezolucja (rozdz. 2.7)</h4>
+    <ul data-for="res">
+      <li>Zadanie: rozstrzygnij, czy zbiór klauzul jest sprzeczny. Jeśli tak — wyprowadź klauzulę pustą <span class="math">⊥</span> (rezolucyjny dowód sprzeczności, Def. 47); jeśli nie — wskaż wartościowanie <span class="math">σ</span>, które spełnia wszystkie klauzule.</li>
+      <li>Kliknij dwie klauzule: pasek na dole pokaże ich rezolwenty — po jednej dla każdej zmiennej <span class="math"><i>p</i></span>, która w jednej klauzuli występuje jako <span class="math"><i>p</i></span>, a w drugiej jako <span class="math">¬<i>p</i></span>. Kliknięta rezolwenta trafia na koniec listy. Gdy pojawi się <span class="math">⊥</span>, pod listą zobaczysz drzewo dowodu (jak na str. 43) i ciąg <span class="math"><i>C</i><sub>0</sub>, …, <i>C<sub>n</sub></i></span>.</li>
+      <li>Wartościowanie ustawiasz w panelu z lewej (<b>T</b> albo <b>F</b> przy każdej zmiennej); przy klauzulach widać, czy są spełnione.</li>
+      <li>Klauzule wpisuj jak w skrypcie: <code>{¬p ∨ q, p, ¬q}</code> albo <code>~p | q, p, ~q</code>. Klauzule <span class="math"><i>p</i> ∨ <i>q</i></span> i <span class="math"><i>q</i> ∨ <i>p</i></span> (oraz <span class="math"><i>p</i> ∨ <i>p</i></span> i <span class="math"><i>p</i></span>) to ta sama klauzula.</li>
+      <li>Zaznaczoną rezolwentę usuniesz klawiszem <span class="kbd">Delete</span> (razem z rezolwentami, które z niej powstały); <span class="kbd">Ctrl+Z</span> cofa ostatnią zmianę.</li>
+      <li>Podpowiedzi (<span class="kbd">H</span>) działają tylko w zbiorach z grupy „z podpowiedziami”.</li>
+    </ul>
+    <h4 data-for="nd">Dwa tryby</h4>
+    <ul data-for="nd">
       <li><b>↑ Od celu.</b> Dodaj cel, kliknij go i wybierz regułę. Nad celem pojawią się przesłanki, a dla (⇒i), (¬i) i (∨e) — okna z założeniami. Powtarzaj, aż nie zostanie żaden otwarty cel.</li>
       <li><b>↓ Od przesłanek.</b> Dodaj przesłanki (hipotezy), zaznacz formuły na dole fragmentów i wybierz regułę — pod spodem pojawi się wniosek. Kolejność kliknięć ma znaczenie, np. dla (∧i) i (∨e). Reguły z oknem zamykają w nim wszystkie hipotezy równe założeniu.</li>
       <li>Tryby można łączyć: gotowy fragment wstawisz w otwarty cel o tej samej formule (<i>Wstaw fragment w cel</i>), a poddrzewo możesz odłączyć jako osobny fragment.</li>
     </ul>
-    <h4>Założenia są lokalne</h4>
-    <ul>
+    <h4 data-for="nd">Założenia są lokalne</h4>
+    <ul data-for="nd">
       <li>Założenia wolno używać tylko wewnątrz jego okna — reguła <i>założenie</i> jest dostępna tylko tam.</li>
       <li>Otwarte cele to po prostu niezamknięte hipotezy. W trybie „od przesłanek” nagłówek fragmentu pokazuje sekwent <span class="math">Γ ⊢ φ</span>, gdzie Γ to te hipotezy. Dowód jest kompletny, gdy Γ jest puste — wtedy nagłówek pokazuje <span class="math">⊢ φ</span>.</li>
     </ul>
-    <h4>Wnioski z założeń</h4>
-    <ul>
+    <h4 data-for="nd">Wnioski z założeń</h4>
+    <ul data-for="nd">
       <li>Kliknij <b>założenie w nagłówku okna</b> i wybierz regułę na pasku na dole — pod założeniem pojawi się <b>wniosek</b>. Np. z <span class="math"><i>p</i> ∧ <i>q</i></span> regułami (∧e<sub>1</sub>) i (∧e<sub>2</sub>) dostaniesz <span class="math"><i>p</i></span> oraz <span class="math"><i>q</i></span>.</li>
       <li>Z wniosków można wyciągać kolejne: kliknij jeden albo dwa (np. <span class="math"><i>p</i></span> i <span class="math"><i>p</i> ⇒ <i>q</i></span> dla (⇒e)). Działają reguły eliminacji oraz (∧i) i (∨i); wolno łączyć założenia okna z założeniami okien, które je otaczają.</li>
       <li>Wnioski działają jak założenia: cel w tym oknie równy wnioskowi zamyka się sam (albo regułą <i>założenie</i>), a do dowodu trafia pełne wyprowadzenie — np. <span class="math">(∧e<sub>1</sub>)</span> nad założeniem. Zaznaczony wniosek usuniesz klawiszem <span class="kbd">Delete</span>.</li>
     </ul>
-    <h4>Cofanie kroków</h4>
-    <ul>
+    <h4 data-for="nd">Cofanie kroków</h4>
+    <ul data-for="nd">
       <li><b>Cofnij krok</b> (<span class="kbd">Delete</span>): zaznacz uzasadnioną formułę albo kliknij nazwę reguły przy kresce — reguła zostanie cofnięta, a formuła znów będzie otwartym celem. Kroki wykonane nad przesłankami nie giną: zostają jako osobne fragmenty, które wstawisz z powrotem (zaznacz otwarty cel i wybierz <i>Wstaw fragment</i>) albo usuniesz. Przy zaznaczonym otwartym celu cofa się krok, z którego ten cel powstał.</li>
       <li><b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>) usuwa wszystko nad formułą. Gdy najedziesz na któryś z tych przycisków, rysunek pokaże, co zostanie cofnięte.</li>
       <li>W trybie „od przesłanek” cofnięcie kroku na dole fragmentu rozdziela go z powrotem na przesłanki.</li>
       <li>Przycisk <b>↶</b> na górze (<span class="kbd">Ctrl+Z</span>) cofa po prostu ostatnią zmianę dowolnego rodzaju — także samo cofnięcie kroku; <b>↷</b> (<span class="kbd">Ctrl+Y</span>) ją ponawia.</li>
     </ul>
-    <h4>Gotowy dowód</h4>
-    <ul>
-      <li>Pod kompletnym dowodem pojawia się <b>dowód w języku naturalnym</b> — rozumowanie na wartościowaniach, jak w rozdz. 2 skryptu: dla dowolnego wartościowania <span class="math">σ</span> pokazuje, że <span class="math">σ̂(φ) = <span class="tv">T</span></span>, a okna stają się przypadkami (wcięte akapity). Nazwy reguł można dopisać przełącznikiem; tekst skopiujesz jako zwykły tekst albo LaTeX.</li>
+    <h4 data-for="nd">Gotowy dowód</h4>
+    <ul data-for="nd">
+      <li data-for="prop">Pod kompletnym dowodem pojawia się <b>dowód w języku naturalnym</b> — rozumowanie na wartościowaniach, jak w rozdz. 2 skryptu: dla dowolnego wartościowania <span class="math">σ</span> pokazuje, że <span class="math">σ̂(φ) = <span class="tv">T</span></span>, a okna stają się przypadkami (wcięte akapity). Nazwy reguł można dopisać przełącznikiem; tekst skopiujesz jako zwykły tekst albo LaTeX.</li>
       <li><b>Odtwórz</b> (skrót <span class="kbd">P</span>) pokazuje dowód krok po kroku w trybie prezentacji z dużą czcionką — „od celu” albo „od przesłanek”. Strzałki przewijają kroki, <span class="kbd">F</span> włącza pełny ekran.</li>
       <li><b>Eksport</b> zapisuje dowód jako obrazek PNG lub SVG (np. do notatek albo na Discorda — <i>Kopiuj PNG</i> i wklej) albo jako kod LaTeX.</li>
     </ul>
-    <h4>Wpisywanie formuł</h4>
-    <ul>
+    <h4 data-for="nd">Wpisywanie formuł</h4>
+    <ul data-for="nd">
       <li>Klikaj symbole w kreatorze albo pisz: <code>~ ! -</code> → ¬, <code>&amp; /\</code> → ∧, <code>| \/</code> → ∨, <code>-&gt; =&gt;</code> → ⇒, <code>T 1</code> → ⊤, <code>F 0</code> → ⊥.</li>
       <li>Kolejność wiązania: ¬, ∧, ∨, ⇒; ∧ i ∨ łączą w lewo, ⇒ w prawo (np. <span class="math"><i>p</i> ⇒ <i>q</i> ⇒ <i>r</i></span> to <span class="math"><i>p</i> ⇒ (<i>q</i> ⇒ <i>r</i>)</span>).</li>
     </ul>
-    <h4>Skróty</h4>
-    <ul>
+    <h4 data-for="nd">Skróty</h4>
+    <ul data-for="nd">
       <li><span class="kbd">Shift</span>/<span class="kbd">Ctrl</span>/<span class="kbd">⌘</span> + klik — dodaj do zaznaczenia (w trybie „od przesłanek” każdy klik dodaje).</li>
       <li><span class="kbd">N</span> następny otwarty cel · <span class="kbd">H</span> podpowiedź · <span class="kbd">P</span> prezentacja · <span class="kbd">Delete</span> cofnij krok · <span class="kbd">Shift+Delete</span> cofnij całe poddrzewo · <span class="kbd">Esc</span> odznacz · <span class="kbd">Ctrl+Z</span> / <span class="kbd">Ctrl+Y</span> cofnij / ponów.</li>
     </ul>
-    <h4>Podpowiedzi</h4>
-    <ul>
-      <li>Podpowiedzi działają tylko w <b>zadaniach przykładowych</b> — to dziesięć zadań z kolokwiów i egzaminów na górze menu <b>Przykłady</b>. Zadania ze skryptu i własne formuły rozwiązujesz samodzielnie.</li>
+    <h4 data-for="nd">Podpowiedzi</h4>
+    <ul data-for="nd">
+      <li data-for="prop">Podpowiedzi działają tylko w <b>zadaniach przykładowych</b> — to dziesięć zadań z kolokwiów i egzaminów na górze menu <b>Przykłady</b>. Zadania ze skryptu i własne formuły rozwiązujesz samodzielnie.</li>
       <li>Przycisk <b>Podpowiedź</b> działa dla zaznaczonego celu, a gdy nic nie jest zaznaczone — dla następnego otwartego celu.</li>
       <li>Kolejne naciśnięcia odsłaniają coraz więcej: <b>1.</b> wskazówka, od czego zacząć; <b>2.</b> konkretna reguła z parametrem (pulsuje na pasku i w tabeli); <b>3.</b> wykonanie tego kroku.</li>
-      <li>Jeśli cel w danym miejscu <b>nie wynika</b> z dostępnych założeń, podpowiedź pokaże kontrprzykład (wartościowanie) i wskaże krok, w którym dowód skręcił w ślepy zaułek — można go cofnąć jednym kliknięciem.</li>
+      <li data-for="prop">Jeśli cel w danym miejscu <b>nie wynika</b> z dostępnych założeń, podpowiedź pokaże kontrprzykład (wartościowanie) i wskaże krok, w którym dowód skręcił w ślepy zaułek — można go cofnąć jednym kliknięciem.</li>
     </ul>
     <h4>Zapis i udostępnianie</h4>
     <ul>
       <li>Praca zapisuje się automatycznie w tej przeglądarce. Przycisk z łańcuchem kopiuje link zawierający cały dowód.</li>
-      <li>Przełącznik <b>Białe / Czarne</b> w nagłówku zmienia tło aplikacji; wybór jest zapamiętywany. Bez wyboru obowiązuje ustawienie systemu.</li>
+      <li>Przełącznik <b>Białe / Czarne</b> w nagłówku zmienia tło aplikacji; wybór jest zapamiętywany (domyślnie tło jest białe).</li>
     </ul>
   </div>
 </div>
@@ -259,25 +336,28 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/formula.js?v=20261007g"></script>
-<script src="js/text.js?v=20261007g"></script>
-<script src="js/proof.js?v=20261007g"></script>
-<script src="js/rules.js?v=20261007g"></script>
-<script src="js/prover.js?v=20261007g"></script>
-<script src="js/explain.js?v=20261007g"></script>
-<script src="js/render.js?v=20261007g"></script>
-<script src="js/export.js?v=20261007g"></script>
-<script src="js/examples.js?v=20261007g"></script>
-<script src="js/ui/kit.js?v=20261007g"></script>
-<script src="js/ui/store.js?v=20261007g"></script>
-<script src="js/ui/ask.js?v=20261007g"></script>
-<script src="js/ui/hints.js?v=20261007g"></script>
-<script src="js/ui/actions.js?v=20261007g"></script>
-<script src="js/ui/workspace.js?v=20261007g"></script>
-<script src="js/ui/exporter.js?v=20261007g"></script>
-<script src="js/ui/present.js?v=20261007g"></script>
-<script src="js/ui/tutorial.js?v=20261007g"></script>
-<script src="js/ui/fireworks.js?v=20261007g"></script>
-<script src="js/ui/main.js?v=20261007g"></script>
+<script src="js/formula.js?v=20261013a"></script>
+<script src="js/text.js?v=20261013a"></script>
+<script src="js/proof.js?v=20261013a"></script>
+<script src="js/rules.js?v=20261013a"></script>
+<script src="js/prover.js?v=20261013a"></script>
+<script src="js/prover-fo.js?v=20261013a"></script>
+<script src="js/explain.js?v=20261013a"></script>
+<script src="js/render.js?v=20261013a"></script>
+<script src="js/export.js?v=20261013a"></script>
+<script src="js/resolution.js?v=20261013a"></script>
+<script src="js/examples.js?v=20261013a"></script>
+<script src="js/ui/kit.js?v=20261013a"></script>
+<script src="js/ui/store.js?v=20261013a"></script>
+<script src="js/ui/ask.js?v=20261013a"></script>
+<script src="js/ui/hints.js?v=20261013a"></script>
+<script src="js/ui/actions.js?v=20261013a"></script>
+<script src="js/ui/workspace.js?v=20261013a"></script>
+<script src="js/ui/exporter.js?v=20261013a"></script>
+<script src="js/ui/present.js?v=20261013a"></script>
+<script src="js/ui/tutorial.js?v=20261013a"></script>
+<script src="js/ui/fireworks.js?v=20261013a"></script>
+<script src="js/ui/res.js?v=20261013a"></script>
+<script src="js/ui/main.js?v=20261013a"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 /* =====================================================================
    Kreator formuł: okno z polem, paletą symboli, podglądem i podpowiedziami.
-   ask() zwraca obietnicę formuły (null — anulowano).
+   ask() zwraca obietnicę formuły albo termu (kind: 'term'; null — anulowano).
+   Składnia (rachunek zdań albo kwantyfikatorów) zależy od bieżącego działu.
    ===================================================================== */
 (function (ND) {
   'use strict';
@@ -10,26 +11,46 @@
 
   const MAX_SUGGESTIONS = 18;
 
-  /** Paleta: zmienne, spójniki i przyciski edycji (act — działanie zamiast wstawienia). */
-  const PALETTE = [
-    ['zmienne', F.VARS.map(v => ({ insert: v, label: `<i>${v}</i>`, title: v }))],
-    ['spójniki', ['¬', '∧', '∨', '⇒', '⊤', '⊥'].map(s => ({ insert: s, label: s, title: s }))],
-    ['edycja', [
-      { insert: '(', label: '(', title: 'nawias otwierający' },
-      { insert: ')', label: ')', title: 'nawias zamykający' },
-      { act: 'left', label: '←', title: 'kursor w lewo' },
-      { act: 'right', label: '→', title: 'kursor w prawo' },
-      { act: 'back', label: '⌫', title: 'usuń znak' },
-      { act: 'clear', label: 'wyczyść', title: 'wyczyść' },
-    ]],
+  /** Palety: zmienne/symbole, spójniki i przyciski edycji (act — działanie zamiast wstawienia). */
+  const sym = (insert, label = insert, title = insert) => ({ insert, label, title });
+  const italic = (insert, label, title) => sym(insert, `<i>${label}</i>${insert.endsWith('(') ? '(' : ''}`, title);
+  const EDIT = ['edycja', [
+    sym('(', '(', 'nawias otwierający'),
+    sym(')', ')', 'nawias zamykający'),
+    { act: 'left', label: '←', title: 'kursor w lewo' },
+    { act: 'right', label: '→', title: 'kursor w prawo' },
+    { act: 'back', label: '⌫', title: 'usuń znak' },
+    { act: 'clear', label: 'wyczyść', title: 'wyczyść' },
+  ]];
+  const TERMS = [
+    ['zmienne', [...F.FO.vars.map(v => italic(v, v, `zmienna ${v}`)), sym('₀', '<i>x</i>₀', 'indeks dolny 0 (np. x₀)')]],
+    ['stałe i funkcje', [...F.FO.consts.map(c => italic(c, c, `stała ${c}`)), ...F.FO.fns.map(f => italic(f + '(', f, `symbol funkcyjny ${f}`)), sym(', ', ',', 'przecinek między argumentami')]],
   ];
+  const PALETTES = {
+    prop: [
+      ['zmienne', F.VARS.map(v => italic(v, v, v))],
+      ['spójniki', ['¬', '∧', '∨', '⇒', '⊤', '⊥'].map(s => sym(s))],
+      EDIT,
+    ],
+    fo: [
+      ['relacje', F.FO.rels.map(r => italic(r + '(', r, `symbol relacyjny ${r}`))],
+      ...TERMS,
+      ['spójniki', ['∀', '∃', '¬', '∧', '∨', '⇒', '⊤', '⊥'].map(s => sym(s))],
+      EDIT,
+    ],
+    term: [...TERMS, EDIT],
+  };
 
-  let pending = null;   // { resolve, check }
+  let pending = null;   // { resolve, check, kind }
+  let palette = null;   // nazwa narysowanej palety
   const input = () => $('askInput');
 
-  function buildPalette() {
+  function buildPalette(name) {
+    if (palette === name) return;
+    palette = name;
     const pal = $('askPalette');
-    PALETTE.forEach(([title, buttons]) => {
+    pal.innerHTML = '';
+    PALETTES[name].forEach(([title, buttons]) => {
       const row = document.createElement('div');
       row.className = 'prow';
       row.innerHTML = `<span class="plab">${title}</span><div class="pbtns"></div>`;
@@ -37,7 +58,7 @@
       buttons.forEach(item => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.innerHTML = item.label;
+        b.innerHTML = `<span>${item.label}</span>`;   // jedna linia: etykieta bywa złożona (np. „p(”, „x₀”)
         b.title = item.title;
         if (item.act) b.className = 'ui';
         b.addEventListener('mousedown', e => e.preventDefault());   // nie zabieraj fokusu polu
@@ -81,10 +102,11 @@
   function preview() {
     const v = input().value, out = $('askPreview');
     let f = null, html;
-    if (!v.trim()) html = '<span class="muted">Tu pojawi się podgląd formuły.</span>';
+    const term = pending && pending.kind === 'term';
+    if (!v.trim()) html = `<span class="muted">Tu pojawi się podgląd ${term ? 'termu' : 'formuły'}.</span>`;
     else {
       try {
-        f = F.parse(v);
+        f = term ? F.parseTerm(v) : F.parse(v, { logic: UI.store.logic() });
         const problem = pending && pending.check ? pending.check(f) : null;
         if (problem) { html = `<span class="bad">${Render.esc(problem)}</span>`; f = null; }
         else html = `<span class="ok">✓</span> ${Render.math(f)}`;
@@ -133,23 +155,23 @@
    * Pyta o formułę. desc — segmenty tekstu; check(f) → komunikat albo null;
    * best — formuły pasujące (wyróżnione), sugg — pozostałe podpowiedzi.
    */
-  function ask({ title, desc = [], check = null, best = [], sugg = [], okLabel = 'Zatwierdź' }) {
+  function ask({ title, desc = [], kind = 'formula', check = null, best = [], sugg = [], okLabel = 'Zatwierdź' }) {
     settle(null);
+    buildPalette(kind === 'term' ? 'term' : UI.store.logic());
+    input().setAttribute('aria-label', kind === 'term' ? 'Term' : 'Formuła');
     $('askTitle').textContent = title;
     $('askDesc').innerHTML = Render.segHTML(desc);
     $('askOk').textContent = okLabel;
     input().value = '';
     suggestions(best, sugg);
     return new Promise(resolve => {
-      pending = { resolve, check };
-      Modal.open('askModal');
+      pending = { resolve, check, kind };
+      Modal.open('askModal', { focus: input() });
       preview();
-      setTimeout(() => input().focus(), 30);
     });
   }
 
   function init() {
-    buildPalette();
     const inp = input();
     inp.maxLength = F.LIMITS.chars;
     inp.addEventListener('input', preview);

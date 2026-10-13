@@ -1,6 +1,7 @@
 /* =====================================================================
    Tekst z formułami: lista segmentów niezależna od formatu wyjściowego.
-     segment: string | formuła | { rule: id } | { sym: '∧' } | { val: formuła, value } | { strong: string } | { qed: true }
+     segment: string | formuła | term | { rule: id } | { sym: '∧' } | { val: formuła, value, v? } | { m: { text, html, tex } }
+              | { strong: string } | { qed: true }
    Renderery (HTML, zwykły tekst, LaTeX) są w render.js.
    ===================================================================== */
 (function (ND) {
@@ -33,10 +34,16 @@
   const rule = id => ({ rule: id });
   /** Symbol spójnika w tekście (pisany jak w formułach). */
   const sym = s => ({ sym: s });
-  /** Wartość logiczna formuły przy wartościowaniu σ: val(φ) → „σ̂(φ) = T”, val(φ, false) → „σ̂(φ) = F”. */
-  const val = (f, value = true) => ({ val: f, value });
+  /**
+   * Wartość logiczna formuły przy wartościowaniu σ: val(φ) → „σ̂(φ) = T”, val(φ, false) → „σ̂(φ) = F”.
+   * W rachunku kwantyfikatorów (v — nazwa wartościowania, np. 'v1', albo jego zapis jako segment m,
+   * np. v_x^a): „𝔄 ⊨ φ[v₁]” albo „𝔄 ⊭ φ[v₁]”.
+   */
+  const val = (f, value = true, v = null) => (v ? { val: f, value, v } : { val: f, value });
+  /** Dowolny zapis matematyczny w trzech postaciach (np. wartościowanie v_x^a). */
+  const m = (text, html, tex) => ({ m: { text, html, tex } });
   const strong = s => ({ strong: s });
   const QED = Object.freeze({ qed: true });
 
-  ND.Seg = Object.freeze({ T, list, rule, sym, val, strong, QED });
+  ND.Seg = Object.freeze({ T, list, rule, sym, val, m, strong, QED });
 })(globalThis.ND ||= {});

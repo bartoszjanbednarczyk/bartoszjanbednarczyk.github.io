@@ -2,19 +2,30 @@
    Stan aplikacji: fragmenty dowodów, zaznaczenie, tryb, ustawienia,
    historia (cofnij/ponów) i zapis. Każda zmiana dowodu przechodzi przez
    commit(), który pilnuje limitów i spójności — to jedyne „drzwi” do stanu.
+   Aplikacja ma trzy działy: dedukcja naturalna dla rachunku zdań ('prop') i dla rachunku
+   kwantyfikatorów ('fo') — oba w tym stanie, każdy z własnymi dowodami, historią i zapisem —
+   oraz rezolucję ('res', osobny moduł ui/res.js). Bieżący dział: system(); składnia formuł: logic().
    ===================================================================== */
 (function (ND) {
   'use strict';
   const { F, Proof, Rules } = ND;
   const UI = (ND.UI ||= {});
-  const { toast, storage, plural } = UI.kit;
+  const { toast, storage, plural, createHistory, LINK_LIMIT, encodeLink, decodeLink } = UI.kit;
 
   const KEYS = Object.freeze({
-    proof: 'nd-proof', backup: 'nd-proof-backup', mode: 'nd-mode', prefs: 'nd-prefs',
+    prefs: 'nd-prefs', system: 'nd-system', logic: 'nd-logic',
     legacyAuto: 'nd-auto', legacyFont: 'nd-fs',
   });
-  const MAX_LINK = 300000;          // maks. długość danych w linku (#d=…)
-  const HISTORY_LIMIT = 100;
+  /** Klucze zapisu każdego rachunku. */
+  const LOGICS = Object.freeze({
+    prop: Object.freeze({ proof: 'nd-proof', backup: 'nd-proof-backup', mode: 'nd-mode' }),
+    fo: Object.freeze({ proof: 'nd-fo-proof', backup: 'nd-fo-proof-backup', mode: 'nd-fo-mode' }),
+  });
+  /** Działy i znaczniki ich linków: #d=… — rachunek zdań, #q=… — kwantyfikatory, #r=… — rezolucja. */
+  const LINK_TAGS = Object.freeze({ prop: 'd', fo: 'q', res: 'r' });
+  const SYSTEMS = Object.freeze(Object.keys(LINK_TAGS));
+  let logic = 'prop', system = 'prop';
+  const keys = () => LOGICS[logic];
   const UNSAVED = 'Ta przeglądarka nie pozwala zapisać pracy — po zamknięciu karty zniknie; zachowaj ją linkiem (przycisk z łańcuchem)';
 
   const state = {
@@ -154,7 +165,7 @@
    * dane z zewnątrz (trusted: false) rzucają FormatError — stan pozostaje wtedy bez zmian.
    */
   function restore(json, { trusted = true } = {}) {
-    state.frags = Proof.deserialize(json, Rules.isRule, { trusted });
+    state.frags = Proof.deserialize(json, Rules.isRule, { trusted, logic });
     state.sel = [];
     state.picks = [];
     state.hint = null;
@@ -177,17 +188,20 @@
 
   /** Zapisuje pracę; zwraca, czy się udało (tryb prywatny, brak miejsca…). */
   function save(json = snapshot()) {
-    persistent = storage.set(KEYS.proof, json) && storage.set(KEYS.mode, state.mode);
+    persistent = storage.set(keys().proof, json) && storage.set(keys().mode, state.mode);
     return persistent;
   }
 
-  /** Zapis po zmianie — z jednorazowym ostrzeżeniem, gdy przeglądarka nie pozwala zapisywać. */
-  function persist(json) {
-    if (!save(json) && !warned) {
+  /** Wynik zapisu po zmianie (także w dziale rezolucji) — z jednorazowym ostrzeżeniem, gdy się nie udał. */
+  function noteSaved(ok) {
+    persistent = ok;
+    if (!ok && !warned) {
       warned = true;
       toast(UNSAVED, { important: true });
     }
   }
+
+  const persist = json => noteSaved(save(json));
 
   /** Powiadamia widoki (indeks musi być aktualny). */
   function notify() {
@@ -204,19 +218,12 @@
   /* ---------- historia ---------- */
 
   /** Wpis historii: dowód i ustawienie automatycznego zamykania celów (jego zmiana też jest krokiem). */
-  const history = { undo: [], redo: [] };
+  const history = createHistory();
   const entry = (proof = snapshot()) => ({ proof, autoHyp: prefs.autoHyp });
+  const record = before => history.record(before);
 
-  function record(before) {
-    history.undo.push(before);
-    if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
-    history.redo = [];
-  }
-
-  function travel(from, to) {
-    if (!from.length) return;
-    const target = from.pop();
-    to.push(entry());
+  function travel(target) {
+    if (!target) return;
     const prefChanged = target.autoHyp !== prefs.autoHyp;
     if (prefChanged) setPref('autoHyp', target.autoHyp);
     restore(target.proof);
@@ -224,10 +231,8 @@
     notify();
     if (prefChanged) emit('prefs');
   }
-  const undo = () => travel(history.undo, history.redo);
-  const redo = () => travel(history.redo, history.undo);
-  const canUndo = () => history.undo.length > 0;
-  const canRedo = () => history.redo.length > 0;
+  const undo = () => travel(history.back(entry()));
+  const redo = () => travel(history.forward(entry()));
 
   /* ---------- zmiany ---------- */
 
@@ -301,37 +306,76 @@
     if (mode !== 'back' && mode !== 'fwd') return;
     state.mode = mode;
     if (mode === 'back' && state.sel.length > 1) state.sel = state.sel.slice(-1);
-    storage.set(KEYS.mode, mode);
+    storage.set(keys().mode, mode);
+  }
+
+  /* ---------- działy: rachunek zdań, rachunek kwantyfikatorów, rezolucja ---------- */
+
+  /** Odłożona praca drugiego rachunku: { proof, history, mode } (wraca po przełączeniu). */
+  const parked = {};
+  const savedMode = l => { const m = storage.get(LOGICS[l].mode); return m === 'back' || m === 'fwd' ? m : 'back'; };
+
+  /** Przełącza stan na dowody innego rachunku (bieżące odkłada razem z historią). */
+  function switchLogic(to) {
+    if (to === logic || !LOGICS[to]) return;
+    parked[logic] = { proof: snapshot(), history: history.park(), mode: state.mode };
+    logic = to;
+    storage.set(KEYS.logic, to);
+    const p = parked[to];
+    delete parked[to];
+    history.unpark(p && p.history);
+    state.mode = p ? p.mode : savedMode(to);
+    try {
+      restore(p ? p.proof : storage.get(keys().proof) || '[]', { trusted: !!p });
+    } catch (e) {
+      storage.set(keys().backup, storage.get(keys().proof) || '');
+      state.frags = [];
+      reindex();
+    }
+  }
+
+  /** Zmienia dział aplikacji ('prop' | 'fo' | 'res'). */
+  function setSystem(to) {
+    if (!SYSTEMS.includes(to) || to === system) return;
+    if (to !== 'res') switchLogic(to);
+    system = to;
+    storage.set(KEYS.system, to);
+    state.sel = [];
+    state.picks = [];
+    state.hint = null;
+    emit('system');
+    refresh();
   }
 
   /* ---------- linki ---------- */
 
-  function base64url(s) {
-    const bytes = new TextEncoder().encode(s);
-    let bin = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-  const unbase64url = s => new TextDecoder('utf-8', { fatal: true })
-    .decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
-
-  /** Fragment adresu z bieżącymi dowodami (#d=…) albo null, gdy dowód jest za duży na link. */
-  function shareHash() {
-    const data = base64url(snapshot());
-    return data.length > MAX_LINK ? null : '#d=' + data;
+  /** Fragment adresu z danymi działu `sys` (#d=…, #q=…, #r=…) albo null, gdy dane są za długie na link. */
+  function linkHash(sys, json) {
+    const data = encodeLink(json);
+    return data.length > LINK_LIMIT ? null : `#${LINK_TAGS[sys]}=${data}`;
   }
 
-  /** Czy fragment adresu zawiera dowód (#d=…). Znaki doklejone na końcu (np. kropka z czatu) są pomijane. */
-  const isLinkHash = hash => /^#d=/.test(hash);
-  const LINK_DATA = /^#d=([\w-]+)/;
+  /** Fragment adresu z bieżącymi dowodami albo null, gdy dowód jest za duży na link. */
+  const shareHash = () => linkHash(logic, snapshot());
+
+  /**
+   * Link z danymi działu: { system, data } albo null, gdy adres nie zawiera linku.
+   * data to zakodowane dane (null — nieczytelne); znaki doklejone na końcu (np. kropka z czatu) są pomijane.
+   */
+  function parseLink(hash) {
+    const m = /^#([a-z])=([\w-]*)/.exec(hash);
+    const sys = m && SYSTEMS.find(s => LINK_TAGS[s] === m[1]);
+    return sys ? { system: sys, data: m[2] || null } : null;
+  }
+  const isLinkHash = hash => !!parseLink(hash);
 
   /**
    * Dołącza fragmenty z linku do obszaru roboczego (nie nadpisuje pracy użytkownika).
    * Pomija fragmenty, które już są (ten sam link otwarty ponownie), oraz te, które nie mieszczą się w limitach.
    */
   function importLink(encoded) {
-    if (encoded.length > MAX_LINK) throw new Proof.FormatError('link');
-    const incoming = Proof.deserialize(unbase64url(encoded), Rules.isRule, { trusted: false });
+    if (encoded.length > LINK_LIMIT) throw new Proof.FormatError('rozmiar');
+    const incoming = Proof.deserialize(decodeLink(encoded), Rules.isRule, { trusted: false, logic });
     normalizeRoots(incoming);   // porównujemy z fragmentami po tych samych porządkach
     const have = new Set(state.frags.map(plainKey));
     const result = { added: 0, duplicates: 0, skipped: 0, total: incoming.length };
@@ -360,21 +404,28 @@
     return parts.join(' · ');
   }
 
-  /** Wczytuje dowód z fragmentu adresu: { ok, message } albo null, gdy adres nie zawiera dowodu. */
+  /** Czy link dotyczy dowodów dedukcji naturalnej (a nie rezolucji). */
+  const ndLink = link => !!link && !!LOGICS[link.system];
+
+  /** Wczytuje dowód z fragmentu adresu: { ok, message } albo null, gdy adres nie zawiera dowodu (dedukcji). */
   function importHash(hash) {
-    if (!isLinkHash(hash)) return null;
+    const link = parseLink(hash);
+    if (!ndLink(link)) return null;
+    if (link.system !== logic) switchLogic(link.system);
     try {
-      const m = hash.match(LINK_DATA);
-      if (!m) throw new Proof.FormatError('link');
-      return { ok: true, message: linkMessage(importLink(m[1])) };
+      if (!link.data) throw new Proof.FormatError('link');
+      return { ok: true, message: linkMessage(importLink(link.data)) };
     } catch (e) {
-      const tooBig = e instanceof Proof.FormatError && ['link', 'rozmiar', 'fragmenty'].includes(e.message);
+      const tooBig = e instanceof Proof.FormatError && ['rozmiar', 'fragmenty'].includes(e.message);
       return { ok: false, message: tooBig ? 'Dowód z linku jest za duży dla tej aplikacji' : 'Nie udało się odczytać dowodu z linku' };
     }
   }
 
-  /** Link otwarty w działającej aplikacji (zmiana #d=… w adresie) — jako krok historii. */
+  /** Link otwarty w działającej aplikacji (zmiana #d=… w adresie) — jako krok historii (w dziale z linku). */
   function openLink(hash) {
+    const link = parseLink(hash);
+    if (!ndLink(link)) return null;
+    setSystem(link.system);
     const before = entry();
     const result = importHash(hash);
     if (!result) return null;
@@ -394,15 +445,17 @@
    */
   function onStorageEvent(e) {
     if (e.key === KEYS.prefs) { loadPrefs(); emit('prefs'); notify(); return; }
-    if (e.key === KEYS.mode && (e.newValue === 'back' || e.newValue === 'fwd')) { state.mode = e.newValue; refresh(); return; }
-    if (e.key !== KEYS.proof || typeof e.newValue !== 'string' || e.newValue === snapshot()) return;
+    if (e.key === keys().mode && (e.newValue === 'back' || e.newValue === 'fwd')) { state.mode = e.newValue; refresh(); return; }
+    // praca odłożonego rachunku zmieniona gdzie indziej — po przełączeniu wczytamy ją z zapisu
+    const other = Object.keys(LOGICS).find(l => l !== logic && e.key === LOGICS[l].proof);
+    if (other) { delete parked[other]; return; }
+    if (e.key !== keys().proof || typeof e.newValue !== 'string' || e.newValue === snapshot()) return;
     try {
       restore(e.newValue, { trusted: false });
     } catch (err) {
       return;
     }
-    history.undo = [];
-    history.redo = [];
+    history.clear();
     notify();
     emit('external');
     toast('Wczytano zmiany z innej karty z tą aplikacją', { important: true });
@@ -417,26 +470,30 @@
    */
   function load() {
     loadPrefs();
-    const mode = storage.get(KEYS.mode);
-    if (mode === 'back' || mode === 'fwd') state.mode = mode;
+    // dział: z linku, z zapisu albo rachunek zdań; rachunek dedukcji — ostatnio używany
+    const savedSystem = storage.get(KEYS.system), savedLogic = storage.get(KEYS.logic);
+    const link = parseLink(location.hash);
+    system = link ? link.system : SYSTEMS.includes(savedSystem) ? savedSystem : 'prop';
+    logic = system !== 'res' ? system : LOGICS[savedLogic] ? savedLogic : 'prop';
+    state.mode = savedMode(logic);
     const messages = [];
     let source = 'empty';
-    const saved = storage.get(KEYS.proof);
+    const saved = storage.get(keys().proof);
     if (saved) {
       try {
         restore(saved, { trusted: false });
         if (state.frags.length) source = 'saved';
       } catch (e) {
-        storage.set(KEYS.backup, saved);
+        storage.set(keys().backup, saved);
         state.frags = [];
         reindex();
         messages.push('Nie udało się odczytać zapisanej pracy — jej kopia została zachowana');
       }
     }
-    const link = importHash(location.hash);
-    if (link) {
-      messages.push(link.message);
-      if (link.ok) source = 'link';
+    const imported = importHash(location.hash);
+    if (imported) {
+      messages.push(imported.message);
+      if (imported.ok) source = 'link';
     }
     if (!save()) { warned = true; messages.push(UNSAVED); }
     if (messages.length) toast(messages.join(' · '), { important: true });
@@ -445,9 +502,11 @@
 
   UI.store = Object.freeze({
     state, prefs, setPref, setAutoHyp, setAutoCloseFor, autoCloses, on, emit,
+    logic: () => logic, system: () => system, setSystem,
     status, completeNodes, isFresh,
     commit, refresh, select, pick, resolvePick, setMode,
-    undo, redo, canUndo, canRedo,
-    load, save, persistent: () => persistent, shareHash, isLinkHash, openLink, onStorageEvent,
+    undo, redo, canUndo: history.canUndo, canRedo: history.canRedo,
+    load, save, noteSaved, persistent: () => persistent,
+    linkHash, shareHash, parseLink, isLinkHash, openLink, onStorageEvent,
   });
 })(globalThis.ND ||= {});

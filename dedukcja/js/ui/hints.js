@@ -2,14 +2,16 @@
    Podpowiedzi: trzy poziomy (wskazówka → reguła → wykonanie kroku),
    a gdy cel nie wynika z założeń — kontrprzykład i wskazanie kroku,
    który zaprowadził w ślepy zaułek. Podpowiedzi działają tylko w zadaniach
-   przykładowych (Examples.isSample) i w dowodzie z samouczka — zadania ze
-   skryptu i pozostałe formuły trzeba rozwiązywać samodzielnie.
+   przykładowych (Examples.PROP.isSample) i w dowodzie z samouczka — zadania ze
+   skryptu i pozostałe formuły trzeba rozwiązywać samodzielnie. W rachunku
+   kwantyfikatorów działają we wszystkich przykładach (Examples.FO), a źródłem
+   jest dowodzący ND.ProverFO (bez kontrprzykładów — rachunek jest nierozstrzygalny).
      stan: { goalId, level, step: { rule, arg }, idea, next }
          | { goalId, dead: true, valuation, culprit } | { goalId, fail: true }
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { F, Proof, Rules, Prover, Explain, Render, Seg, Examples } = ND;
+  const { F, Proof, Rules, Prover, ProverFO, Explain, Render, Seg, Examples } = ND;
   const UI = (ND.UI ||= {});
   const { $, icon, toast, anyOverlay } = UI.kit;
   const S = UI.store, st = S.state;
@@ -17,11 +19,14 @@
 
   /* ---------- gdzie wolno podpowiadać ---------- */
 
-  const LOCKED = 'Podpowiedzi działają tylko w zadaniach przykładowych — wybierz je z menu „Przykłady”';
+  const LOCKED_PROP = 'Podpowiedzi działają tylko w zadaniach przykładowych — wybierz je z menu „Przykłady”';
+  const LOCKED_FO = 'Podpowiedzi działają tylko w przykładach z menu „Przykłady” — własne formuły dowodzisz samodzielnie';
+  const fo = () => S.logic() === 'fo';
+  const lockedMessage = () => (fo() ? LOCKED_FO : LOCKED_PROP);
 
   /** Czy we fragmencie o tym korzeniu działają podpowiedzi (zadanie przykładowe albo dowód z samouczka). */
-  const allowedRoot = root => !!root && (Examples.isSample(root.f)
-    || !!(UI.tutorial && UI.tutorial.isTutorialProof && UI.tutorial.isTutorialProof(root)));
+  const allowedRoot = root => !!root && (Examples.forLogic(S.logic()).isSample(root.f)
+    || (!fo() && !!(UI.tutorial && UI.tutorial.isTutorialProof && UI.tutorial.isTutorialProof(root))));
 
   /** Czy podpowiedź działa dla węzła (wpisu indeksu) — rozstrzyga korzeń jego fragmentu. */
   const allowedFor = info => !!info && allowedRoot(st.frags[info.fi]);
@@ -45,16 +50,17 @@
     plans.set(id, plan);
   }
 
-  /** Czy węzeł ma regułę i przesłanki (formuły, okna) takie jak w planie. */
+  /** Czy węzeł ma regułę i przesłanki (formuły, okna — z założeniem i świeżą zmienną) takie jak w planie. */
+  const sameA = (a, b) => (a ? !!b && F.eq(a, b) : !b);
   const followsPlan = (n, plan) => n.rule === plan.rule && n.prem.length === plan.prem.length
     && n.prem.every((p, i) => {
       const q = plan.prem[i];
-      return p.box ? !!q.box && F.eq(p.a, q.a) && F.eq(p.body.f, q.body.f) : !q.box && F.eq(p.f, q.f);
+      return p.box ? !!q.box && sameA(p.a, q.a) && (p.x || null) === (q.x || null) && F.eq(p.body.f, q.body.f) : !q.box && F.eq(p.f, q.f);
     });
 
   /** Czy plan jest poprawny w danym zasięgu założeń (np. po odłączeniu poddrzewa może nie być). */
   const fitsScope = (plan, scope) => (plan.rule === 'hyp' ? Proof.inScope(scope, plan.f)
-    : plan.prem.every(p => (p.box ? fitsScope(p.body, [...scope, p.a]) : fitsScope(p, scope))));
+    : plan.prem.every(p => (p.box ? fitsScope(p.body, Proof.within(scope, p)) : fitsScope(p, scope))));
 
   /** Poddowód odziedziczony po planie rodzica — o ile rodzic został uzasadniony zgodnie z planem. */
   function inheritedPlan(info) {
@@ -68,21 +74,30 @@
 
   /* ---------- obliczanie podpowiedzi ---------- */
 
-  /** Podpowiedź dla otwartego celu `info` (z indeksu). */
-  function compute(info) {
-    const goal = info.n.f, assumptions = info.scope;
-    const planned = inheritedPlan(info);
-    const valuation = planned ? null : F.countermodel(assumptions, goal);
-    if (valuation) {
-      let culprit = null;
-      for (let up = info.up; up !== null;) {
-        const u = st.idx.get(up);
-        if (!F.countermodel(u.scope, u.n.f)) { culprit = up; break; }
-        up = u.up;
-      }
-      return { goalId: info.n.id, dead: true, valuation, culprit };
+  /** Ostatni krok przed celem `info`, który da się jeszcze uratować (cel nad nim nie wynika z założeń). */
+  function deadEnd(info) {
+    for (let up = info.up; up !== null;) {
+      const u = st.idx.get(up);
+      if (!F.countermodel(u.scope, u.n.f)) return up;
+      up = u.up;
     }
-    const proof = planned || Prover.prove(assumptions, goal);
+    return null;
+  }
+
+  /**
+   * Podpowiedź dla otwartego celu `info` (z indeksu). W rachunku zdań najpierw szukamy kontrprzykładu;
+   * w rachunku kwantyfikatorów dowodzący jest heurystyczny, a świeże zmienne nazywa jak aplikacja
+   * (zajęte nazwy z całego fragmentu).
+   */
+  function compute(info) {
+    const goal = info.n.f, assumptions = info.scope, planned = inheritedPlan(info);
+    if (!planned && !fo()) {
+      const valuation = F.countermodel(assumptions, goal);
+      if (valuation) return { goalId: info.n.id, dead: true, valuation, culprit: deadEnd(info) };
+    }
+    const proof = planned || (fo()
+      ? ProverFO.prove(assumptions, goal, { used: Rules.usedVars(st.frags[info.fi]), terms: (info.vars || []).map(F.VAR) })
+      : Prover.prove(assumptions, goal));
     if (!proof) return { goalId: info.n.id, fail: true };
     remember(info.n.id, proof);
     return {
@@ -125,10 +140,10 @@
   function press() {
     if (anyOverlay()) return;
     if (!st.frags.length) { toast('Najpierw dodaj cel do udowodnienia'); return; }
-    if (target() === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
+    if (target() === 'locked') { st.hint = null; S.refresh(); toast(lockedMessage()); return; }
     if (st.mode === 'fwd') { S.setMode('back'); toast('Podpowiedzi działają w trybie „od celu” — przełączono'); }
     const t = target();
-    if (t === 'locked') { st.hint = null; S.refresh(); toast(LOCKED); return; }
+    if (t === 'locked') { st.hint = null; S.refresh(); toast(lockedMessage()); return; }
     if (!t) { st.hint = null; S.refresh(); toast('Wszystkie cele są zamknięte — dowód jest kompletny'); return; }
     const h = st.hint;
     if (h && h.goalId === t.n.id && st.sel.length === 1 && st.sel[0] === t.n.id) {
@@ -178,7 +193,7 @@
     const on = available();
     b.classList.toggle('off', !on);
     b.setAttribute('aria-disabled', String(!on));
-    b.title = on ? 'Podpowiedź dla zaznaczonego lub następnego celu (H)' : LOCKED;
+    b.title = on ? 'Podpowiedź dla zaznaczonego lub następnego celu (H)' : lockedMessage();
   }
 
   /** Klasy formuły węzła wynikające z podpowiedzi. */
@@ -226,7 +241,9 @@
       return {
         cls: 'dock-hint',
         html: `${icon('bulb')}<div class="htext"><span class="hlev">Podpowiedź</span>`
-          + labelled(T`Nie udało mi się znaleźć podpowiedzi dla tego celu. Spróbuj dowodu nie wprost: ${rule('nnE')}, a potem ${rule('notI')}.`) + '</div>',
+          + labelled(fo()
+            ? T`Nie udało mi się znaleźć dowodu tego celu w tym miejscu — być może nie wynika on z dostępnych założeń (w rachunku kwantyfikatorów nie zawsze da się to sprawdzić). Spróbuj cofnąć ostatni krok albo dowodu nie wprost: ${rule('nnE')}, a potem ${rule('notI')}.`
+            : T`Nie udało mi się znaleźć podpowiedzi dla tego celu. Spróbuj dowodu nie wprost: ${rule('nnE')}, a potem ${rule('notI')}.`) + '</div>',
       };
     }
     const first = h.level === 1;

@@ -1,15 +1,16 @@
 /* =====================================================================
    Drzewa dowodów: węzły, okna, przechodzenie, zapis i odczyt.
      węzeł: { id, f, rule, prem: [węzeł | okno] }   rule === null → otwarty cel
-     okno:  { box: true, a, body, facts }             a — założenie, body — poddowód,
+     okno:  { box: true, a, body, facts, x? }         a — założenie (null w oknie reguły (∀i)), body — poddowód,
             facts — wnioski wyciągnięte w tym oknie z założeń (drzewa wyprowadzeń
             bez otwartych liści; nie są częścią dowodu, dopóki nie zamkną celu —
-            wtedy w miejsce celu trafia kopia wyprowadzenia)
+            wtedy w miejsce celu trafia kopia wyprowadzenia),
+            x — świeża zmienna okna (reguły (∀i) i (∃e) rachunku kwantyfikatorów)
    Moduł czysty (bez DOM).
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { eq, key, parse, size } = ND.F;
+  const { eq, key, parse, size, isVarName } = ND.F;
 
   /**
    * Limity całego obszaru roboczego (pilnowane centralnie przy każdej zmianie).
@@ -20,7 +21,7 @@
 
   let lastId = 0;
   const node = (f, rule = null, prem = []) => ({ id: ++lastId, f, rule, prem });
-  const box = (a, body, facts = []) => ({ box: true, a, body, facts });
+  const box = (a, body, facts = [], x = null) => (x ? { box: true, a, body, facts, x } : { box: true, a, body, facts });
   /** Wnioski okna (okna z dowodzącego nie mają tego pola). */
   const factsOf = b => b.facts || [];
   /** Ostatni nadany identyfikator — węzły o większym id są „nowe” (do animacji). */
@@ -35,7 +36,7 @@
   /**
    * Odwiedza wszystkie węzły fragmentów. Kontekst:
    *   fi — numer fragmentu, parent/slot — miejsce w rodzicu (do podmiany),
-   *   scope — założenia otaczających okien, boxes — te okna (od zewnętrznego),
+   *   scope — założenia otaczających okien, vars — ich świeże zmienne, boxes — te okna (od zewnętrznego),
    *   up — id węzła-rodzica, depth — głębokość. `scope0` — założenia dostępne już przy korzeniu
    *   (np. przy sprawdzaniu wniosku okna).
    */
@@ -43,11 +44,14 @@
     const rec = (n, ctx) => {
       visit(n, ctx);
       n.prem.forEach((p, i) => (p.box
-        ? rec(p.body, { fi: ctx.fi, parent: p, slot: 'body', scope: [...ctx.scope, p.a], boxes: [...ctx.boxes, p], up: n.id, depth: ctx.depth + 1 })
-        : rec(p, { fi: ctx.fi, parent: n, slot: i, scope: ctx.scope, boxes: ctx.boxes, up: n.id, depth: ctx.depth + 1 })));
+        ? rec(p.body, { fi: ctx.fi, parent: p, slot: 'body', scope: within(ctx.scope, p), vars: p.x ? [...ctx.vars, p.x] : ctx.vars, boxes: [...ctx.boxes, p], up: n.id, depth: ctx.depth + 1 })
+        : rec(p, { fi: ctx.fi, parent: n, slot: i, scope: ctx.scope, vars: ctx.vars, boxes: ctx.boxes, up: n.id, depth: ctx.depth + 1 })));
     };
-    roots.forEach((r, fi) => rec(r, { fi, parent: null, slot: null, scope: scope0, boxes: [], up: null, depth: 0 }));
+    roots.forEach((r, fi) => rec(r, { fi, parent: null, slot: null, scope: scope0, vars: [], boxes: [], up: null, depth: 0 }));
   }
+
+  /** Założenia dostępne wewnątrz okna `b` (okno reguły (∀i) nie ma założenia). */
+  const within = (scope, b) => (b.a ? [...scope, b.a] : scope);
 
   /**
    * Okna obszaru roboczego: klucz „id węzła:nr przesłanki” (jak data-box w HTML) →
@@ -56,7 +60,7 @@
   function boxIndex(roots) {
     const m = new Map();
     walk(roots, (n, ctx) => n.prem.forEach((p, i) => {
-      if (p.box) m.set(`${n.id}:${i}`, { b: p, owner: n, i, fi: ctx.fi, scope: [...ctx.scope, p.a], boxes: [...ctx.boxes, p] });
+      if (p.box) m.set(`${n.id}:${i}`, { b: p, owner: n, i, fi: ctx.fi, scope: within(ctx.scope, p), vars: p.x ? [...ctx.vars, p.x] : ctx.vars, boxes: [...ctx.boxes, p] });
     }));
     return m;
   }
@@ -109,7 +113,7 @@
     const visit = (n, ctx, extraDepth = 0) => {
       nodes++;
       depth = Math.max(depth, ctx.depth + extraDepth);
-      formula = Math.max(formula, size(n.f), ...n.prem.filter(p => p.box).map(p => size(p.a)));
+      formula = Math.max(formula, size(n.f), ...n.prem.filter(p => p.box && p.a).map(p => size(p.a)));
       // wnioski okien też zajmują miejsce (i trafiają do zapisu)
       n.prem.forEach(p => { if (p.box) factsOf(p).forEach(w => walk([w], (m, c) => visit(m, c, ctx.depth + 1))); });
     };
@@ -132,7 +136,7 @@
   }
 
   /** Kopia drzewa z nowymi identyfikatorami (np. wyprowadzenie wniosku wstawiane w cel). */
-  const clone = n => node(n.f, n.rule, n.prem.map(p => (p.box ? box(p.a, clone(p.body), factsOf(p).map(clone)) : clone(p))));
+  const clone = n => node(n.f, n.rule, n.prem.map(p => (p.box ? box(p.a, clone(p.body), factsOf(p).map(clone), p.x) : clone(p))));
 
   /** Uzasadnia otwarty cel `n` kopią wyprowadzenia wniosku `fact` (ta sama formuła). */
   function closeByFact(n, fact) {
@@ -160,14 +164,16 @@
 
   /* ---------- zapis i odczyt ---------- */
 
-  /** Postać do zapisu: { f, r?, p? }, okno: { a, b, w? } (w — wnioski). Formuły jako klucze (krótkie linki). */
+  /** Postać do zapisu: { f, r?, p? }, okno: { a?, x?, b, w? } (x — świeża zmienna, w — wnioski). Formuły jako klucze (krótkie linki). */
   function toPlain(n) {
     const o = { f: key(n.f) };
     if (n.rule) o.r = n.rule;
     if (n.prem.length) {
       o.p = n.prem.map(p => {
         if (!p.box) return toPlain(p);
-        const w = { a: key(p.a), b: toPlain(p.body) };
+        const w = p.a ? { a: key(p.a) } : {};
+        if (p.x) w.x = p.x;
+        w.b = toPlain(p.body);
         if (factsOf(p).length) w.w = factsOf(p).map(toPlain);
         return w;
       });
@@ -181,13 +187,18 @@
    * Odczyt ze ścisłą kontrolą typów i nazw reguł (isRule pochodzi z modułu reguł).
    * Dane z zewnątrz (link, localStorage) podlegają też limitom rozmiaru; własne kopie
    * z historii zmian (trusted) — nie, bo powstały z poprawnego stanu.
+   * logic — składnia formuł: 'prop' (rachunek zdań) albo 'fo' (rachunek kwantyfikatorów).
    */
-  function fromPlain(list, isRule, { trusted = false } = {}) {
+  function fromPlain(list, isRule, { trusted = false, logic = 'prop' } = {}) {
     if (!Array.isArray(list) || (!trusted && list.length > LIMITS.fragments)) throw new FormatError('fragmenty');
     let nodes = 0;
     const formula = s => {
       if (typeof s !== 'string') throw new FormatError('formuła');
-      return parse(s);
+      return parse(s, { logic });
+    };
+    const variable = x => {
+      if (logic !== 'fo' || !isVarName(x)) throw new FormatError('zmienna');
+      return x;
     };
     const rec = (o, depth) => {
       if (!trusted && (++nodes > LIMITS.nodes || depth > LIMITS.depth)) throw new FormatError('rozmiar');
@@ -196,10 +207,11 @@
       if (o.p !== undefined && !Array.isArray(o.p)) throw new FormatError('przesłanki');
       const n = node(formula(o.f), o.r || null);
       n.prem = (o.p || []).map(p => {
-        if (!(p && typeof p === 'object' && 'a' in p)) return rec(p, depth + 1);
+        if (!(p && typeof p === 'object' && 'b' in p)) return rec(p, depth + 1);
         if (p.w !== undefined && !Array.isArray(p.w)) throw new FormatError('wnioski');
+        if (p.a === undefined && p.x === undefined) throw new FormatError('okno');
         const facts = (p.w || []).map(w => rec(w, depth + 1));
-        return box(formula(p.a), rec(p.b, depth + 1), facts);
+        return box(p.a === undefined ? null : formula(p.a), rec(p.b, depth + 1), facts, p.x === undefined ? null : variable(p.x));
       });
       if ((n.rule === null || n.rule === 'hyp') && n.prem.length) throw new FormatError('liść z przesłankami');
       return n;
@@ -211,7 +223,7 @@
   const deserialize = (json, isRule, opts) => fromPlain(JSON.parse(json), isRule, opts);
 
   ND.Proof = Object.freeze({
-    LIMITS, node, box, factsOf, latestId, isOpen, isBareLeaf, children, walk, index, boxIndex, factFor, openLeaves, openFormulas,
+    LIMITS, node, box, within, factsOf, latestId, isOpen, isBareLeaf, children, walk, index, boxIndex, factFor, openLeaves, openFormulas,
     completeSubtrees, stats, inScope, replaceAt, discharge, clone, closeByFact, closeByScope, reopenStrayHyps,
     toPlain, fromPlain, serialize, deserialize, FormatError,
   });

@@ -1,16 +1,19 @@
 /* =====================================================================
-   Reguły dedukcji naturalnej (rozdz. 2.9 skryptu).
+   Reguły dedukcji naturalnej (rozdz. 2.9 skryptu) i reguły dla kwantyfikatorów (rozdz. 3.3).
    Każda reguła jest opisana dokładnie raz — jednym rekordem:
      back     stosowanie „od celu”: wymagany spójnik celu, parametr, kształty przesłanek,
               odczyt parametru z gotowego węzła (z tego korzysta też weryfikacja),
      fwd      stosowanie „od przesłanek”: liczba przesłanek, ich kolejność, budowa wniosku,
      schema   przesłanki i wniosek do karty w tabeli reguł.
-   Kształt przesłanki: formuła albo okno { assume, goal }.
+     verify   (opcjonalnie) własne sprawdzenie węzła — reguły z kwantyfikatorami (świeże zmienne, podstawienia).
+   Kształt przesłanki: formuła albo okno { box, assume, goal, fresh } (fresh — świeża zmienna okna).
    W funkcjach „od przesłanek” `fs` to formuły zaznaczonych korzeni, `nodes` — ich węzły.
+   Kontekst `ctx` (reguły z kwantyfikatorami): fresh(base) — świeża zmienna dla bieżącego fragmentu,
+   used — nazwy zmiennych zajęte we fragmencie.
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { TOP, BOT, META, NOT, AND, OR, IMP, eq } = ND.F;
+  const { TOP, BOT, META, NOT, AND, OR, IMP, ALL: FORALL, EX: EXISTS, VAR, MSUB, eq, subst, match, isFree, freeVars, isVarName, freshVar, text, key, isTerm, termsOf, allVars, FO } = ND.F;
   const { T } = ND.Seg;
   const P = ND.Proof;
 
@@ -24,6 +27,8 @@
     nn: { sym: '¬¬', tex: '\\neg\\neg' },
     T: { sym: '⊤', tex: '\\top' },
     F: { sym: '⊥', tex: '\\bot' },
+    all: { sym: '∀', tex: '\\forall' },
+    ex: { sym: '∃', tex: '\\exists' },
   };
   const SUBSCRIPT = { 1: '₁', 2: '₂' };
 
@@ -34,10 +39,12 @@
     not: 'Cel nie jest negacją',
     T: 'Cel nie jest stałą ⊤',
     F: 'Cel nie jest stałą ⊥',
+    all: 'Cel nie zaczyna się od kwantyfikatora ∀',
+    ex: 'Cel nie zaczyna się od kwantyfikatora ∃',
   };
 
-  /** Przesłanka-okno: w oknie z założeniem `assume` trzeba udowodnić `goal`. */
-  const boxed = (assume, goal) => ({ assume, goal });
+  /** Przesłanka-okno: w oknie z założeniem `assume` (i świeżą zmienną `fresh`) trzeba udowodnić `goal`. */
+  const boxed = (assume, goal, fresh = null) => ({ box: true, assume, goal, fresh });
   /** Pierwsza przesłanka węzła, o ile nie jest oknem. */
   const firstFormula = n => (n.prem[0] && !n.prem[0].box ? n.prem[0].f : null);
   /** Kolejność „jak zaznaczono”, o ile formuły spełniają warunek. */
@@ -70,6 +77,100 @@
     desc: fs => T`Fragment trafi do okna z założeniem ${α}, a otwarte hipotezy równe ${α} zostaną w nim zamknięte. Wynik: ${result(fs)}. Jakie jest założenie ${α}?`,
     best: (fs, ctx, [m]) => ctx.hypothesesOf(m),
   });
+
+  /* ---------- kwantyfikatory: świeże zmienne i podstawienia ---------- */
+
+  const X = 'x', X0 = 'x0', TERM_T = VAR('t');   // metazmienne schematów: x, x₀ i term t
+
+  /**
+   * Warunek świeżości zmiennej okna `y` (reguły (∀i) i (∃e)): to zmienna, która nie jest już
+   * zmienną otaczającego okna i nie występuje wolno w założeniach okien ani w formułach `fs`
+   * (wniosek reguły, formuła z kwantyfikatorem). Zwraca powód albo null.
+   */
+  function freshProblem(y, ctx, fs) {
+    if (!isVarName(y)) return 'Świeża zmienna musi być zmienną (u–z)';
+    if ((ctx.vars || []).includes(y)) return `Zmienna ${text(VAR(y))} jest już zmienną otaczającego okna`;
+    const inScope = (ctx.scope || []).find(a => isFree(y, a));
+    if (inScope) return `Zmienna ${text(VAR(y))} występuje wolno w założeniu ${text(inScope)}`;
+    const inF = fs.find(f => isFree(y, f));
+    return inF ? `Zmienna ${text(VAR(y))} występuje wolno w ${text(inF)}` : null;
+  }
+
+  /** Nazwy zmiennych zajęte w drzewie dowodu (formuły, założenia i świeże zmienne okien) — do wyboru świeżej zmiennej. */
+  function usedVars(root, acc = new Set()) {
+    P.walk([root], n => {
+      allVars(n.f, acc);
+      n.prem.forEach(p => {
+        if (!p.box) return;
+        if (p.a) allVars(p.a, acc);
+        if (p.x) acc.add(p.x);
+        P.factsOf(p).forEach(w => usedVars(w, acc));
+      });
+    });
+    return acc;
+  }
+
+  /** Kontekst świeżych zmiennych dla zbioru zajętych nazw. */
+  const freshContext = used => ({ used, fresh: base => { const y = freshVar(base, used); used.add(y); return y; } });
+
+  /** α z t zastąpionym zmienną x (poza miejscami, gdzie zmienna termu t jest związana). */
+  function abstract(f, t, x) {
+    const k = key(t), tv = freeVars(t);
+    const rec = (g, blocked) => {
+      if (isTerm(g)) {
+        if (!blocked && key(g) === k) return VAR(x);
+        return g.args && g.args.length ? { ...g, args: g.args.map(a => rec(a, blocked)) } : g;
+      }
+      switch (g.t) {
+        case 'v': return g.args && g.args.length ? { ...g, args: g.args.map(a => rec(a, blocked)) } : g;
+        case 'all': case 'ex': return { ...g, a: rec(g.a, blocked || tv.includes(g.x)) };
+        case 'not': return { ...g, a: rec(g.a, blocked) };
+        case 'and': case 'or': case 'imp': return { ...g, a: rec(g.a, blocked), b: rec(g.b, blocked) };
+        default: return g;
+      }
+    };
+    return rec(f, false);
+  }
+
+  /**
+   * Podpowiedzi „od przesłanek” dla (∃i) i (∀i): formuły Q x α, dla których A = α[x/t],
+   * otrzymane przez zastąpienie wszystkich wystąpień termu t z A zmienną (dla ∀i tylko zmienne wolne).
+   */
+  function generalizations(A, Q, onlyVars = false) {
+    const out = [], seen = new Set(), names = allVars(A);
+    const spare = FO.vars.find(n => !names.has(n)) || freshVar('x', names);
+    for (const t of termsOf(A).values()) {
+      if (t.t === 'var' ? !isFree(t.n, A) : onlyVars) continue;
+      const x = t.t === 'var' ? t.n : spare;
+      const g = Q(x, t.t === 'var' ? A : abstract(A, t, x));
+      if (!match(g.a, g.x, A) || seen.has(key(g))) continue;
+      seen.add(key(g));
+      out.push(g);
+    }
+    return out;
+  }
+
+  /** Zmienna `y`, przy której α[x/y] jest jedną z hipotez `hyps` (do (∃e) „od przesłanek”). */
+  function witnessIn(D, hyps) {
+    for (const h of hyps) {
+      const m = match(D.a, D.x, h);
+      if (m && m.t && m.t.t === 'var') return { y: m.t.n, h };
+    }
+    return null;
+  }
+
+  /** Sprawdzenie (∃e) „od przesłanek”: { y, assume } albo { reason }. `m` — węzeł fragmentu z wnioskiem β. */
+  function existsWindow(D, m, ctx) {
+    const beta = m.f, hyps = P.openFormulas(m);
+    const hit = witnessIn(D, hyps);
+    if (hit) {
+      const others = hyps.filter(h => !eq(h, hit.h));
+      const why = freshProblem(hit.y, { scope: others }, [beta, D]);
+      if (!why) return { y: hit.y, assume: hit.h };
+    }
+    const y = ctx.fresh(D.x);
+    return { y, assume: subst(D.a, D.x, VAR(y)) };
+  }
 
   const DEFINITIONS = [
     {
@@ -245,6 +346,140 @@
         build: ([D, C], [d, m, n]) => ({ f: C, prem: [d, { assume: D.a, sub: m }, { assume: D.b, sub: n }] }),
       },
     },
+
+    /* ---------- kwantyfikatory (rozdz. 3.3) ---------- */
+    {
+      id: 'allI', con: 'all', kind: 'i', fo: true,
+      title: 'Wprowadzanie kwantyfikatora ogólnego', name: 'wprowadzanie kwantyfikatora ogólnego',
+      schema: { prem: [boxed(null, MSUB(α, X, VAR(X0)), X0)], concl: FORALL(X, α) },
+      back: {
+        goal: 'all',
+        premises: (f, x, ctx) => { const y = ctx.fresh(f.x); return [boxed(null, subst(f.a, f.x, VAR(y)), y)]; },
+      },
+      verify(n, ctx) {
+        const [b] = n.prem;
+        if (n.f.t !== 'all' || n.prem.length !== 1 || !b.box || b.a || !b.x) return false;
+        const body = subst(n.f.a, n.f.x, VAR(b.x));
+        return !!body && eq(b.body.f, body) && !freshProblem(b.x, ctx, [n.f]);
+      },
+      fwd: {
+        arity: 1,
+        param: {
+          desc: ([A]) => T`Fragment z wnioskiem ${A} trafi do okna ze świeżą zmienną, a wnioskiem będzie formuła ${FORALL(X, α)}, dla której ${A} = ${MSUB(α, X, VAR(X0))}. Jaka to formuła?`,
+          check: (g, [A], [m]) => {
+            if (g.t !== 'all') return 'Wynik musi zaczynać się od kwantyfikatora ∀';
+            const r = match(g.a, g.x, A);
+            if (!r) return `${text(A)} nie jest postaci α[${g.x}/x₀] dla tej formuły`;
+            if (r.t && r.t.t !== 'var') return `W miejscu ${g.x} stoi term ${text(r.t)}, a nie zmienna`;
+            return r.t ? freshProblem(r.t.n, { scope: P.openFormulas(m) }, [g]) : null;
+          },
+          best: ([A], ctx, [m]) => generalizations(A, FORALL, true).filter(g => { const r = match(g.a, g.x, A); return !freshProblem(r.t.n, { scope: P.openFormulas(m) }, [g]); }),
+          onlyBest: true,
+        },
+        build: ([A], [m], g, ctx) => {
+          const r = match(g.a, g.x, A);
+          const y = r.t ? r.t.n : ctx.fresh(g.x);
+          return { f: g, prem: [{ assume: null, fresh: y, sub: m }] };
+        },
+      },
+    },
+    {
+      id: 'allE', con: 'all', kind: 'e', fo: true,
+      title: 'Eliminacja kwantyfikatora ogólnego', name: 'eliminacja kwantyfikatora ogólnego',
+      schema: { prem: [FORALL(X, α)], concl: MSUB(α, X, TERM_T) },
+      back: {
+        param: {
+          desc: f => T`Wyprowadzimy ${f} z formuły ${FORALL(X, α)}, podstawiając term za ${VAR(X)}: ${f} = ${MSUB(α, X, TERM_T)}. Jaka jest formuła ${FORALL(X, α)}?`,
+          check: (g, f) => (g.t !== 'all' ? 'Ta formuła musi zaczynać się od kwantyfikatora ∀'
+            : match(g.a, g.x, f) ? null : `Cel nie jest postaci α[${g.x}/t] — żadne dopuszczalne podstawienie nie daje ${text(f)}`),
+          best: (f, ctx) => ctx.cands.filter(c => c.t === 'all' && match(c.a, c.x, f)),
+        },
+        premises: (f, D) => [D],
+        paramOf: n => { const c = firstFormula(n); return c && c.t === 'all' ? c : null; },
+      },
+      verify(n) {
+        const D = firstFormula(n);
+        return n.prem.length === 1 && !!D && D.t === 'all' && !!match(D.a, D.x, n.f);
+      },
+      fwd: {
+        arity: 1, order: ordered(([A]) => A.t === 'all'), reject: 'Potrzebna formuła postaci ∀x α',
+        param: {
+          kind: 'term',
+          desc: ([A]) => T`Z ${A} wyprowadzimy ${MSUB(A.a, A.x, TERM_T)}. Jaki jest term ${TERM_T}?`,
+          check: (t, [A]) => (subst(A.a, A.x, t) ? null : 'Tego podstawienia nie wolno wykonać — zmienna termu zostałaby związana kwantyfikatorem'),
+          best: (fs, ctx) => ctx.terms,
+        },
+        build: ([A], [m], t) => ({ f: subst(A.a, A.x, t), prem: [m] }),
+      },
+    },
+    {
+      id: 'exI', con: 'ex', kind: 'i', fo: true,
+      title: 'Wprowadzanie kwantyfikatora egzystencjalnego', name: 'wprowadzanie kwantyfikatora egzystencjalnego',
+      schema: { prem: [MSUB(α, X, TERM_T)], concl: EXISTS(X, α) },
+      back: {
+        goal: 'ex',
+        param: {
+          kind: 'term',
+          desc: f => T`Wystarczy udowodnić ${MSUB(f.a, f.x, TERM_T)} dla pewnego termu ${TERM_T}. Jaki jest term ${TERM_T}?`,
+          check: (t, f) => (subst(f.a, f.x, t) ? null : 'Tego podstawienia nie wolno wykonać — zmienna termu zostałaby związana kwantyfikatorem'),
+          best: (f, ctx) => ctx.terms,
+        },
+        premises: (f, t) => [subst(f.a, f.x, t)],
+        paramOf: n => {
+          const c = firstFormula(n), r = c && n.f.t === 'ex' ? match(n.f.a, n.f.x, c) : null;
+          return r ? r.t || VAR(n.f.x) : null;
+        },
+      },
+      verify(n) {
+        const c = firstFormula(n);
+        return n.f.t === 'ex' && n.prem.length === 1 && !!c && !!match(n.f.a, n.f.x, c);
+      },
+      fwd: {
+        arity: 1,
+        param: {
+          desc: ([A]) => T`Z ${A} wyprowadzimy formułę ${EXISTS(X, α)}, dla której ${A} = ${MSUB(α, X, TERM_T)}. Jaka to formuła?`,
+          check: (g, [A]) => (g.t !== 'ex' ? 'Wynik musi zaczynać się od kwantyfikatora ∃'
+            : match(g.a, g.x, A) ? null : `${text(A)} nie jest postaci α[${g.x}/t] dla tej formuły`),
+          best: ([A], ctx) => [...ctx.openGoals.filter(g => g.t === 'ex' && match(g.a, g.x, A)), ...generalizations(A, EXISTS)],
+          onlyBest: true,
+        },
+        build: (fs, [m], g) => ({ f: g, prem: [m] }),
+      },
+    },
+    {
+      id: 'exE', con: 'ex', kind: 'e', fo: true,
+      title: 'Eliminacja kwantyfikatora egzystencjalnego', name: 'eliminacja kwantyfikatora egzystencjalnego',
+      schema: { prem: [EXISTS(X, α), boxed(MSUB(α, X, VAR(X0)), β, X0)], concl: β },
+      back: {
+        param: {
+          desc: f => T`Udowodnimy formułę ${EXISTS(X, α)}, a potem ${f} w oknie ze świeżą zmienną ${VAR(X0)} i założeniem ${MSUB(α, X, VAR(X0))}. Jaka jest formuła ${EXISTS(X, α)}?`,
+          check: g => (g.t === 'ex' ? null : 'Ta formuła musi zaczynać się od kwantyfikatora ∃'),
+          best: (f, ctx) => ctx.cands.filter(c => c.t === 'ex'),
+          onlyBest: true,
+        },
+        premises: (f, D, ctx) => { const y = ctx.fresh(D.x); return [D, boxed(subst(D.a, D.x, VAR(y)), f, y)]; },
+        paramOf: n => { const c = firstFormula(n); return c && c.t === 'ex' ? c : null; },
+      },
+      verify(n, ctx) {
+        const D = firstFormula(n), b = n.prem[1];
+        if (n.prem.length !== 2 || !D || D.t !== 'ex' || !b.box || !b.x || !b.a) return false;
+        const a = subst(D.a, D.x, VAR(b.x));
+        return !!a && eq(b.a, a) && eq(b.body.f, n.f) && !freshProblem(b.x, ctx, [n.f, D]);
+      },
+      fwd: {
+        arity: 2,
+        order: (fs, nodes) => {
+          const ok = [[0, 1], [1, 0]].filter(([d]) => fs[d].t === 'ex');
+          if (!ok.length || !nodes) return ok[0] || null;
+          return ok.find(([d, m]) => witnessIn(fs[d], P.openFormulas(nodes[m]))) || ok[0];
+        },
+        reject: 'Potrzebne ∃x α oraz fragment z wnioskiem β i założeniem α[x/x₀]',
+        build: ([D, B], [d, m], x, ctx) => {
+          const w = existsWindow(D, m, ctx);
+          return { f: B, prem: [d, { assume: w.assume, fresh: w.y, sub: m }] };
+        },
+      },
+    },
   ];
 
   /* ---------- etykiety ---------- */
@@ -269,8 +504,9 @@
   const get = id => (id === 'hyp' ? HYP : RULES.get(id));
   const isRule = id => id === 'hyp' || RULES.has(id);
   const ALL = [...RULES.values()];
-  /** Kolejność na pasku akcji: założenie, wprowadzanie, eliminacja. */
-  const ORDER = ['hyp', ...ALL.filter(r => r.kind === 'i').map(r => r.id), ...ALL.filter(r => r.kind === 'e').map(r => r.id)];
+  /** Kolejność na pasku akcji: założenie, wprowadzanie, eliminacja (rachunek kwantyfikatorów — wszystkie reguły). */
+  const ORDER_FO = ['hyp', ...ALL.filter(r => r.kind === 'i').map(r => r.id), ...ALL.filter(r => r.kind === 'e').map(r => r.id)];
+  const ORDER = ORDER_FO.filter(id => id === 'hyp' || !RULES.get(id).fo);
   /** Układ tabeli reguł: spójnik, reguły wprowadzania, reguły eliminacji. */
   const GROUPS = [
     ['∧', ['andI'], ['andE1', 'andE2']],
@@ -279,7 +515,9 @@
     ['¬', ['notI'], ['notE', 'nnE']],
     ['⊤⊥', ['topI'], ['botE']],
   ];
-
+  const GROUPS_FO = [...GROUPS, ['∀', ['allI'], ['allE']], ['∃', ['exI'], ['exE']]];
+  /** Reguły dostępne w danym rachunku: { order, groups }. */
+  const forLogic = logic => (logic === 'fo' ? { order: ORDER_FO, groups: GROUPS_FO } : { order: ORDER, groups: GROUPS });
 
   /* ---------- stosowanie „od celu” ---------- */
 
@@ -287,7 +525,7 @@
   const backBlocked = (r, f) => (r.back.goal && f.t !== r.back.goal ? GOAL_MESSAGES[r.back.goal] : null);
 
   /** Węzły przesłanek z kształtów (okna z pustym celem w środku). */
-  const materialize = shapes => shapes.map(s => (s.assume ? P.box(s.assume, P.node(s.goal)) : P.node(s)));
+  const materialize = shapes => shapes.map(s => (s.box ? P.box(s.assume || null, P.node(s.goal), [], s.fresh || null) : P.node(s)));
 
   /* ---------- stosowanie „od przesłanek” ---------- */
 
@@ -305,11 +543,11 @@
     return { fs: ord.map(i => fs[i]), nodes: ord.map(i => nodes[i]) };
   }
 
-  /** Zamienia przesłanki { assume, sub } na okna, zamykając w nich hipotezy równe założeniu. */
+  /** Zamienia przesłanki { assume, fresh, sub } na okna, zamykając w nich hipotezy równe założeniu. */
   const enclose = prem => prem.map(p => {
-    if (!p.assume) return p;
-    P.discharge(p.sub, p.assume);
-    return P.box(p.assume, p.sub);
+    if (!p.sub) return p;
+    if (p.assume) P.discharge(p.sub, p.assume);
+    return P.box(p.assume || null, p.sub, [], p.fresh || null);
   });
 
   /* ---------- wnioski z założeń (w oknach) ---------- */
@@ -318,28 +556,28 @@
    * Reguły, którymi wyciąga się wnioski z założeń i wcześniejszych wniosków okna — te,
    * które z gotowych formuł robią nową bez otwierania okna (jak „od przesłanek”).
    */
-  const FACT_RULES = Object.freeze(['andE1', 'andE2', 'impE', 'notE', 'nnE', 'botE', 'andI', 'orI1', 'orI2']);
+  const FACT_RULES = Object.freeze(['andE1', 'andE2', 'impE', 'notE', 'nnE', 'botE', 'andI', 'orI1', 'orI2', 'allE', 'exI']);
 
   /** Powód, dla którego reguły nie można zastosować do zaznaczonych założeń/wniosków `fs` (null — można). */
   function factBlocked(r, fs) {
     if (!FACT_RULES.includes(r.id)) {
       return r.id === 'hyp' ? 'To już jest założenie albo wniosek tego okna'
-        : `Reguła (${r.label.text}) potrzebuje celu albo okna — wnioski wyciąga się regułami eliminacji oraz (∧i) i (∨i)`;
+        : `Reguła (${r.label.text}) potrzebuje celu albo okna — wnioski wyciąga się regułami eliminacji oraz (∧i), (∨i)${r.fo ? ' i (∃i)' : ''}`;
     }
     return fwdBlocked(r, fs);
   }
 
   /** Wniosek: węzeł reguły `r` nad przesłankami `nodes` (gotowe wyprowadzenia zaznaczonych formuł). */
-  function buildFact(r, fs, nodes, x) {
+  function buildFact(r, fs, nodes, x, ctx) {
     const arranged = fwdArrange(r, fs, nodes);
-    const { f, prem } = r.fwd.build(arranged.fs, arranged.nodes, x);
+    const { f, prem } = r.fwd.build(arranged.fs, arranged.nodes, x, ctx);
     return P.node(f, r.id, prem);
   }
 
   /** Czy wniosek jest kompletnym, poprawnym wyprowadzeniem z założeń `scope`. */
   function validFact(fact, scope) {
     let ok = true;
-    P.walk([fact], (n, ctx) => { if (n.rule === null || !checkNode(n, ctx.scope)) ok = false; }, scope);
+    P.walk([fact], (n, ctx) => { if (n.rule === null || !checkNode(n, ctx.scope, ctx.vars)) ok = false; }, scope);
     return ok;
   }
 
@@ -347,7 +585,8 @@
 
   const sameShape = (prem, shapes) => prem.length === shapes.length && prem.every((p, i) => {
     const s = shapes[i];
-    return s.assume ? !!p.box && eq(p.a, s.assume) && eq(p.body.f, s.goal) : !p.box && eq(p.f, s);
+    if (!s.box) return !p.box && eq(p.f, s);
+    return !!p.box && (s.assume ? !!p.a && eq(p.a, s.assume) : !p.a) && eq(p.body.f, s.goal) && (p.x || null) === (s.fresh || null);
   });
 
   /** Parametr reguły odczytany z gotowego węzła (np. α dla modus ponens); undefined, gdy reguła go nie ma. */
@@ -356,27 +595,32 @@
     return r && r.back.param ? r.back.paramOf(n) : undefined;
   }
 
-  /** Czy węzeł jest poprawnym zastosowaniem swojej reguły (scope — założenia otaczających okien). */
-  function checkNode(n, scope) {
+  /**
+   * Czy węzeł jest poprawnym zastosowaniem swojej reguły
+   * (scope — założenia otaczających okien, vars — ich świeże zmienne).
+   */
+  function checkNode(n, scope, vars = []) {
     if (n.rule === null) return n.prem.length === 0;
     if (n.rule === 'hyp') return n.prem.length === 0 && P.inScope(scope, n.f);
     const r = RULES.get(n.rule);
     if (!r || backBlocked(r, n.f)) return false;
+    if (r.verify) return r.verify(n, { scope, vars });
     const x = paramOf(n);
-    if (r.back.param && (!x || (r.back.param.check && r.back.param.check(x)))) return false;
+    if (r.back.param && (!x || (r.back.param.check && r.back.param.check(x, n.f)))) return false;
     return sameShape(n.prem, r.back.premises(n.f, x));
   }
 
   /** Zbiór identyfikatorów węzłów z błędnie zastosowaną regułą. */
   function verify(roots) {
     const bad = new Set();
-    P.walk(roots, (n, ctx) => { if (!checkNode(n, ctx.scope)) bad.add(n.id); });
+    P.walk(roots, (n, ctx) => { if (!checkNode(n, ctx.scope, ctx.vars)) bad.add(n.id); });
     return bad;
   }
 
   ND.Rules = Object.freeze({
-    ALL, ORDER, GROUPS, get, isRule,
+    ALL, forLogic, get, isRule,
     backBlocked, materialize, fwdBlocked, fwdArrange, enclose,
     paramOf, checkNode, verify, FACT_RULES, factBlocked, buildFact, validFact,
+    usedVars, freshContext,
   });
 })(globalThis.ND ||= {});

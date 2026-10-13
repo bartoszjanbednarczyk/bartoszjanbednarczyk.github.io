@@ -5,7 +5,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { F, Proof, Rules, Render, Explain, Examples } = ND;
+  const { F, Proof, Rules, Render, Explain } = ND;
   const UI = (ND.UI ||= {});
   const { $, icon, plural, scrollToView, markChoice } = UI.kit;
   const S = UI.store, st = S.state;
@@ -22,7 +22,7 @@
   /** Przewija do formuły węzła (na środek okna). */
   function reveal(id) {
     requestAnimationFrame(() => {
-      const el = document.querySelector(`.ws .fm[data-id="${id}"]`);
+      const el = document.querySelector(`#ws .fm[data-id="${id}"]`);
       if (el) scrollToView(el);
     });
   }
@@ -30,7 +30,7 @@
   /** Kliknięta formuła nie może zniknąć pod paskiem akcji, który właśnie się pojawił (przewija tylko tyle, ile trzeba). */
   function keepAboveDock(id) {
     requestAnimationFrame(() => {
-      const el = document.querySelector(`.ws .fm[data-id="${id}"]`), dock = $('dock');
+      const el = document.querySelector(`#ws .fm[data-id="${id}"]`), dock = $('dock');
       if (el && !dock.hidden && el.getBoundingClientRect().bottom > dock.getBoundingClientRect().top - 8) scrollToView(el, 'nearest');
     });
   }
@@ -38,7 +38,7 @@
   /** Przewija do fragmentu: wyśrodkowuje go, a wysoki pokazuje od początku (pod nagłówkiem). */
   function revealFragment(i) {
     requestAnimationFrame(() => {
-      const el = document.querySelector(`.ws .frag[data-fi="${i}"]`);
+      const el = document.querySelector(`#ws .frag[data-fi="${i}"]`);
       if (el) scrollToView(el, el.offsetHeight > 0.6 * window.innerHeight ? 'start' : 'center');
     });
   }
@@ -72,10 +72,10 @@
   /** Dowód słowny (HTML) — z pamięcią podręczną, bo fragmenty są przerysowywane przy każdym kliknięciu. */
   const proseCache = new Map();
   function proseHTML(root) {
-    const cacheKey = JSON.stringify(Proof.toPlain(root)) + (S.prefs.nlRules ? '|r' : '');
+    const cacheKey = S.logic() + JSON.stringify(Proof.toPlain(root)) + (S.prefs.nlRules ? '|r' : '');
     if (!proseCache.has(cacheKey)) {
       if (proseCache.size > 64) proseCache.clear();
-      proseCache.set(cacheKey, Render.proseHTML(Explain.prose(root), { rules: S.prefs.nlRules }));
+      proseCache.set(cacheKey, Render.proseHTML(Explain.prose(root, { logic: S.logic() }), { rules: S.prefs.nlRules }));
     }
     return `<details class="nl"${S.prefs.nlOpen ? ' open' : ''}>
       <summary>Dowód w języku naturalnym</summary>
@@ -107,15 +107,17 @@
   }
 
   function emptyHTML() {
-    const chips = Examples.LIST.map((e, i) => [e, i]).filter(([e]) => e.group === 's29').slice(0, 6)
-      .map(([e, i]) => `<button type="button" data-ex="${i}" title="${Render.esc(`${e.title} — ${e.note}`)}">${F.html(F.parse(e.formula))}</button>`).join('');
+    const fo = S.logic() === 'fo', list = A.examples().LIST;
+    const chips = list.map((e, i) => [e, i]).filter(([e]) => e.group === (fo ? 'q33' : 's29')).slice(0, 6)
+      .map(([e, i]) => `<button type="button" data-ex="${i}" title="${Render.esc(`${e.title} — ${e.note}`)}">${F.html(A.parse(e.formula))}</button>`).join('');
     return `<div class="card empty">
-      <div class="big">⊢ φ</div>
+      <div class="big">${fo ? '⊢ ∀x φ' : '⊢ φ'}</div>
       <h2>Co chcesz udowodnić?</h2>
-      <p>Wpisz formułę rachunku zdań i buduj jej dowód, klikając reguły dedukcji naturalnej. Aplikacja pilnuje poprawności każdego kroku i rysuje dowód z oknami, tak jak w skrypcie.</p>
+      <p>${fo ? 'Wpisz formułę rachunku kwantyfikatorów (np. <code>Ax p(x) -> Ex p(x)</code>) i buduj jej dowód regułami dedukcji naturalnej z rozdz. 3.3 — z oknami ze świeżymi zmiennymi dla (∀i) i (∃e).'
+        : 'Wpisz formułę rachunku zdań i buduj jej dowód, klikając reguły dedukcji naturalnej.'} Aplikacja pilnuje poprawności każdego kroku i rysuje dowód z oknami, tak jak w skrypcie.</p>
       <div class="cta">
         <button type="button" class="btn primary lg" data-act="new">${icon('plus')}Wpisz formułę</button>
-        <button type="button" class="btn lg" data-act="tutorial">${icon('play')}Samouczek (1 min)</button>
+        ${fo ? '' : `<button type="button" class="btn lg" data-act="tutorial">${icon('play')}Samouczek (1 min)</button>`}
       </div>
       <div class="exchips"><span class="lab">albo zacznij od przykładu ze skryptu:</span>${chips}</div>
       <div class="modes">
@@ -148,7 +150,7 @@
     const active = document.activeElement;
     if (!target || (active && active !== document.body && document.contains(active))) return;
     const same = target.selector && !(target.inDock && selectionChanged) ? target.container.querySelector(target.selector) : null;
-    const el = same || document.querySelector('.ws .fm.sel') || (target.inDock && !$('dock').hidden ? $('dock').querySelector('button') : null);
+    const el = same || document.querySelector('#ws .fm.sel') || (target.inDock && !$('dock').hidden ? $('dock').querySelector('button') : null);
     if (el) el.focus({ preventScroll: true });
   }
 
@@ -168,7 +170,7 @@
     const anySelected = st.sel.length > 0 || st.picks.length > 0;
     const hinted = UI.hints.hintedRule();
     let usable = 0;
-    document.querySelectorAll('.rcard').forEach(c => {
+    document.querySelectorAll('#rtable .rcard').forEach(c => {
       const id = c.dataset.rule, why = av.reasons.get(id);
       const ok = !why && (anySelected || id === 'topI');
       if (ok) usable++;
@@ -212,6 +214,7 @@
     $('dockRules').innerHTML = av.available.length
       ? '<span class="grp">Wyciągnij wniosek</span>' + av.available.map(id => chipHTML(id, false)).join('')
       : `<span class="note">${Render.esc(note)}</span>`;
+    $('dockRules').hidden = false;
     const ops = A.offeredOps().map(op => `<button type="button" class="chip op" data-op="${op.name}" title="${Render.esc(op.title)}">${op.icon ? icon(op.icon) : ''}${op.label}</button>`);
     $('dockOps').innerHTML = ops.length ? '<span class="grp">Edycja</span>' + ops.join('') : '';
     $('dockOps').hidden = !ops.length;
@@ -239,6 +242,7 @@
       }
     } else rules = `<span class="note">${dockMessage(infos)}</span>`;
     $('dockRules').innerHTML = rules;
+    $('dockRules').hidden = false;
 
     const ops = A.offeredOps().map(op => `<button type="button" class="chip op" data-op="${op.name}"`
       + (op.preview ? ` data-preview="${op.preview}" data-target="${op.target}"` : '')
@@ -300,6 +304,8 @@
   }
 
   function render() {
+    if (S.system() === 'res') return;     // dział rezolucji rysuje ui/res.js
+    if (builtFor !== S.logic()) { buildRuleTable(); buildExamples(); builtFor = S.logic(); }
     const focus = focusTarget(document.activeElement);
     const selection = st.sel.join(','), selectionChanged = selection !== lastSelection;
     lastSelection = selection;
@@ -321,15 +327,29 @@
 
   /* ---------- budowa i zdarzenia ---------- */
 
+  /** Rachunek, dla którego zbudowano tabelę reguł i menu przykładów (przebudowa po zmianie działu). */
+  let builtFor = null;
+
   function buildRuleTable() {
     const card = id => `<div class="rcard${id === 'hyp' ? ' hypc' : ''}" data-rule="${id}" tabindex="0" role="button" aria-label="${Render.esc(Rules.get(id).name)}">${Render.schemaHTML(id)}</div>`;
     let html = '<span></span><span class="colh">wprowadzanie</span><span class="colh">eliminacja</span>';
-    Rules.GROUPS.forEach(([con, intro, elim]) => {
+    Rules.forLogic(S.logic()).groups.forEach(([con, intro, elim]) => {
       html += `<div class="con">${con}</div><div class="cell">${intro.map(card).join('')}</div><div class="cell">${elim.map(card).join('')}</div>`;
     });
     html += `<div class="rowsep"></div><div class="cell wide">${card('hyp')}</div>`;
-    const table = $('rtable');
-    table.innerHTML = html;
+    $('rtable').innerHTML = html;
+  }
+
+  function buildExamples() {
+    const { GROUPS, LIST } = A.examples();
+    const item = (e, i) => `<button type="button" data-ex="${i}"><span class="t">${Render.esc(e.title)}<small>${Render.esc(e.note)}</small></span><span class="f">${F.html(A.parse(e.formula))}</span></button>`;
+    $('exList').innerHTML = GROUPS.map(g => `<div class="grp">${Render.esc(g.title)}</div>`
+      + LIST.map((e, i) => (e.group === g.id ? item(e, i) : '')).join('')).join('');
+  }
+
+  /** Zdarzenia tabeli reguł i menu przykładów (raz — ich zawartość zmienia się z działem). */
+  function initTables() {
+    const table = $('rtable'), menu = $('exMenu');
     // drugie kliknięcie podwójnego kliknięcia i przytrzymany klawisz nie stosują reguły ponownie
     table.addEventListener('click', e => { const c = e.target.closest('.rcard'); if (c && e.detail <= 1) A.apply(c.dataset.rule); });
     table.addEventListener('keydown', e => {
@@ -338,18 +358,10 @@
       e.preventDefault();
       if (!e.repeat) A.apply(c.dataset.rule);
     });
-  }
-
-  function buildExamples() {
-    const list = $('exList'), menu = $('exMenu');
-    const item = (e, i) => `<button type="button" data-ex="${i}"><span class="t">${Render.esc(e.title)}<small>${Render.esc(e.note)}</small></span><span class="f">${F.html(F.parse(e.formula))}</span></button>`;
-    list.innerHTML = Examples.GROUPS.map(g => `<div class="grp">${Render.esc(g.title)}</div>`
-      + Examples.LIST.map((e, i) => (e.group === g.id ? item(e, i) : '')).join('')).join('');
-    list.addEventListener('click', e => {
+    $('exList').addEventListener('click', e => {
       const b = e.target.closest('[data-ex]');
       if (b) { menu.open = false; A.loadExample(+b.dataset.ex); }
     });
-    document.addEventListener('click', e => { if (!e.target.closest('#exMenu')) menu.open = false; });
   }
 
   /**
@@ -382,6 +394,16 @@
     else if (t.closest('.fbody') && (st.sel.length || st.picks.length)) S.select([]);
   }
 
+  /** Kliknięcie na pasku akcji (main.js przekazuje je tu w działach dedukcji naturalnej). */
+  function onDockClick(e) {
+    const h = e.target.closest('[data-hintgo]');
+    if (h) { UI.hints.act(h.dataset.hintgo); return; }
+    const r = e.target.closest('[data-rule]');
+    if (r) { A.apply(r.dataset.rule); return; }
+    const o = e.target.closest('[data-op]');
+    if (o) A.runOp(o.dataset.op);
+  }
+
   function select(id, additive) {
     A.toggleSelect(id, additive);
     if (st.sel.includes(id)) keepAboveDock(id);
@@ -389,9 +411,9 @@
 
   /** Podgląd na rysunku, co zmieni przycisk cofania pod kursorem albo z fokusem (krok albo całe poddrzewo). */
   function previewOp(button) {
-    document.querySelectorAll('.ws .inf.undo-step, .ws .inf.undo-tree').forEach(el => el.classList.remove('undo-step', 'undo-tree'));
+    document.querySelectorAll('#ws .inf.undo-step, #ws .inf.undo-tree').forEach(el => el.classList.remove('undo-step', 'undo-tree'));
     const d = button ? button.dataset : null;
-    const bar = d && d.preview ? document.querySelector(`.ws .bar[data-of="${d.target}"]`) : null;
+    const bar = d && d.preview ? document.querySelector(`#ws .bar[data-of="${d.target}"]`) : null;
     if (bar) bar.parentElement.classList.add(d.preview === 'tree' ? 'undo-tree' : 'undo-step');
   }
   const previewFrom = e => previewOp(e.type === 'pointerout' || e.type === 'focusout' ? null : e.target.closest('[data-preview]'));
@@ -411,8 +433,7 @@
   }
 
   function init() {
-    buildRuleTable();
-    buildExamples();
+    initTables();
     const ws = $('ws');
     ws.addEventListener('click', onWorkspaceClick);
     ws.addEventListener('keydown', onWorkspaceKey);
@@ -422,17 +443,7 @@
     // „toggle” nie bąbelkuje — nasłuch w fazie przechwytywania
     ws.addEventListener('toggle', e => { if (e.target.matches('details.nl')) S.setPref('nlOpen', e.target.open); }, true);
     $('status').addEventListener('click', e => { const action = e.target.closest('[data-act]'); if (action) runAct(action); });
-    $('dock').addEventListener('click', e => {
-      if (e.detail > 1) return;   // pasek przerysowuje się pod kursorem — drugie kliknięcie trafiłoby w inną regułę
-      const h = e.target.closest('[data-hintgo]');
-      if (h) { UI.hints.act(h.dataset.hintgo); return; }
-      const r = e.target.closest('[data-rule]');
-      if (r) { A.apply(r.dataset.rule); return; }
-      const o = e.target.closest('[data-op]');
-      if (o) A.runOp(o.dataset.op);
-    });
     ['pointerover', 'pointerout', 'focusin', 'focusout'].forEach(type => $('dockOps').addEventListener(type, previewFrom));
-    $('dockClose').addEventListener('click', () => S.select([]));
     document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => { S.setMode(b.dataset.mode); S.refresh(); }));
     $('newGoal').addEventListener('click', () => A.newFormula());
     $('hintBtn').addEventListener('click', () => UI.hints.press());
@@ -442,5 +453,5 @@
     S.on('render', render);
   }
 
-  UI.workspace = Object.freeze({ init, reveal, revealFragment });
+  UI.workspace = Object.freeze({ init, reveal, revealFragment, onDockClick });
 })(globalThis.ND ||= {});

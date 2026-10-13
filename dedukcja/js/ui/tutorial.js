@@ -121,6 +121,7 @@
   function start() {
     storage.set(SEEN_KEY, '1');
     Modal.close('helpModal');
+    S.setSystem('prop');   // samouczek dotyczy rachunku zdań
     tour = { index: 0, html: '', pinned: null };
     S.setAutoCloseFor(isTutorialProof);
     $('tutorial').hidden = false;

@@ -44,6 +44,35 @@ function plainChain(n) {
   return o;
 }
 
+test('linki działów: #d=, #q=, #r= (znaki doklejone na końcu pomijane), inne adresy to nie linki', () => {
+  assert.deepEqual(S.parseLink('#d=abc.'), { system: 'prop', data: 'abc' });
+  assert.deepEqual(S.parseLink('#q=x-y_z'), { system: 'fo', data: 'x-y_z' });
+  assert.deepEqual(S.parseLink('#r=!!!'), { system: 'res', data: null });
+  for (const h of ['', '#', '#x=abc', '#top', '#dd=abc']) assert.equal(S.parseLink(h), null, h);
+  assert.match(S.linkHash('res', '{"c":["p"]}'), /^#r=[\w-]+$/);
+});
+
+test('przełączanie działów zachowuje dowody i historię każdego rachunku osobno', () => {
+  reset();
+  S.setSystem('prop');
+  S.commit(() => { st.frags.push(Proof.node(F.parse('p -> p'))); return true; });
+  S.setSystem('fo');
+  assert.equal(S.logic(), 'fo');
+  assert.equal(st.frags.length, 0);
+  assert.equal(S.canUndo(), false);
+  S.commit(() => { st.frags.push(Proof.node(F.parse('Ax p(x) -> p(a)', { logic: 'fo' }))); return true; });
+  S.setSystem('res');
+  assert.equal(S.logic(), 'fo', 'rezolucja nie zmienia rachunku dedukcji');
+  S.setSystem('prop');
+  assert.deepEqual(st.frags.map(r => F.text(r.f)), ['p ⇒ p']);
+  S.undo();
+  assert.equal(st.frags.length, 0);
+  S.setSystem('fo');
+  assert.deepEqual(st.frags.map(r => F.text(r.f)), ['∀x p(x) ⇒ p(a)']);
+  assert.ok(memory.get('nd-fo-proof').includes('p(a)'));
+  S.setSystem('prop');
+});
+
 test('commit zapisuje zmianę w historii; cofnij/ponów odtwarzają stan', () => {
   reset();
   assert.ok(S.commit(() => { st.frags.push(Proof.node(F.parse('p -> p'))); return true; }));

@@ -1,6 +1,6 @@
 /* =====================================================================
-   Narzędzia interfejsu: ikony, komunikaty, schowek, pliki,
-   bezpieczny localStorage i okna modalne.
+   Narzędzia interfejsu: ikony, komunikaty, schowek, pliki, bezpieczny
+   localStorage, historia zmian, kodowanie linków i okna modalne.
    ===================================================================== */
 (function (ND) {
   'use strict';
@@ -59,12 +59,14 @@
 
   /**
    * Krótki komunikat u góry ekranu. Ważne komunikaty (important: true — np. o utracie pracy)
-   * są widoczne dłużej, a zwykłe pojawiają się dopiero po nich, zamiast je zasłonić.
+   * są widoczne dłużej, a zwykłe pojawiają się dopiero po nich, zamiast je zasłonić;
+   * kolejny ważny komunikat dopisuje się do widocznego.
    */
   function toast(message, { important = false } = {}) {
-    if (!important && Date.now() < importantUntil) { deferred = message; return; }
+    const busy = Date.now() < importantUntil;
+    if (!important && busy) { deferred = message; return; }
     const t = $('toast'), ms = important ? IMPORTANT_MS : TOAST_MS;
-    t.textContent = message;
+    t.textContent = important && busy ? `${t.textContent} · ${message}` : message;
     t.classList.add('show');
     importantUntil = important ? Date.now() + ms : 0;
     clearTimeout(toastTimer);
@@ -82,6 +84,53 @@
     /** Czy zapis w ogóle działa (np. nie w trybie prywatnym z blokadą). */
     available() { try { localStorage.setItem('nd-probe', '1'); localStorage.removeItem('nd-probe'); return true; } catch (e) { return false; } },
   });
+
+  /* ---------- historia zmian (cofnij / ponów) ---------- */
+
+  const HISTORY_LIMIT = 100;
+
+  /**
+   * Historia z ograniczoną liczbą kroków; wpisy to dowolne migawki stanu.
+   * back/forward odkładają bieżącą migawkę na drugi stos i zwracają migawkę do odtworzenia (albo null).
+   */
+  function createHistory(limit = HISTORY_LIMIT) {
+    let undo = [], redo = [];
+    const step = (from, to, current) => {
+      if (!from.length) return null;
+      to.push(current);
+      return from.pop();
+    };
+    return Object.freeze({
+      record(entry) {
+        undo.push(entry);
+        if (undo.length > limit) undo.shift();
+        redo = [];
+      },
+      back: current => step(undo, redo, current),
+      forward: current => step(redo, undo, current),
+      canUndo: () => undo.length > 0,
+      canRedo: () => redo.length > 0,
+      clear() { undo = []; redo = []; },
+      /** Stosy do odłożenia (np. przy przełączeniu rachunku) i ich przywrócenie. */
+      park: () => ({ undo, redo }),
+      unpark(stacks) { undo = stacks ? stacks.undo : []; redo = stacks ? stacks.redo : []; },
+    });
+  }
+
+  /* ---------- linki: dane w adresie jako base64url ---------- */
+
+  /** Maks. długość danych w linku (#d=…, #q=…, #r=…). */
+  const LINK_LIMIT = 300000;
+
+  function encodeLink(s) {
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  /** Odwrotność encodeLink; rzuca wyjątek dla niepoprawnych danych. */
+  const decodeLink = s => new TextDecoder('utf-8', { fatal: true })
+    .decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
 
   /* ---------- wygląd i ruch ---------- */
   const theme = () => (document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
@@ -102,12 +151,15 @@
     el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block, inline: 'nearest' });
   }
 
-  /** Grupa przycisków-opcji (role="radio"): wyróżnia ten, którego data-`attr` ma wartość `value`. */
-  function markChoice(groupId, attr, value) {
+  /**
+   * Grupa przycisków-opcji: wyróżnia ten, którego data-`attr` ma wartość `value`
+   * (aria-checked dla role="radio", aria-selected dla zakładek role="tab").
+   */
+  function markChoice(groupId, attr, value, aria = 'aria-checked') {
     document.querySelectorAll(`#${groupId} button`).forEach(b => {
       const on = b.dataset[attr] === value;
       b.classList.toggle('on', on);
-      b.setAttribute('aria-checked', String(on));
+      b.setAttribute(aria, String(on));
     });
   }
 
@@ -185,8 +237,11 @@
     const openedAt = new Map();
     /** Kliknięcie tła tuż po otwarciu to zwykle drugie kliknięcie podwójnego kliknięcia przycisku. */
     const GHOST_CLICK_MS = 450;
+    /** Pole w oknie dostaje fokus chwilę po otwarciu (gdy okno jest już widoczne). */
+    const FOCUS_DELAY_MS = 30;
 
-    function open(id) {
+    /** Otwiera okno; `focus` — element, który ma dostać fokus (domyślnie samo okno). */
+    function open(id, { focus = null } = {}) {
       if (stack.includes(id)) return;
       const bg = $(id);
       returnFocus.set(bg, document.activeElement);
@@ -196,6 +251,7 @@
       overlay('modal:' + id, true);
       const dialog = bg.querySelector('.modal');
       if (dialog) { dialog.tabIndex = -1; dialog.focus({ preventScroll: true }); }
+      if (focus) setTimeout(() => { if (stack.includes(id)) focus.focus(); }, FOCUS_DELAY_MS);
     }
 
     function close(id) {
@@ -233,8 +289,16 @@
     });
   })();
 
+  /** Menu rozwijane (details.menu) zamykają się po kliknięciu gdziekolwiek poza nimi. */
+  function closeMenusOnOutsideClick() {
+    document.addEventListener('click', e => {
+      document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+    });
+  }
+
   UI.kit = Object.freeze({
-    $, icon, hydrateIcons, plural, toast, storage, theme, reducedMotion, syncBars, scrollToView, markChoice,
-    copyText, copyImage, download, perFrame, overlay, anyOverlay, watchOverlays, Modal,
+    $, icon, hydrateIcons, plural, toast, storage, createHistory, LINK_LIMIT, encodeLink, decodeLink,
+    theme, reducedMotion, syncBars, scrollToView, markChoice,
+    copyText, copyImage, download, perFrame, overlay, anyOverlay, watchOverlays, closeMenusOnOutsideClick, Modal,
   });
 })(globalThis.ND ||= {});

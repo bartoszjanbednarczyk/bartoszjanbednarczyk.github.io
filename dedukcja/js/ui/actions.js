@@ -11,6 +11,15 @@
   const S = UI.store, st = S.state;
   const { T } = Seg;
 
+  /* ---------- rachunek bieżącego działu ---------- */
+
+  /** Formuła w składni bieżącego rachunku (zdań albo kwantyfikatorów). */
+  const parse = src => F.parse(src, { logic: S.logic() });
+  /** Przykłady bieżącego rachunku: { GROUPS, LIST, isSample }. */
+  const examples = () => Examples.forLogic(S.logic());
+  /** Świeże zmienne dla fragmentu (nazwy zajęte w całym fragmencie — jak w skrypcie: x₀, x₁, …). */
+  const freshFor = roots => { const used = new Set(); roots.forEach(r => Rules.usedVars(r, used)); return Rules.freshContext(used); };
+
   /* ---------- zaznaczenie ---------- */
 
   /** Zaznaczone węzły z kontekstem z indeksu (w kolejności klikania). */
@@ -83,8 +92,9 @@
    */
   function availability() {
     const infos = selection();
-    const reasons = new Map(Rules.ORDER.map(id => [id, blocked(id, infos)]));
-    const available = Rules.ORDER.filter(id => !reasons.get(id));
+    const order = Rules.forLogic(S.logic()).order;
+    const reasons = new Map(order.map(id => [id, blocked(id, infos)]));
+    const available = order.filter(id => !reasons.get(id));
     return { reasons, available };
   }
 
@@ -107,7 +117,24 @@
     return [...m.values()];
   }
 
-  const paramContext = info => ({ cands: candidates(info), openGoals: openGoalFormulas(), hypothesesOf: n => Proof.openFormulas(n) });
+  /**
+   * Termy podsuwane jako parametr (np. świadek dla (∃i), term dla (∀e)): świeże zmienne
+   * otaczających okien, a potem termy z założeń, celu i korzeni — od najprostszych.
+   */
+  function candidateTerms(info) {
+    const m = new Map();
+    if (info) {
+      (info.vars || []).slice().reverse().forEach(x => m.set(x, F.VAR(x)));
+      info.scope.forEach(a => F.termsOf(a, m));
+      if (info.n) F.termsOf(info.n.f, m);
+    }
+    st.frags.forEach(r => F.termsOf(r.f, m));
+    return [...m.values()].sort((a, b) => F.key(a).length - F.key(b).length);
+  }
+
+  /** Pozostałe podpowiedzi w kreatorze parametru (oprócz pasujących): termy albo formuły z kontekstu. */
+  const otherSuggestions = (p, info) => (p.onlyBest ? [] : p.kind === 'term' ? candidateTerms(info) : candidates(info));
+  const paramContext = info => ({ cands: candidates(info), openGoals: openGoalFormulas(), hypothesesOf: n => Proof.openFormulas(n), terms: candidateTerms(info) });
   const dialogTitle = r => `${r.title} (${r.label.text})`;
 
   /* ---------- stosowanie reguł ---------- */
@@ -148,9 +175,9 @@
     if (r.back.param) {
       const p = r.back.param;
       x = preset !== undefined ? preset : await UI.ask.ask({
-        title: dialogTitle(r), desc: p.desc(goal), check: p.check || null,
+        title: dialogTitle(r), desc: p.desc(goal), kind: p.kind || 'formula', check: p.check ? y => p.check(y, goal) : null,
         best: [...UI.hints.bestArgs(r.id, goalId), ...p.best(goal, paramContext(info))],
-        sugg: p.onlyBest ? [] : candidates(info),
+        sugg: otherSuggestions(p, info),
       });
       if (!x) { S.refresh(); return; }
     }
@@ -158,7 +185,7 @@
       const cur = st.idx.get(goalId);
       if (!cur || !Proof.isOpen(cur.n)) return false;         // stan zmienił się w międzyczasie
       cur.n.rule = r.id;
-      cur.n.prem = Rules.materialize(r.back.premises(goal, x));
+      cur.n.prem = Rules.materialize(r.back.premises(goal, x, freshFor([st.frags[cur.fi]])));
       return true;
     }, { celebrate: true, select: () => nextOpenGoal(goalId) });
   }
@@ -169,13 +196,16 @@
     let x;
     if (r.fwd.param) {
       const p = r.fwd.param;
-      x = await UI.ask.ask({ title: dialogTitle(r), desc: p.desc(fs), best: p.best(fs, paramContext(null), nodes), sugg: candidates(null) });
+      x = await UI.ask.ask({
+        title: dialogTitle(r), desc: p.desc(fs), kind: p.kind || 'formula', check: p.check ? y => p.check(y, fs, nodes) : null,
+        best: p.best(fs, paramContext(null), nodes), sugg: otherSuggestions(p, null),
+      });
       if (!x) { S.refresh(); return; }
     }
     let rootId = null;
     S.commit(() => {
       if (!nodes.every(n => st.frags.includes(n))) return false;  // fragmenty zmieniły się w międzyczasie
-      const { f, prem } = r.fwd.build(fs, nodes, x);
+      const { f, prem } = r.fwd.build(fs, nodes, x, freshFor(nodes));
       const root = Proof.node(f, r.id, Rules.enclose(prem));
       const at = nodes.length ? Math.min(...nodes.map(n => st.frags.indexOf(n))) : st.frags.length;
       st.frags = st.frags.filter(n => !nodes.includes(n));
@@ -373,9 +403,10 @@
     let x;
     if (r.fwd.param) {
       // podsuwane formuły: podformuły założeń dostępnych w oknie, korzeni i otwartych celów
-      const p = r.fwd.param, arranged = Rules.fwdArrange(r, fs, items).fs, here = { scope: at.scope };
+      const p = r.fwd.param, arranged = Rules.fwdArrange(r, fs, items).fs, here = { scope: at.scope, vars: at.vars };
       x = await UI.ask.ask({
-        title: dialogTitle(r), desc: p.desc(arranged), best: p.best(arranged, paramContext(here), items.map(premiseOf)), sugg: candidates(here),
+        title: dialogTitle(r), desc: p.desc(arranged), kind: p.kind || 'formula', check: p.check ? y => p.check(y, arranged, items.map(premiseOf)) : null,
+        best: p.best(arranged, paramContext(here), items.map(premiseOf)), sugg: otherSuggestions(p, here),
       });
       if (!x) { S.refresh(); return; }
     }
@@ -385,7 +416,7 @@
       if (now.some(i => !i)) return false;                       // stan zmienił się w międzyczasie
       const { target } = pickTarget(now);
       if (!target) return false;
-      const fact = Rules.buildFact(r, now.map(i => i.f), now.map(premiseOf), x);
+      const fact = Rules.buildFact(r, now.map(i => i.f), now.map(premiseOf), x, freshFor([st.frags[target.fi]]));
       if (Proof.inScope(target.scope, fact.f) || Proof.factFor(target.boxes, fact.f)) { duplicate = fact.f; return false; }
       (target.b.facts ||= []).push(fact);
       made = { f: fact.f, a: target.b.a };
@@ -430,7 +461,8 @@
     const back = st.mode === 'back';
     const f = await UI.ask.ask({
       title: back ? 'Nowy cel' : 'Nowa przesłanka',
-      desc: back ? T`Formuła, którą chcesz udowodnić (np. tautologia). Pojawi się jako otwarty cel.`
+      desc: back ? (S.logic() === 'fo' ? T`Formuła, którą chcesz udowodnić (prawo rachunku kwantyfikatorów, np. ∀x p(x) ⇒ ∃x p(x)). Pojawi się jako otwarty cel.`
+        : T`Formuła, którą chcesz udowodnić (np. tautologia). Pojawi się jako otwarty cel.`)
         : T`Formuła-hipoteza. Pozostaje otwarta, dopóki nie zamkniesz jej w oknie regułą (⇒i), (¬i) lub (∨e).`,
       sugg: st.frags.length ? candidates(null) : [],
       okLabel: back ? 'Dodaj cel' : 'Dodaj przesłankę',
@@ -440,11 +472,11 @@
   }
 
   function loadExample(i) {
-    const ex = Examples.LIST[i];
+    const ex = examples().LIST[i];
     if (!ex) return;
     if (ex.proof) { addFragment(ex.proof()); return; }
     // zadanie to cel do udowodnienia — tryb „od celu” włączamy dopiero, gdy cel się zmieścił
-    if (addFragment(Proof.node(F.parse(ex.formula)), { select: true }) && st.mode !== 'back') {
+    if (addFragment(Proof.node(parse(ex.formula)), { select: true }) && st.mode !== 'back') {
       S.setMode('back');
       S.refresh();
     }
@@ -465,7 +497,7 @@
   function copyProse(fi, format) {
     const root = st.frags[fi];
     if (!root || !S.status(root).complete) return;
-    const prose = Explain.prose(root), opts = { rules: S.prefs.nlRules };
+    const prose = Explain.prose(root, { logic: S.logic() }), opts = { rules: S.prefs.nlRules };
     if (format === 'tex') copyText(Render.proseTeX(prose, opts), 'Skopiowano dowód słowny jako LaTeX');
     else copyText(Render.proseText(prose, opts), 'Skopiowano dowód słowny');
   }
@@ -489,7 +521,7 @@
   }
 
   UI.actions = Object.freeze({
-    selection, picks, isRoot, targetFragment, availability, togglePick,
+    parse, examples, selection, picks, isRoot, targetFragment, availability, togglePick,
     apply, applyStep, offeredOps, runOp,
     addFragment, newFormula, loadExample, deleteFragment, clearAll, copyProse, toggleSelect, gotoNextOpen,
   });

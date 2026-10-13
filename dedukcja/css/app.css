@@ -3,7 +3,8 @@
    1. Tokeny (jasny/ciemny motyw, kolory postępu)   2. Podstawy i przyciski
    3. Nagłówek i układ   4. Tabela reguł   5. Rysunek dowodu   6. Obszar roboczy
    7. Dowód słowny   8. Pasek akcji i podpowiedzi   9. Okna modalne i eksport
-   10. Prezentacja   11. Samouczek   12. Fajerwerki i komunikaty   13. Responsywność
+   10. Prezentacja   11. Samouczek   12. Fajerwerki i komunikaty   13. Działy (zakładki)
+   14. Rezolucja   15. Responsywność
    ===================================================================== */
 
 /* ---------- 1. tokeny ---------- */
@@ -129,7 +130,7 @@ main, aside { min-width: 0; }
 .rcard:hover { border-color: var(--accent); background: var(--accent-soft); }
 .rcard.ok { border-color: var(--accent); }
 .rcard.off { opacity: .3; }
-.rcard.off:hover { border-color: var(--line); background: var(--panel); }
+.rcard.off:hover, .rcard.static:hover { border-color: var(--line); background: var(--panel); }
 .rcard.hypc { width: 100%; min-height: 54px; }
 .rcard .math { white-space: nowrap; }
 .rcard .inf > .prem { gap: .7em; }
@@ -138,9 +139,9 @@ main, aside { min-width: 0; }
 
 /* ---------- 5. rysunek dowodu ---------- */
 .fm { font-family: var(--math); white-space: nowrap; display: inline-block; padding: 1px 5px; border-radius: 6px; border: 1.5px solid transparent; line-height: 1.3; transition: background .2s, border-color .2s, color .2s; }
-.ws .fm[data-id] { cursor: pointer; }
-.ws .fm[data-id]:hover { background: var(--sel-bg); }
-.ws .fm[data-id]:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.fm[role="button"] { cursor: pointer; }
+.fm[role="button"]:hover { background: var(--sel-bg); }
+.fm[role="button"]:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
 /* nazwa reguły przy kresce zaznacza wniosek kroku (do cofania); wyższe pole kliknięcia bez zmiany układu */
 .ws .lbl[data-of] { cursor: pointer; border-radius: 6px; padding-block: .5em; margin-block: -.5em; }
 .ws .lbl[data-of]:hover { background: var(--sel-bg); color: var(--ink); }
@@ -186,6 +187,7 @@ main, aside { min-width: 0; }
 .pill .ic { width: 14px; height: 14px; }
 .pill.ok { background: var(--accent-soft); color: var(--accent-ink); }
 .pill.bad { background: transparent; border: 1px solid var(--err); color: var(--err); }
+.pill.neutral { background: var(--sel-bg); color: var(--ink2); }
 .info { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--ink2); background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
 .info .ic { color: var(--accent-ink); margin-top: 1px; }
 .info b { color: var(--ink); }
@@ -225,6 +227,7 @@ main, aside { min-width: 0; }
 .exchips .lab { width: 100%; font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
 .exchips button { font-family: var(--math); font-size: 1rem; border: 1px solid var(--line2); border-radius: 999px; padding: 4px 12px; background: var(--panel); cursor: pointer; }
 .exchips button:hover { border-color: var(--accent); background: var(--accent-soft); }
+.exchips button.txt { font-family: var(--ui); font-size: .9rem; }
 
 /* ---------- 7. dowód słowny ---------- */
 .nl { border-top: 1px solid var(--line); background: var(--panel); background: color-mix(in srgb, var(--accent-soft) 35%, var(--panel)); }
@@ -323,7 +326,7 @@ main, aside { min-width: 0; }
 .exp-preview { border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow: auto; max-height: min(52vh, 520px); display: grid; place-items: center; background: var(--soft); }
 .exp-preview.checker { background: repeating-conic-gradient(var(--soft) 0 25%, var(--panel) 0 50%) 0 0 / 18px 18px; }
 .exp-preview svg { max-width: 100%; height: auto; display: block; }
-textarea { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; background: var(--canvas); color: var(--ink); resize: vertical; }
+#tex { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; background: var(--canvas); color: var(--ink); resize: vertical; }
 
 .help h4 { margin: 16px 0 6px; font-size: .95rem; }
 .help ul { padding-left: 20px; margin: 4px 0; }
@@ -384,7 +387,61 @@ textarea { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Reg
   .tut-hole { transition: none; }
 }
 
-/* ---------- 13. responsywność ---------- */
+/* ---------- 13. działy (zakładki w nagłówku) ---------- */
+.systems { flex-basis: 100%; display: flex; gap: 2px; margin: -2px 0 -10px; overflow-x: auto; scrollbar-width: none; }
+.systems::-webkit-scrollbar { display: none; }
+.show-sm { display: none; }
+.systems button { border: 0; background: transparent; padding: 7px 14px 9px; font-size: .9rem; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-weight: 700; }
+.systems button:hover { color: var(--ink); }
+.systems button.on { color: var(--ink); border-bottom-color: var(--accent); }
+.systems button:focus-visible { outline: 2px solid var(--sel); outline-offset: -2px; border-radius: 6px; }
+
+/* rachunek kwantyfikatorów: wartościowanie zmienione w punkcie (v z indeksami nad i pod) */
+.vm { display: inline-flex; flex-direction: column; vertical-align: .45em; font-size: .74em; line-height: 1.1; margin-left: .05em; }
+.vm > span { white-space: nowrap; }
+.vm sub { font-size: .72em; vertical-align: -.15em; line-height: 0; }
+.box > .bhead .zal.sep { margin-left: .15em; margin-right: .5em; }
+
+/* ---------- 14. rezolucja ---------- */
+.res-rule { padding: 6px 16px 10px; }
+.rcard.static { cursor: default; font-size: 16px; min-height: 76px; }
+.rcard.static .inf > .prem { gap: 1.6em; }
+.res-val { border-top: 1px solid var(--line); padding-bottom: 16px; }
+.res-vars { display: flex; flex-direction: column; gap: 6px; padding: 6px 16px 0; }
+.rvar { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: calc(var(--fs) * .9); }
+.rvar .tseg button { font-family: var(--ui); font-weight: 700; min-width: 40px; justify-content: center; }
+.rvar .tseg button.on[data-value="true"] { color: var(--accent-ink); }
+.rvar .tseg button.on[data-value="false"] { color: var(--err); }
+.res-vars > .btn { align-self: flex-start; margin-top: 4px; }
+
+/* lista klauzul: kolumny wspólne dla wszystkich wierszy (subgrid), by uzasadnienia stały równo */
+.clist { display: grid; grid-template-columns: 3.2em max-content minmax(0, 1fr) 28px; column-gap: 14px; padding: 8px 10px 12px; overflow-x: auto; }
+.crow { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; row-gap: 2px; padding: 5px 10px; border-radius: 10px; border: 1.5px solid transparent; cursor: pointer; font-size: var(--fs); }
+@supports not (grid-template-columns: subgrid) { .crow { grid-template-columns: 3.2em minmax(0, auto) 1fr 28px; column-gap: 14px; } }
+.crow:hover { background: var(--sel-bg); }
+.crow:focus-visible { outline: 2px solid var(--sel); outline-offset: 1px; }
+.crow.sel { border-color: var(--sel); background: var(--sel-bg); }
+.crow.first-derived { margin-top: 10px; position: relative; }
+.crow.first-derived::before { content: ''; position: absolute; left: 8px; right: 8px; top: -6px; border-top: 1px dashed var(--line2); }
+.crow.unused { opacity: .45; }
+.crow.fresh { animation: rise .35s ease-out; }
+.crow.hinted { animation: hintpulse 1.4s ease-in-out infinite; }
+.cnum { color: var(--muted); font-size: .8em; }
+.cform { white-space: nowrap; }
+.cwhy { font-size: .78rem; color: var(--muted); font-family: var(--ui); }
+.cwhy .math { font-size: 1.15em; }
+.cval { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; }
+.cval .ic { width: 15px; height: 15px; }
+.cval.yes { background: var(--accent-soft); color: var(--accent-ink); }
+.cval.no { background: var(--goal-bg); color: var(--goal); }
+.rseq { padding: 4px 18px 14px; border-top: 1px solid var(--line); font-size: .9rem; color: var(--ink2); }
+.rseq p { margin: 10px 0 6px; }
+.rseq ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: calc(var(--fs) * .85); }
+.rseq li .math { font-size: 1em; }
+.rsat p { margin: 0; padding: 12px 18px 16px; font-size: calc(var(--fs) * .8); }
+#resAskInput { min-height: 64px; font-size: 1.1rem; resize: vertical; }
+
+/* ---------- 15. responsywność ---------- */
 @media (max-width: 1300px) {
   .hide-md { display: none !important; }
   .brand p { display: none; }
@@ -407,6 +464,7 @@ textarea { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Reg
   .seg { order: 3; width: 100%; }
   .seg button { flex: 1; align-items: center; }
   .hide-sm { display: none !important; }
+  .show-sm { display: inline; }
   .dock { bottom: 0; border-radius: 16px 16px 0 0; width: 100vw; border-bottom: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
   .dock-row .grp { display: none; }
   .fbody { padding: 20px 12px 18px; }
@@ -419,6 +477,13 @@ textarea { width: 100%; min-height: 300px; font-family: ui-monospace, SFMono-Reg
   .dock-hint .htext { flex-basis: calc(100% - 34px); }
   .dock-hint .hbtns { width: 100%; justify-content: flex-end; }
   .menu-list { position: fixed; left: 16px; right: 16px; top: calc(var(--head) + 8px); width: auto; }
+  /* „∈ 𝓕” obok klauzuli, dłuższe uzasadnienie rezolwenty — pod nią */
+  .clist { grid-template-columns: 2.6em minmax(0, 1fr) auto 24px; column-gap: 10px; }
+  .crow .cwhy.derived { grid-column: 2 / 4; grid-row: 2; }
+  .crow .cval { grid-column: 4; grid-row: 1; }
+  .crow .cform { white-space: normal; }
+  @supports not (grid-template-columns: subgrid) { .crow { grid-template-columns: 2.6em minmax(0, 1fr) auto 24px; column-gap: 10px; } }
+  .systems button { padding: 6px 10px 8px; font-size: .84rem; }
 }
 
 /* niski ekran (np. telefon poziomo): pasek akcji zajmuje najwyżej połowę wysokości, resztę przewija */

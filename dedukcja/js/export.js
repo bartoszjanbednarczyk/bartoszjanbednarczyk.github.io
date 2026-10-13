@@ -14,20 +14,30 @@
 
   const TEX_PREAMBLE = String.raw`\usepackage[T1]{fontenc}
 \usepackage{proof}
-% okno (pudełko) z założeniem, jak w skrypcie; zerowanie przesunięć proof.sty,
+% okno (pudełko) z nagłówkiem, jak w skrypcie; zerowanie przesunięć proof.sty,
 % aby kreska pod oknem obejmowała całe okno
 \makeatletter
-\newcommand{\okno}[2]{\raisebox{\depth}{\fbox{$\begin{array}{@{}c@{}}#1\quad\mbox{założenie}\\[5pt]#2\end{array}$}}%
+\newcommand{\oknoh}[2]{\raisebox{\depth}{\fbox{$\begin{array}{@{}c@{}}#1\\[5pt]#2\end{array}$}}%
   \global\@LeftOffset=0pt\global\@RightOffset=0pt}
-\makeatother`;
+\makeatother
+\newcommand{\okno}[2]{\oknoh{#1\quad\mbox{założenie}}{#2}}`;
+
+  /** Nagłówek okna w LaTeX-u: założenie albo świeża zmienna (reguły (∀i), (∃e)). */
+  const texHead = b => [
+    b.x ? `${F.texName(b.x)}\\quad\\mbox{świeża zmienna}` : '',
+    b.a ? `${F.tex(b.a)}\\quad\\mbox{założenie}` : '',
+  ].filter(Boolean).join(';\\ ');
 
   function texTree(n, depth) {
     const pad = '  '.repeat(depth);
     if (Proof.isBareLeaf(n)) return pad + F.tex(n.f);
-    const prem = n.prem.map(p => (p.box
-      ? `${pad}  \\okno{${F.tex(p.a)}}{%\n${texTree(p.body, depth + 2)}%\n${pad}  }`
-      : texTree(p, depth + 1))).join(`\n${pad}  &\n`);
-    return `${pad}\\infer[(${Render.label(n.rule).tex})]{${F.tex(n.f)}}{%\n${prem}${n.prem.length ? '%\n' : ''}${pad}}`;
+    const prem = n.prem.map(p => {
+      if (!p.box) return texTree(p, depth + 1);
+      const open = p.x ? `\\oknoh{${texHead(p)}}` : `\\okno{${F.tex(p.a)}}`;
+      return `${pad}  ${open}{%\n${texTree(p.body, depth + 2)}%\n${pad}  }`;
+    }).join(`\n${pad}  &\n`);
+    const lbl = Render.label(n.rule).tex;
+    return `${pad}\\infer${lbl ? `[(${lbl})]` : ''}{${F.tex(n.f)}}{%\n${prem}${n.prem.length ? '%\n' : ''}${pad}}`;
   }
 
   /** Od tej głębokości proof.sty wyczerpuje limit zagnieżdżeń grup TeX-a (ok. 255). */
@@ -42,8 +52,8 @@
   }
 
   /** Kod LaTeX dowodu: pełny dokument standalone albo fragment do wklejenia (z preambułą w komentarzu). */
-  function latex(root, { standalone = true } = {}) {
-    const w = warnings(root);
+  function latex(root, { standalone = true, check = true } = {}) {
+    const w = check ? warnings(root) : { open: 0, errors: 0, deep: false };
     const warn = [
       w.open ? `% UWAGA: dowód niekompletny (otwarte cele: ${w.open})` : '',
       w.errors ? `% UWAGA: dowód zawiera błędnie zastosowane reguły (${w.errors})` : '',
@@ -82,7 +92,7 @@
     const em = style.size, labelSize = em * style.labelScale;
     const gap = style.premGap * em, pad = style.premPad * em, labelGap = style.labelGap * em;
     const [padTop, padSide, padBottom] = style.boxPad.map(v => v * em);
-    const WORD = [{ t: 'założenie', italic: false }];
+    const word = t => [{ t, italic: false }];
 
     /** Linia tekstu: szerokość, wysokość i położenie linii bazowej od góry. */
     const line = (runs, size) => {
@@ -102,20 +112,31 @@
         const rowW = prem.length ? prem.reduce((s, b) => s + b.w, 0) + gap * (prem.length - 1) + 2 * pad : 0;
         const rowH = prem.length ? Math.max(...prem.map(b => b.h)) : style.emptyRow * em;
         const colW = Math.max(rowW, concl.w);
-        const label = line([{ t: `(${Render.label(n.rule).text})`, italic: false }], labelSize);
+        const lt = Render.label(n.rule).text;
+        const label = lt ? line([{ t: `(${lt})`, italic: false }], labelSize) : null;
         const barY = rowH + style.barAbove * em, conclY = barY + style.barBelow * em;
-        d = { w: colW + labelGap + label.w, h: conclY + concl.h, concl, prem, rowW, rowH, colW, label, barY, conclY };
+        d = { w: colW + (label ? labelGap + label.w : 0), h: conclY + concl.h, concl, prem, rowW, rowH, colW, label, barY, conclY };
       }
       dims.set(n, d);
       return d;
     }
 
+    /** Nagłówek okna: kawałki (formuła albo szare słowo) — „α założenie” albo „x₀ świeża zmienna; α założenie”. */
+    function headPieces(b) {
+      const out = [];
+      if (b.x) out.push({ l: line(F.runs(F.VAR(b.x)), em) }, { l: line(word('świeża zmienna'), em), muted: true, gap: style.headGap });
+      if (b.x && b.a) out.push({ l: line(word(';'), em), muted: true });
+      if (b.a) out.push({ l: line(F.runs(b.a), em), gap: b.x ? style.headGap : 0 }, { l: line(word('założenie'), em), muted: true, gap: style.headGap });
+      return out;
+    }
+
     function measureBox(b) {
-      const head = line(F.runs(b.a), em), word = line(WORD, em);
-      const headW = head.w + style.headGap * em + word.w;
+      const pieces = headPieces(b);
+      const headW = pieces.reduce((w, p) => w + (p.gap || 0) * em + p.l.w, 0);
+      const headH = Math.max(...pieces.map(p => p.l.h));
       const body = measureTree(b.body);
       const inner = Math.max(headW, body.w);
-      const d = { w: inner + 2 * padSide, h: padTop + head.h + style.boxGap * em + body.h + padBottom, head, word, headW, inner, body };
+      const d = { w: inner + 2 * padSide, h: padTop + headH + style.boxGap * em + body.h + padBottom, pieces, headH, headW, inner, body };
       dims.set(b, d);
       return d;
     }
@@ -133,17 +154,20 @@
         px += d.prem[i].w + gap;
       });
       items.push({ type: 'line', x1: x, y1: y + d.barY, x2: x + d.colW, y2: y + d.barY });
-      text(d.label, x + d.colW + labelGap, y + d.barY - d.label.h / 2);
+      if (d.label) text(d.label, x + d.colW + labelGap, y + d.barY - d.label.h / 2);
       text(d.concl, x + (d.colW - d.concl.w) / 2, y + d.conclY);
     }
 
     function placeBox(b, x, y) {
       const d = dims.get(b);
-      const hx = x + padSide + (d.inner - d.headW) / 2;
+      let hx = x + padSide + (d.inner - d.headW) / 2;
       items.push({ type: 'rect', x, y, w: d.w, h: d.h });
-      text(d.head, hx, y + padTop);
-      text(d.word, hx + d.head.w + style.headGap * em, y + padTop, true);
-      placeTree(b.body, x + padSide + (d.inner - d.body.w) / 2, y + padTop + d.head.h + style.boxGap * em);
+      for (const p of d.pieces) {
+        hx += (p.gap || 0) * em;
+        text(p.l, hx, y + padTop + (d.headH - p.l.h) / 2, !!p.muted);
+        hx += p.l.w;
+      }
+      placeTree(b.body, x + padSide + (d.inner - d.body.w) / 2, y + padTop + d.headH + style.boxGap * em);
     }
 
     const size = measureTree(root), margin = style.margin * em;

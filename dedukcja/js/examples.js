@@ -1,7 +1,11 @@
 /* =====================================================================
    Przykłady: zadania przykładowe (wybrane z kolokwiów i egzaminów — tylko
    w nich działa przycisk „Podpowiedź”), rozdział 2.9 skryptu, zadanie 41,
-   pozostałe zadania z kolokwiów i egzaminów oraz gotowe dowody ze skryptu.
+   pozostałe zadania z kolokwiów i egzaminów oraz gotowe dowody ze skryptu;
+   przykłady dla rachunku kwantyfikatorów (rozdz. 3.3) i zbiory klauzul do rezolucji (rozdz. 2.7).
+   Każdy dział ma { GROUPS, LIST, isSample } — podpowiedzi działają tylko w przykładach, dla których
+   isSample zwraca true. Wymaga modułów formula.js i proof.js (resolution.js — dopiero przy sprawdzaniu
+   zbiorów klauzul, więc testy bez rezolucji mogą wczytać ten moduł).
    ===================================================================== */
 (function (ND) {
   'use strict';
@@ -100,5 +104,112 @@
   /** Czy formuła (korzeń dowodu) jest zadaniem przykładowym. */
   const isSample = f => SAMPLES.some(g => ND.F.eq(f, g));
 
-  ND.Examples = Object.freeze({ GROUPS, LIST, SAMPLES, isSample });
+  /* =====================================================================
+     Rachunek kwantyfikatorów (rozdz. 3.3): przykłady i zadania ze skryptu — same prawa
+     rachunku kwantyfikatorów. Schematy φ, ψ z zadań zapisujemy jako symbole relacyjne:
+     φ(x), ψ(x) — formuły, w których x może występować wolno, φ — formuła bez wolnego x.
+     Podpowiedzi działają we wszystkich tych przykładach (i tylko w nich).
+     ===================================================================== */
+
+  const FO_GROUPS = Object.freeze([
+    { id: 'q33', title: 'Rozdział 3.3 — przykłady' },
+    { id: 'q149', title: 'Zadania 149–169' },
+    { id: 'q170', title: 'Zadania 170–179 (x nie występuje wolno w φ)' },
+    { id: 'q53', title: 'Prawa z przykładów 53–55' },
+    { id: 'qterm', title: 'Z termami i stałymi' },
+  ]);
+
+  const FO_LIST = Object.freeze([
+    { group: 'q33', title: 'Przykład 56', formula: 'Ax (φ(x) & ψ(x)) -> (Ax φ(x)) & (Ax ψ(x))', note: 'też zadanie 154' },
+    { group: 'q33', title: 'Prawo De Morgana', formula: '~(Ex φ(x)) -> Ax ~φ(x)', note: 'schemat dowodu ze str. 58' },
+    { group: 'q33', title: 'Przykład 57', formula: '(Ex p(x)) -> ~Ax ~p(x)', note: 'reguła (∃e)' },
+
+    { group: 'q149', title: 'Zadanie 149', formula: '(Ax ~φ(x)) -> ~Ex φ(x)', note: 'druga implikacja prawa De Morgana' },
+    { group: 'q149', title: 'Zadanie 150', formula: '(Ex ~φ(x)) -> ~Ax φ(x)', note: 'prawo De Morgana' },
+    { group: 'q149', title: 'Zadanie 151', formula: '~(Ax φ(x)) -> Ex ~φ(x)', note: 'wymaga (¬¬e)' },
+    { group: 'q149', title: 'Zadanie 153', formula: '(Ax φ(x)) | (Ax ψ(x)) -> Ax (φ(x) | ψ(x))', note: 'prawo' },
+    { group: 'q149', title: 'Zadanie 157', formula: '((Ex φ(x)) -> Ax ψ(x)) -> Ax (φ(x) -> ψ(x))', note: 'prawo' },
+    { group: 'q149', title: 'Zadanie 159', formula: '(Ex (φ(x) & ψ(x))) -> (Ex φ(x)) & (Ex ψ(x))', note: 'prawo' },
+    { group: 'q149', title: 'Zadanie 160', formula: '((Ex φ(x)) -> Ex ψ(x)) -> Ex (φ(x) -> ψ(x))', note: 'prawo · wymaga (¬¬e)' },
+    { group: 'q149', title: 'Zadanie 162', formula: '(Ax φ(x)) -> (Ex ψ(x)) -> Ex (φ(x) -> ψ(x))', note: 'prawo' },
+    { group: 'q149', title: 'Zadanie 163', formula: '(Ex (φ(x) -> ψ(x))) -> (Ax φ(x)) -> Ex ψ(x)', note: 'prawo' },
+    { group: 'q149', title: 'Zadanie 166', formula: '(Ax φ(x)) -> Ex φ(x)', note: 'uniwersum jest niepuste' },
+    { group: 'q149', title: 'Zadanie 169', formula: '(Ey Ax φ(x, y)) -> Ax Ey φ(x, y)', note: 'prawo (odwrotna implikacja — zad. 168 — nie jest)' },
+
+    { group: 'q170', title: 'Zadanie 170 (⇒)', formula: '(Ax (φ -> ψ(x))) -> (φ -> Ax ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 170 (⇐)', formula: '(φ -> Ax ψ(x)) -> Ax (φ -> ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 171', formula: '(Ax (φ -> ψ(x))) -> (φ -> Ex ψ(x))', note: 'tylko ta implikacja' },
+    { group: 'q170', title: 'Zadanie 172', formula: '(Ax (ψ(x) -> φ)) -> ((Ax ψ(x)) -> φ)', note: 'tylko ta implikacja' },
+    { group: 'q170', title: 'Zadanie 173 (⇒)', formula: '(Ax (ψ(x) -> φ)) -> ((Ex ψ(x)) -> φ)', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 173 (⇐)', formula: '((Ex ψ(x)) -> φ) -> Ax (ψ(x) -> φ)', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 176 (⇒)', formula: '(Ex (φ -> ψ(x))) -> (φ -> Ex ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 176 (⇐)', formula: '(φ -> Ex ψ(x)) -> Ex (φ -> ψ(x))', note: 'formuły są równoważne · wymaga (¬¬e)' },
+    { group: 'q170', title: 'Zadanie 177', formula: '(φ -> Ax ψ(x)) -> Ex (φ -> ψ(x))', note: 'tylko ta implikacja' },
+    { group: 'q170', title: 'Zadanie 178', formula: '((Ex ψ(x)) -> φ) -> Ex (ψ(x) -> φ)', note: 'tylko ta implikacja' },
+    { group: 'q170', title: 'Zadanie 179 (⇒)', formula: '(Ex (ψ(x) -> φ)) -> ((Ax ψ(x)) -> φ)', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 179 (⇐)', formula: '((Ax ψ(x)) -> φ) -> Ex (ψ(x) -> φ)', note: 'formuły są równoważne · wymaga (¬¬e)' },
+
+    { group: 'q53', title: 'Przykład 54 (∀, ⇐)', formula: '(Ax φ(x)) & (Ax ψ(x)) -> Ax (φ(x) & ψ(x))', note: 'rozdzielność ∀ względem ∧' },
+    { group: 'q53', title: 'Przykład 54 (∃, ⇒)', formula: '(Ex (φ(x) | ψ(x))) -> (Ex φ(x)) | (Ex ψ(x))', note: 'rozdzielność ∃ względem ∨' },
+    { group: 'q53', title: 'Przykład 54 (∃, ⇐)', formula: '(Ex φ(x)) | (Ex ψ(x)) -> Ex (φ(x) | ψ(x))', note: 'rozdzielność ∃ względem ∨' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∨)', formula: '(Ax (φ | ψ(x))) -> φ | Ax ψ(x)', note: 'wymaga (¬¬e)' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∨, ⇐)', formula: 'φ | (Ax ψ(x)) -> Ax (φ | ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∧)', formula: '(Ax (φ & ψ(x))) -> φ & Ax ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∧)', formula: '(Ex (φ & ψ(x))) -> φ & Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∧, ⇐)', formula: 'φ & (Ex ψ(x)) -> Ex (φ & ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∨)', formula: '(Ex (φ | ψ(x))) -> φ | Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+
+    { group: 'qterm', title: 'Sokrates', formula: '(Ax (p(x) -> q(x))) & p(c) -> q(c)', note: 'każdy człowiek jest śmiertelny…' },
+    { group: 'qterm', title: 'Podstawienie termu', formula: '(Ax p(x)) -> p(f(a))', note: 'reguła (∀e) z termem f(a)' },
+    { group: 'qterm', title: 'Świadek z funkcji', formula: '(Ax (p(x) -> q(f(x)))) & p(a) -> Ey q(y)', note: 'świadkiem jest f(a)' },
+    { group: 'qterm', title: 'Zamiana kwantyfikatorów', formula: '(Ax Ay r(x, y)) -> Ay Ax r(x, y)', note: 'dwa okna ze świeżymi zmiennymi' },
+    { group: 'qterm', title: 'Monotoniczność ∀', formula: '(Ax (p(x) -> q(x))) -> (Ax p(x)) -> Ax q(x)', note: 'jedno okno ze świeżą zmienną' },
+    { group: 'qterm', title: 'Monotoniczność ∃', formula: '(Ax (p(x) -> q(x))) -> (Ex p(x)) -> Ex q(x)', note: '(∀e) dla świadka z (∃e)' },
+    { group: 'qterm', title: 'Paradoks pijaka', formula: 'Ex (p(x) -> Ay p(y))', note: 'trudne · wymaga (¬¬e)' },
+  ].map(Object.freeze));
+
+  const FO_FORMULAS = Object.freeze(FO_LIST.map(e => ND.F.parse(e.formula, { logic: 'fo' })));
+  /** Podpowiedzi w rachunku kwantyfikatorów działają we wszystkich przykładach (i tylko w nich). */
+  const isFoSample = f => FO_FORMULAS.some(g => ND.F.eq(f, g));
+
+  /* =====================================================================
+     Rezolucja (rozdz. 2.7): zbiory klauzul. Podpowiedzi tylko w grupie „z podpowiedziami”.
+     ===================================================================== */
+
+  const RES_GROUPS = Object.freeze([
+    { id: 'rprzyk', title: 'Przykładowe zbiory — z podpowiedziami' },
+    { id: 'r133', title: 'Zadanie 133' },
+    { id: 'rinne', title: 'Inne zbiory klauzul' },
+  ]);
+
+  const RES_LIST = Object.freeze([
+    { group: 'rprzyk', title: 'Przykład ze str. 43', clauses: '{p ∨ q, ¬p ∨ q, p ∨ ¬q, ¬p ∨ ¬q}', note: 'dowód sprzeczności narysowany w skrypcie' },
+    { group: 'rprzyk', title: 'Okulary pana Hilarego', clauses: '{¬p ∨ q, ¬q ∨ r, ¬r, p ∨ s, ¬s ∨ t, ¬t}', note: 'zadanie 145 jako zbiór klauzul (z zaprzeczonym wnioskiem)' },
+    { group: 'rprzyk', title: 'Zbiór spełnialny', clauses: '{p ∨ q, ¬p ∨ r, ¬q ∨ ¬r, q ∨ r}', note: 'wskaż wartościowanie' },
+
+    { group: 'r133', title: 'Zadanie 133.1', clauses: '{¬p ∨ q, ¬p ∨ ¬r ∨ s, ¬q ∨ r, p, ¬s}', note: 'sprzeczny?' },
+    { group: 'r133', title: 'Zadanie 133.2', clauses: '{p ∨ r, ¬r ∨ ¬s, q ∨ s, q ∨ r, ¬p ∨ ¬q, s ∨ p}', note: 'sprzeczny?' },
+    { group: 'r133', title: 'Zadanie 133.3', clauses: '{p ∨ q ∨ r, ¬r ∨ ¬q ∨ ¬p, ¬q ∨ r, ¬r ∨ p}', note: 'sprzeczny?' },
+
+    { group: 'rinne', title: 'Modus ponens', clauses: '{p, ¬p ∨ q, ¬q}', note: 'p, p ⇒ q i zaprzeczenie q' },
+    { group: 'rinne', title: 'Dylemat konstrukcyjny', clauses: '{p ∨ q, ¬p ∨ r, ¬q ∨ r, ¬r}', note: 'zadanie 41.9 z zaprzeczonym wnioskiem' },
+    { group: 'rinne', title: 'Trzy zmienne', clauses: '{p ∨ q ∨ r, ¬p ∨ q, ¬q ∨ r, ¬r ∨ p, ¬p ∨ ¬q ∨ ¬r}', note: 'sprzeczny?' },
+    { group: 'rinne', title: 'Cztery klauzule', clauses: '{p ∨ ¬q, q ∨ ¬r, r ∨ ¬p, p ∨ q ∨ r}', note: 'sprzeczny?' },
+  ].map(Object.freeze));
+
+  let resSamples = null;   // klucze zbiorów z podpowiedziami — liczone przy pierwszym użyciu
+  /** Czy zbiór klauzul (w dowolnej kolejności) jest zbiorem przykładowym z podpowiedziami. */
+  const isResSample = clauses => {
+    resSamples ||= RES_LIST.filter(e => e.group === 'rprzyk').map(e => ND.Res.setKey(ND.Res.parseClauses(e.clauses)));
+    return resSamples.includes(ND.Res.setKey(clauses));
+  };
+
+  const PROP = Object.freeze({ GROUPS, LIST, SAMPLES, isSample });
+  const FO = Object.freeze({ GROUPS: FO_GROUPS, LIST: FO_LIST, isSample: isFoSample });
+  const RES = Object.freeze({ GROUPS: RES_GROUPS, LIST: RES_LIST, isSample: isResSample });
+
+  /** Przykłady dedukcji naturalnej dla rachunku ('prop' | 'fo'). */
+  const forLogic = logic => (logic === 'fo' ? FO : PROP);
+
+  ND.Examples = Object.freeze({ PROP, FO, RES, forLogic });
 })(globalThis.ND ||= {});

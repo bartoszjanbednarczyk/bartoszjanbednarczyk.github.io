@@ -59,7 +59,7 @@
    * Pierwsza nota (cel dowodu) jest krokiem zerowym, pozostałe noty dołączają do sąsiednich kroków.
    */
   function readingSteps(root) {
-    const sentences = Explain.prose(root, { merge: false, skipKnown: false }).sentences;
+    const sentences = Explain.prose(root, { merge: false, skipKnown: false, logic: S.logic() }).sentences;
     const steps = [];
     let notes = [];
     sentences.forEach((s, i) => {
