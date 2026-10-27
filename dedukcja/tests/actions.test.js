@@ -180,6 +180,21 @@ test('„od przesłanek”: okno znika, a zamknięte w nim hipotezy znów są ot
   assert.equal(st.frags.length, 0);
 });
 
+test('(wś) „od celu” zamyka cel α ∨ ¬α, a inne alternatywy odrzuca z komunikatem', () => {
+  load([{ f: '~~p -> p', r: 'impI', p: [{ a: '~~p', b: { f: 'p', r: 'orE', p: [{ f: 'p | ~p' }, { a: 'p', b: { f: 'p', r: 'hyp' } }, { a: '~p', b: { f: 'p' } }] } }] }]);
+  const id = pick('p | ~p');
+  assert.equal(A.availability().reasons.get('lem'), null);
+  A.apply('lem');
+  assert.equal(st.idx.get(id).n.rule, 'lem');
+  assert.deepEqual(Proof.openFormulas(st.frags[0]).map(F.text), ['p']);
+  load([{ f: 'p | ~q' }]);
+  pick('p | ~q');
+  assert.match(A.availability().reasons.get('lem'), /α ∨ ¬α/);
+  A.apply('lem');
+  assert.equal(st.frags[0].rule, null);
+  assert.match(toasts.join(' '), /Cel nie jest postaci α ∨ ¬α/);
+});
+
 test('„od przesłanek” w środku drzewa: wniosek staje się hipotezą, przesłanki wracają jako fragmenty', () => {
   load([{ f: 'p', r: 'andE1', p: [{ f: 'p&q', r: 'andI', p: [{ f: 'p' }, { f: 'q' }] }] }], { mode: 'fwd' });
   const mid = pick('p&q');

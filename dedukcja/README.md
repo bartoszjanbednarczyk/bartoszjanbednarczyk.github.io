@@ -5,7 +5,7 @@ Na stronie jest osadzona w ramce w `../dedukcja.html`.
 
 Trzy działy (zakładki pod nagłówkiem):
 
-- **Rachunek zdań** — dedukcja naturalna z rozdz. 2.9 skryptu (link `#d=…`),
+- **Rachunek zdań** — dedukcja naturalna z rozdz. 2.9 skryptu, uzupełniona o regułę (wś) — prawo wyłączonego środka α ∨ ¬α bez przesłanek (w tabeli reguł obok „założenia”; dostępna też w rachunku kwantyfikatorów, ale dowodzący i podpowiedzi z niej nie korzystają) (link `#d=…`),
 - **Rachunek kwantyfikatorów** — dedukcja naturalna z rozdz. 3.3: termy z funkcjami (także stałe liczbowe 0, 42),
   relacje pisane między argumentami (=, <, >, ≤, ≥, ≠ jako skrót ¬(x = y)), symbole relacyjne p–t, P–S, φ, ψ,
   reguły (∀i), (∀e), (∃i), (∃e), okna ze świeżymi zmiennymi, dowód słowny ze strukturą 𝔄 i wartościowaniami

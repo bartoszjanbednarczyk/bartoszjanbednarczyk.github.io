@@ -176,13 +176,13 @@
     let usable = 0;
     document.querySelectorAll('#rtable .rcard').forEach(c => {
       const id = c.dataset.rule, why = av.reasons.get(id);
-      const ok = !why && (anySelected || id === 'topI');
+      const r = Rules.get(id);
+      const ok = !why && (anySelected || (!!r.fwd && r.fwd.arity === 0));   // reguły bez przesłanek: od razu „od przesłanek”
       if (ok) usable++;
       c.classList.toggle('ok', ok);
       c.classList.toggle('hinted', hinted === id);
       c.classList.toggle('off', !!why && anySelected);
       c.setAttribute('aria-disabled', String(!!why && anySelected));
-      const r = Rules.get(id);
       c.title = `(${r.label.text}) ${r.name}` + (why && anySelected ? ` — ${why}` : '');
     });
     $('rulesSub').textContent = anySelected
@@ -340,7 +340,7 @@
     Rules.forLogic(S.logic()).groups.forEach(([con, intro, elim]) => {
       html += `<div class="con">${con}</div><div class="cell">${intro.map(card).join('')}</div><div class="cell">${elim.map(card).join('')}</div>`;
     });
-    html += `<div class="rowsep"></div><div class="cell wide">${card('hyp')}</div>`;
+    html += `<div class="rowsep"></div><div class="cell wide">${['hyp', ...Rules.forLogic(S.logic()).extra].map(card).join('')}</div>`;
     $('rtable').innerHTML = html;
   }
 

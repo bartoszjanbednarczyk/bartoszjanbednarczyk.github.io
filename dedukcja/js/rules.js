@@ -6,6 +6,9 @@
      fwd      stosowanie „od przesłanek”: liczba przesłanek, ich kolejność, budowa wniosku,
      schema   przesłanki i wniosek do karty w tabeli reguł.
      verify   (opcjonalnie) własne sprawdzenie węzła — reguły z kwantyfikatorami (świeże zmienne, podstawienia).
+     label    (opcjonalnie) własna etykieta — dla reguł bez spójnika w nazwie, np. (wś).
+   W `back` pole `goal` to wymagany spójnik główny celu, a `shape` (opcjonalnie) — dokładniejszy
+   warunek na cel (zwraca powód albo null).
    Kształt przesłanki: formuła albo okno { box, assume, goal, fresh } (fresh — świeża zmienna okna).
    W funkcjach „od przesłanek” `fs` to formuły zaznaczonych korzeni, `nodes` — ich węzły.
    Kontekst `ctx` (reguły z kwantyfikatorami): fresh(base) — świeża zmienna dla bieżącego fragmentu,
@@ -18,6 +21,8 @@
   const P = ND.Proof;
 
   const α = META('α'), β = META('β'), γ = META('γ');
+  /** Czy formuła jest postaci α ∨ ¬α (prawo wyłączonego środka). */
+  const isExcludedMiddle = f => f.t === 'or' && f.b.t === 'not' && eq(f.b.a, f.a);
 
   const CONNECTIVES = {
     and: { sym: '∧', tex: '\\land' },
@@ -355,6 +360,25 @@
       },
     },
     {
+      id: 'lem', con: 'or', kind: 'i',
+      label: { text: 'wś', html: 'wś', tex: '\\textrm{wś}' },
+      title: 'Prawo wyłączonego środka', name: 'prawo wyłączonego środka (tertium non datur)',
+      schema: { prem: [], concl: OR(α, NOT(α)) },
+      back: {
+        goal: 'or',
+        shape: f => (isExcludedMiddle(f) ? null : 'Cel nie jest postaci α ∨ ¬α'),
+        premises: () => [],
+      },
+      fwd: {
+        arity: 0,
+        param: {
+          desc: () => T`Wyprowadzimy ${OR(α, NOT(α))} bez żadnych przesłanek. Jaka jest formuła ${α}?`,
+          best: (fs, ctx) => ctx.openGoals.filter(isExcludedMiddle).map(g => g.a),
+        },
+        build: (fs, nodes, x) => ({ f: OR(x, NOT(x)), prem: [] }),
+      },
+    },
+    {
       id: 'orE', con: 'or', kind: 'e',
       title: 'Rozpatrywanie przypadków', name: 'eliminacja alternatywy (rozpatrywanie przypadków)',
       schema: { prem: [OR(α, β), boxed(α, γ), boxed(β, γ)], concl: γ },
@@ -522,7 +546,7 @@
     });
   }
 
-  const RULES = new Map(DEFINITIONS.map(d => [d.id, Object.freeze({ ...d, label: labelOf(d) })]));
+  const RULES = new Map(DEFINITIONS.map(d => [d.id, Object.freeze({ ...d, label: d.label ? Object.freeze({ ...d.label }) : labelOf(d) })]));
 
   /** Pseudoreguła: użycie założenia otaczającego okna. */
   const HYP = Object.freeze({
@@ -536,7 +560,7 @@
   /** Kolejność na pasku akcji: założenie, wprowadzanie, eliminacja (rachunek kwantyfikatorów — wszystkie reguły). */
   const ORDER_FO = ['hyp', ...ALL.filter(r => r.kind === 'i').map(r => r.id), ...ALL.filter(r => r.kind === 'e').map(r => r.id)];
   const ORDER = ORDER_FO.filter(id => id === 'hyp' || !RULES.get(id).fo);
-  /** Układ tabeli reguł: spójnik, reguły wprowadzania, reguły eliminacji. */
+  /** Układ tabeli reguł: spójnik, reguły wprowadzania, reguły eliminacji. Reguły spoza tabeli (EXTRA) stoją w ostatnim wierszu obok „założenia”. */
   const GROUPS = [
     ['∧', ['andI'], ['andE1', 'andE2']],
     ['∨', ['orI1', 'orI2'], ['orE']],
@@ -545,13 +569,15 @@
     ['⊤⊥', ['topI'], ['botE']],
   ];
   const GROUPS_FO = [...GROUPS, ['∀', ['allI'], ['allE']], ['∃', ['exI'], ['exE']]];
-  /** Reguły dostępne w danym rachunku: { order, groups }. */
-  const forLogic = logic => (logic === 'fo' ? { order: ORDER_FO, groups: GROUPS_FO } : { order: ORDER, groups: GROUPS });
+  const EXTRA = ['lem'];
+  /** Reguły dostępne w danym rachunku: { order, groups, extra }. */
+  const forLogic = logic => (logic === 'fo' ? { order: ORDER_FO, groups: GROUPS_FO, extra: EXTRA } : { order: ORDER, groups: GROUPS, extra: EXTRA });
 
   /* ---------- stosowanie „od celu” ---------- */
 
   /** Powód, dla którego reguły nie można zastosować do celu `f` (null — można). */
-  const backBlocked = (r, f) => (r.back.goal && f.t !== r.back.goal ? GOAL_MESSAGES[r.back.goal] : null);
+  const backBlocked = (r, f) => (r.back.goal && f.t !== r.back.goal ? GOAL_MESSAGES[r.back.goal]
+    : r.back.shape ? r.back.shape(f) : null);
 
   /** Węzły przesłanek z kształtów (okna z pustym celem w środku). */
   const materialize = shapes => shapes.map(s => (s.box ? P.box(s.assume || null, P.node(s.goal), [], s.fresh || null) : P.node(s)));

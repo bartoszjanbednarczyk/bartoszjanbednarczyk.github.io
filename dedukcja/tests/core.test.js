@@ -111,7 +111,7 @@ test('weryfikacja wykrywa każdą zepsutą przesłankę', () => {
 });
 
 test('stosowanie wstecz: przesłanki z reguły zawsze przechodzą weryfikację', () => {
-  const goals = ['p & q', 'p | q', 'T', 'p -> q', '~p', 'F'].map(F.parse);
+  const goals = ['p & q', 'p | q', 'p | ~p', 'T', 'p -> q', '~p', 'F'].map(F.parse);
   const x = F.parse('r | s');
   for (const r of Rules.ALL.filter(rule => !rule.fo)) {   // reguły dla kwantyfikatorów: tests/fo.test.js
     for (const goal of goals) {
@@ -140,6 +140,49 @@ test('stosowanie w przód: wnioski z reguły przechodzą weryfikację', () => {
   }
   assert.ok(Rules.fwdBlocked(Rules.get('impE'), [F.parse('p'), F.parse('q -> r')]));
   assert.ok(Rules.fwdBlocked(Rules.get('andI'), [F.parse('p')]));
+});
+
+test('(wś): α ∨ ¬α bez przesłanek — wstecz, w przód, weryfikacja, zapis i etykieta', () => {
+  const r = Rules.get('lem'), goal = F.parse('(p -> q) | ~(p -> q)');
+  assert.equal(Rules.backBlocked(r, goal), null);
+  for (const s of ['p | q', 'p | ~q', '~p | p', 'p & ~p', '~(p | ~p)']) assert.ok(Rules.backBlocked(r, F.parse(s)), s);
+  const n = Proof.node(goal, 'lem', Rules.materialize(r.back.premises(goal)));
+  assert.ok(Rules.checkNode(n, []) && Rules.verify([n]).size === 0);
+  assert.ok(!Rules.checkNode(Proof.node(F.parse('p | ~q'), 'lem', []), []));
+  assert.ok(!Rules.checkNode(Proof.node(F.parse('p | ~p'), 'lem', [Proof.node(F.parse('p'))]), []));
+  assert.equal(Rules.fwdBlocked(r, []), null);
+  assert.ok(Rules.fwdBlocked(r, [F.parse('p')]));
+  const built = r.fwd.build([], [], F.parse('p -> q'));
+  assert.equal(F.text(built.f), F.text(goal));
+  assert.ok(Rules.checkNode(Proof.node(built.f, 'lem', Rules.enclose(built.prem)), []));
+  assert.deepEqual(Rules.forLogic('prop').extra, ['lem']);
+  assert.ok(Rules.forLogic('prop').order.includes('lem') && Rules.forLogic('fo').order.includes('lem'));
+  assert.equal(Render.label('lem').text, 'wś');
+  assert.equal(Render.label('lem').tex, '\\textrm{wś}');
+  const back = Proof.deserialize(Proof.serialize([n]), Rules.isRule)[0];
+  assert.equal(back.rule, 'lem');
+  assert.ok(Rules.verify([back]).size === 0);
+});
+
+test('(wś) w dowodzie: ¬¬p ⇒ p przez rozpatrywanie przypadków p ∨ ¬p', () => {
+  const P = s => F.parse(s), node = Proof.node, hyp = s => node(P(s), 'hyp');
+  const root = node(P('~~p -> p'), 'impI', [Proof.box(P('~~p'), node(P('p'), 'orE', [
+    node(P('p | ~p'), 'lem'),
+    Proof.box(P('p'), hyp('p')),
+    Proof.box(P('~p'), node(P('p'), 'botE', [node(F.BOT, 'notE', [hyp('~p'), hyp('~~p')])])),
+  ]))]);
+  assert.equal(Rules.verify([root]).size, 0);
+  const text = Render.proseText(Explain.prose(root), { rules: true });
+  assert.match(text, /Z definicji negacji σ̂\(p\) = T lub σ̂\(¬p\) = T, więc z definicji alternatywy σ̂\(p ∨ ¬p\) = T \(wś\)\./);
+  assert.ok(!/undefined|null|\[object/.test(text), text);
+  const covered = new Set();
+  for (const s of Explain.prose(root, { merge: false, skipKnown: false }).sentences) s.nodes.forEach(n => covered.add(n.id));
+  Proof.walk([root], n => { if (n.rule !== 'hyp') assert.ok(covered.has(n.id), n.rule); });
+  Proof.walk([root], n => assert.ok(Explain.goalStep(n).length > 0, n.rule));
+  const tex = Export.latex(root, { standalone: true });
+  assert.ok(tex.includes('\\textrm{wś}'));
+  const L = Export.layout(root, Export.approxMeasurer());
+  assert.ok(Number.isFinite(L.w) && L.w > 0);
 });
 
 test('(∨e) w przód: gałęzie trafiają do okien według hipotez, nie kolejności kliknięć', () => {

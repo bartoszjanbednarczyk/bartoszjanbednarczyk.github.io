@@ -131,7 +131,7 @@ main, aside { min-width: 0; }
 .rcard.ok { border-color: var(--accent); }
 .rcard.off { opacity: .3; }
 .rcard.off:hover, .rcard.static:hover { border-color: var(--line); background: var(--panel); }
-.rcard.hypc { width: 100%; min-height: 54px; }
+.rtable .wide .rcard { min-height: 54px; }
 .rcard .math { white-space: nowrap; }
 .rcard .inf > .prem { gap: .7em; }
 .rcard .inf > .lbl { font-size: .88em; }

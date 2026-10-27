@@ -43,6 +43,7 @@
       case 'impE': return T`Dowodzimy ${x} oraz ${IMP(x, f)} — cel wynika z nich na mocy modus ponens.`;
       case 'notE': return T`Dowodzimy ${x} oraz ${NOT(x)}.`;
       case 'botE': return T`Wystarczy wyprowadzić sprzeczność ${BOT} — wynika z niej dowolna formuła.`;
+      case 'lem': return T`Cel to prawo wyłączonego środka — dowodzimy go bez żadnych przesłanek.`;
       case 'nnE': return isRAA(n)
         ? T`Dowód nie wprost: wystarczy udowodnić ${NOT(NOT(f))}, czyli założyć ${NOT(f)} i dojść do sprzeczności.`
         : T`Cel wynika z ${NOT(NOT(f))}.`;
@@ -87,6 +88,7 @@
     switch (pf.rule) {
       case 'hyp': return T`Spójrz na założenia okien, w których leży ten cel.`;
       case 'topI': return T`Cel to stała ${TOP} — jedna z reguł dowodzi jej bez żadnych przesłanek.`;
+      case 'lem': return T`Cel jest szczególnym przypadkiem prawa wyłączonego środka — jedna z reguł dowodzi go bez żadnych przesłanek.`;
       case 'andI': return T`Spójnik główny celu to ${sym('∧')}. Co trzeba wiedzieć, żeby wiedzieć, że koniunkcja jest prawdziwa?`;
       case 'impI': return T`Spójnik główny celu to ${sym('⇒')}. Jak zwykle dowodzi się implikacji?`;
       case 'notI': return T`Cel jest negacją. Spróbuj założyć to, co jest negowane, i dojść do sprzeczności.`;
@@ -337,6 +339,7 @@
         case 'orI1': case 'orI2': return this.infer(n, [this.establish(n.prem[0])], 'z definicji alternatywy');
         case 'andE1': case 'andE2': return this.projection(n);
         case 'nnE': return isRAA(n) ? this.byContradiction(n) : this.doubleNegation(n);
+        case 'lem': return this.excludedMiddle(n);
         case 'impE': return this.infer(n, [this.establish(n.prem[0]), this.establish(n.prem[1])], 'z definicji implikacji');
         case 'notE': return this.contradiction(n);
         case 'botE': return this.explosion(n);
@@ -345,6 +348,13 @@
         case 'orE': return this.cases(n);
         default: return this.say(T`${this.is(n.f)}.`, { nodes: [n], concl: n.f });
       }
+    }
+
+    /** (wś): σ̂(α) = T albo σ̂(α) = F, czyli σ̂(α) = T lub σ̂(¬α) = T. */
+    excludedMiddle(n) {
+      const a = n.f.a;
+      return this.say(T`Z definicji negacji ${this.is(a)} lub ${this.is(n.f.b)}, więc z definicji alternatywy ${this.is(n.f)}${rule('lem')}.`,
+        { nodes: [n], concl: n.f });
     }
 
     doubleNegation(n) {
