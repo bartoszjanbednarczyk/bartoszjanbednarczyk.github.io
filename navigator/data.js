@@ -623,10 +623,10 @@ var results = {
         "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrK4": {
-        "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrK4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
-        "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
+        "local-complex": "2ExpTime",
+        "local-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>; local and global satisfiability are polynomially equivalent here (Lemma 7 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>)",
+        "global-complex": "2ExpTime",
+        "global-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>"
     },
     "GrIK4": {
         "local-complex": "undecidable",
@@ -656,10 +656,10 @@ var results = {
         "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrD4": {
-        "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrD4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
-        "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
+        "local-complex": "2ExpTime",
+        "local-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>; local and global satisfiability are polynomially equivalent here (Lemma 7 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>)",
+        "global-complex": "2ExpTime",
+        "global-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>"
     },
     "GrID4": {
         "local-complex": "undecidable",
@@ -689,10 +689,10 @@ var results = {
         "global-comment": "lower bound: reduction from alternating Turing machines in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, upper bound: <a href='#DemriN05'>[DemriN05]</a> via translation to GF2"
     },
     "IGrS4": {
-        "local-complex": "decidable in Tower, NExpTime-hard",
-        "local-comment": "hardness comes from GrS4, upper bound in  <a href='#BednarczykKW21'>[BednarczykKW21]</a>",
-        "global-complex": "decidable in Tower, NExpTime-hard",
-        "global-comment": "hardness comes from local satisfiability <a href='#BednarczykKW21'>[BednarczykKW21]</a>"
+        "local-complex": "2ExpTime",
+        "local-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>; local and global satisfiability are polynomially equivalent here (Lemma 7 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>)",
+        "global-complex": "2ExpTime",
+        "global-comment": "Theorem 9 in <a href='#BednarczykKW21'>[BednarczykKW21]</a>, by adapting the bounds for SIQ<sup>-</sup> from <a href='#GogaczGIJM19'>[GogaczGIJM19]</a>"
     },
     "GrIS4": {
         "local-complex": "undecidable",

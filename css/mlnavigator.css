@@ -325,7 +325,7 @@
 [data-c="ps"]    { background: #e8f0fb !important; color: #1d4f91 !important; }
 [data-c="exp"]   { background: #fdf2dc !important; color: #8a5a00 !important; }
 [data-c="nexp"]  { background: #fde8dc !important; color: #9a3b0a !important; }
-[data-c="tower"] { background: #f1eafb !important; color: #5b2d91 !important; }
+[data-c="twoexp"] { background: #fbe6f1 !important; color: #9b1f63 !important; }
 [data-c="undec"] { background: #fbe4e6 !important; color: #a1182a !important; }
 
 .nv-legend {

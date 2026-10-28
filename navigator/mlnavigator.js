@@ -55,7 +55,7 @@ function fillTable(name) {
 function complexityClass(text) {
     var s = String(text).toLowerCase();
     if (s.indexOf('undecidable') > -1) return 'undec';
-    if (s.indexOf('tower') > -1) return 'tower';
+    if (s.indexOf('2exptime') > -1) return 'twoexp';
     if (s.indexOf('nexptime') > -1) return 'nexp';
     if (s.indexOf('exptime') > -1) return 'exp';
     if (s.indexOf('pspace') > -1) return 'ps';
