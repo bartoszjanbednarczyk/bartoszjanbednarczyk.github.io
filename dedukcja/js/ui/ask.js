@@ -126,16 +126,15 @@
 
   function suggestions(best, rest) {
     const seen = new Set(), list = [];
-    const add = (f, isBest) => { const k = F.key(f); if (!seen.has(k)) { seen.add(k); list.push([f, isBest]); } };
-    best.forEach(f => add(f, true));
-    rest.forEach(f => add(f, false));
+    const add = f => { const k = F.key(f); if (!seen.has(k)) { seen.add(k); list.push(f); } };
+    best.forEach(add);
+    rest.forEach(add);
     const box = $('askSuggest');
     box.innerHTML = '';
-    list.slice(0, MAX_SUGGESTIONS).forEach(([f, isBest]) => {
+    list.slice(0, MAX_SUGGESTIONS).forEach(f => {
       const c = document.createElement('button');
       c.type = 'button';
       c.innerHTML = F.html(f);
-      if (isBest) { c.className = 'best'; c.title = 'pasuje do tej reguły'; }
       c.addEventListener('click', () => { input().value = F.text(f); preview(); input().focus(); });
       box.appendChild(c);
     });
@@ -158,7 +157,7 @@
 
   /**
    * Pyta o formułę. desc — segmenty tekstu; check(f) → komunikat albo null;
-   * best — formuły pasujące (wyróżnione), sugg — pozostałe podpowiedzi.
+   * best — formuły pasujące (pierwsze na liście), sugg — pozostałe podpowiedzi.
    */
   function ask({ title, desc = [], kind = 'formula', check = null, best = [], sugg = [], okLabel = 'Zatwierdź' }) {
     settle(null);

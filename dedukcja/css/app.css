@@ -318,7 +318,6 @@ main, aside { min-width: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
 .chips button { font-family: var(--math); font-size: 15.5px; border: 1px solid var(--line2); border-radius: 999px; padding: 3px 11px; background: var(--canvas); cursor: pointer; }
 .chips button:hover { border-color: var(--accent); }
-.chips button.best { border-color: var(--accent); background: var(--accent-soft); }
 
 .exp-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 12px; }
 .exp-opts { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 10px; font-size: .88rem; color: var(--ink2); }
