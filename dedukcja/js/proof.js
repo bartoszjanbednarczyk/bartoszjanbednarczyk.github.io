@@ -10,7 +10,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { eq, key, parse, size, isVarName } = ND.F;
+  const { eq, key, code, parse, size, isVarName } = ND.F;
 
   /**
    * Limity całego obszaru roboczego (pilnowane centralnie przy każdej zmianie).
@@ -177,12 +177,12 @@
 
   /** Postać do zapisu: { f, r?, p? }, okno: { a?, x?, b, w? } (x — świeża zmienna, w — wnioski). Formuły jako klucze (krótkie linki). */
   function toPlain(n) {
-    const o = { f: key(n.f) };
+    const o = { f: code(n.f) };
     if (n.rule) o.r = n.rule;
     if (n.prem.length) {
       o.p = n.prem.map(p => {
         if (!p.box) return toPlain(p);
-        const w = p.a ? { a: key(p.a) } : {};
+        const w = p.a ? { a: code(p.a) } : {};
         if (p.x) w.x = p.x;
         w.b = toPlain(p.body);
         if (factsOf(p).length) w.w = factsOf(p).map(toPlain);

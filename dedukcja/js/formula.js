@@ -5,6 +5,8 @@
 
    Węzły formuł:  { t: 'v', n, args? }        — zmienna zdaniowa / formuła atomowa p(t₁, …, tₙ);
                                                 relacje =, <, >, ≤, ≥ to symbole o takich nazwach (x = y)
+                  { t: 'v', n, args, ps }       — schemat po podstawieniu: φ(x)[x/a] (ps — zmienne φ(x),
+                                                args — termy po podstawieniu), wypisywany jako φ[x/a]
                   { t: 'T' } | { t: 'F' }       — ⊤, ⊥
                   { t: 'not', a } | { t: 'and' | 'or' | 'imp', a, b }
                   { t: 'all' | 'ex', x, a }     — ∀x α, ∃x α (x — nazwa zmiennej)
@@ -50,6 +52,37 @@
   const V = n => ({ t: 'v', n });
   /** Formuła atomowa p(t₁, …, tₙ); bez argumentów — zmienna zdaniowa (symbol relacyjny 0-argumentowy). */
   const ATOM = (n, args = []) => (args.length ? { t: 'v', n, args } : { t: 'v', n });
+  /**
+   * Schematy φ, ψ, χ: φ(x) to dowolna formuła, w której x może występować wolno. Podstawienie
+   * nie zamienia φ(x) w φ(a), lecz daje φ[x/a] — węzeł pamięta zmienne schematu (pole ps).
+   * Konkretne symbole relacyjne (p, q, …) podstawia się zwykle: p(x)[x/a] = p(a).
+   */
+  const isSchema = n => typeof n === 'string' && 'φψχ'.includes(n[0]);
+  /**
+   * Formuła atomowa `g` z nowymi argumentami. Dla schematu, którego argumentami są zmienne, pamięta
+   * te zmienne (ps); gdy argumenty znów są tymi zmiennymi (φ[x/y][y/x] = φ(x)), ps znika.
+   */
+  function withArgs(g, args) {
+    const { ps: old, ...rest } = g;
+    const ps = !isSchema(g.n) ? null : old || (g.args.every(a => a.t === 'var') ? g.args.map(a => a.n) : null);
+    if (!ps || args.every((a, i) => a.t === 'var' && a.n === ps[i])) return { ...rest, args };
+    return { ...rest, args, ps };
+  }
+  /**
+   * Podstawienie widoczne w schemacie: pary [x, t] (bez powtórzeń zmiennych, w kolejności ps)
+   * i czy wystarczy zapis φ[x/t] — gdy zmienne φ są różne i wszystkie zostały podstawione.
+   */
+  function schemaSubst(f) {
+    const pairs = [], seen = new Set();
+    f.ps.forEach((x, i) => {
+      if (seen.has(x)) return;
+      seen.add(x);
+      const t = f.args[i];
+      if (!(t.t === 'var' && t.n === x)) pairs.push([x, t]);
+    });
+    return { pairs, short: pairs.length === f.ps.length };
+  }
+
   /** Metazmienna (α, β, γ) — tylko w opisach reguł, nigdy w dowodzie. */
   const META = n => ({ t: 'meta', n });
   const NOT = a => ({ t: 'not', a });
@@ -114,18 +147,23 @@
    * Na kolokwiach i egzaminach zasięg kwantyfikatora sięga do nawiasu zamykającego — bez nawiasów
    * zapis ∀x p(x) ⇒ q zostałby przeczytany jako ∀x (p(x) ⇒ q).
    */
-  function printer(sym, { clear = false } = {}) {
+  function printer(sym, { clear = false, schema = true } = {}) {
     const args = xs => sym.lp + xs.map(x => go(x)).join(sym.comma) + sym.rp;
+    const sub = pairs => sym.lb + pairs.map(([x, t]) => sym.name(x) + sym.slash + go(t)).join(sym.comma) + sym.rb;
     /** tail — czy po formule nic już nie stoi (aż do nawiasu zamykającego albo do końca). */
     const go = (f, tail = true) => {
       switch (f.t) {
         case 'v':
           if (isInfix(f)) return go(f.args[0]) + sym.rel(f.n) + go(f.args[1]);
+          if (schema && f.ps) {
+            const { pairs, short } = schemaSubst(f);
+            return sym.name(f.n) + (short ? '' : args(f.ps.map(VAR))) + sub(pairs);
+          }
           return sym.name(f.n) + (f.args && f.args.length ? args(f.args) : '');
         case 'var': return sym.name(f.n);
         case 'fn': return sym.name(f.n) + (f.args.length ? args(f.args) : '');
         case 'meta': return sym.meta(f.n);
-        case 'msub': return wrap(f.a, PREC[f.a.t] < PREC.msub) + sym.subst(sym.name(f.x), go(f.s));
+        case 'msub': return wrap(f.a, PREC[f.a.t] < PREC.msub) + sub([[f.x, f.s]]);
         case 'T': return sym.T;
         case 'F': return sym.F;
         // ¬(x = y), a nie ¬x = y
@@ -147,7 +185,7 @@
   }
 
   const TEX_GREEK = { α: '\\alpha', β: '\\beta', γ: '\\gamma', φ: '\\phi', ψ: '\\psi', χ: '\\chi', θ: '\\theta', ϑ: '\\vartheta' };
-  const UNICODE = { T: '⊤', F: '⊥', not: '¬', and: ' ∧ ', or: ' ∨ ', imp: ' ⇒ ', all: '∀', ex: '∃', qsep: ' ', lp: '(', rp: ')', comma: ', ' };
+  const UNICODE = { T: '⊤', F: '⊥', not: '¬', and: ' ∧ ', or: ' ∨ ', imp: ' ⇒ ', all: '∀', ex: '∃', qsep: ' ', lp: '(', rp: ')', comma: ', ', lb: '[', rb: ']', slash: '/' };
   const plainName = n => { if (isNumeral(n)) return n; const { base, digits } = splitName(n); return base + subDigits(digits); };
   const htmlName = n => { if (isNumeral(n)) return n; const { base, digits } = splitName(n); return `<i>${base}</i>${digits ? `<sub>${digits}</sub>` : ''}`; };
   const texName = n => {
@@ -157,20 +195,26 @@
     return b + (digits ? (digits.length > 1 ? `_{${digits}}` : '_' + digits) : '');
   };
 
-  /** Klucz: zwarta, jednoznaczna postać — do porównań, map i zapisu (zgodna ze starszymi linkami). */
-  const key = memo(printer({
+  const KEY_SYMBOLS = {
     name: n => n, meta: n => '?' + n, T: 'T', F: 'F', not: '~', and: '&', or: '|', imp: '>', all: 'A', ex: 'E', qsep: ' ',
-    lp: '(', rp: ')', comma: ',', subst: (x, t) => `[${x}/${t}]`, rel: n => n,
-  }));
+    lp: '(', rp: ')', comma: ',', lb: '[', rb: ']', slash: '/', rel: n => n,
+  };
+  /**
+   * Klucz: zwarta, jednoznaczna postać — do porównań i map. Pomija zapis podstawienia w schematach
+   * (φ[x/a] i φ(a) to ta sama formuła), więc jest zgodny ze starszymi linkami.
+   */
+  const key = memo(printer(KEY_SYMBOLS, { schema: false }));
+  /** Zapis (link, localStorage, historia zmian): jak klucz, ale z podstawieniem w schematach — φ[x/a]. */
+  const code = memo(printer(KEY_SYMBOLS));
   /** Zwykły tekst (Unicode). */
-  const text = printer({ ...UNICODE, name: plainName, meta: n => n, subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].text} ` }, { clear: true });
+  const text = printer({ ...UNICODE, name: plainName, meta: n => n, rel: n => ` ${INFIX[n].text} ` }, { clear: true });
   /** HTML: nazwy kursywą. Bezpieczne — nazwy pochodzą z białej listy parsera. */
-  const html = printer({ ...UNICODE, name: htmlName, meta: n => `<i>${n}</i>`, subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].html} ` }, { clear: true });
+  const html = printer({ ...UNICODE, name: htmlName, meta: n => `<i>${n}</i>`, rel: n => ` ${INFIX[n].html} ` }, { clear: true });
   /** LaTeX (tryb matematyczny). */
   const tex = printer({
     name: texName, meta: n => TEX_GREEK[n] || n, T: '\\top', F: '\\bot', not: '\\neg ',
     and: ' \\land ', or: ' \\lor ', imp: ' \\Rightarrow ', all: '\\forall ', ex: '\\exists ', qsep: '\\, ',
-    lp: '(', rp: ')', comma: ', ', subst: (x, t) => `[${x}/${t}]`, rel: n => ` ${INFIX[n].tex} `,
+    lp: '(', rp: ')', comma: ', ', lb: '[', rb: ']', slash: '/', rel: n => ` ${INFIX[n].tex} `,
   }, { clear: true });
 
   /** Formuła jako fragmenty tekstu z informacją o kursywie (do rysowania SVG/PNG): litery kursywą, liczby prosto. */
@@ -192,21 +236,21 @@
   ];
   /** Rachunek kwantyfikatorów — sprawdzane przed TOKENS („!=” przed „!”, „>=” przed „>”). */
   const FO_TOKENS = [
-    ['∀', 'all'], ['∃', 'ex'], [',', 'comma'], ['.', 'dot'],
+    ['∀', 'all'], ['∃', 'ex'], [',', 'comma'], ['.', 'dot'], ['[', 'lb'], [']', 'rb'],
     ['<=', 'le'], ['>=', 'ge'], ['!=', 'ne'], ['≤', 'le'], ['≥', 'ge'], ['≠', 'ne'],
   ];
   /**
-   * Sprawdzane po TOKENS, by „=>” zostało implikacją. Znak „>” jest tokenem implikacji (tak zapisuje
+   * Sprawdzane po TOKENS, by „=>” zostało implikacją, a „/\\” koniunkcją („/” — w podstawieniu φ[x/a]). Znak „>” jest tokenem implikacji (tak zapisuje
    * ją też klucz formuły) — dopiero parser czyta go jako relację, gdy stoi po termie (x > 0).
    */
-  const FO_LATE_TOKENS = [['=', 'eq'], ['<', 'lt']];
+  const FO_LATE_TOKENS = [['=', 'eq'], ['<', 'lt'], ['/', 'slash']];
   /** Relacje między termami: token → nazwa symbolu (≠ — skrót negacji równości). */
   const RELATION_TOKENS = { eq: '=', lt: '<', le: '≤', ge: '≥', ne: '≠' };
   const CONSTANTS = { T: 'T', 1: 'T', F: 'F', 0: 'F' };
   /** Równoważności nie ma wśród spójników systemu (rozdz. 2.9 traktuje ją jako skrót). */
   const IFF = ['<->', '<=>', '⇔', '↔'];
   const SUB_INPUT = { '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4', '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9' };
-  const FO_SYMBOLS = 'zmienne to u–z, stałe a–e i liczby, symbole funkcyjne f–h, relacyjne p–t, P–S, φ, ψ oraz =, <, >, ≤, ≥, ≠';
+  const FO_SYMBOLS = 'zmienne to u–z, stałe a–e i liczby, symbole funkcyjne f–h, relacyjne p–t, P–S, φ, ψ (także z podstawieniem: φ[x/a]) oraz =, <, >, ≤, ≥, ≠';
 
   /** Nazwa w rachunku kwantyfikatorów: litera, a po niej cyfry (także ₀–₉ albo _0). */
   function readName(src, i) {
@@ -352,7 +396,11 @@
       if (x.t === 'F') { k++; return BOT; }
       if (x.t === 'id') {
         const cls = classOf(x.n);
-        if (cls === 'rel') { k++; return ATOM(x.n, termList()); }
+        if (cls === 'rel') {
+          k++;
+          const args = termList();
+          return peek() && peek().t === 'lb' ? substituted(x.n, args) : ATOM(x.n, args);
+        }
         if (!cls) throw new ParseError(`Nieznany symbol ${plainName(x.n)} — ${FO_SYMBOLS}`);
         // term na początku formuły atomowej: relacja między termami (x = y, f(x) > 0)
         const left = term(), op = relation();
@@ -371,6 +419,31 @@
       }
       throw new ParseError('Nieoczekiwany symbol — brakuje argumentu spójnika');
     }
+    /** Schemat z podstawieniem: φ[x/a] albo φ(x, y)[x/a] (zmienne schematu — w nawiasie albo przed ukośnikami). */
+    function substituted(n, args) {
+      if (!isSchema(n)) {
+        throw new ParseError(`Zapis [x/t] jest tylko dla schematów φ, ψ, χ — w ${plainName(n)}(…) wpisz od razu termy, np. ${plainName(n)}(a)`);
+      }
+      k++;
+      const pairs = [];
+      do {
+        const v = toks[k];
+        if (!v || v.t !== 'id' || classOf(v.n) !== 'var') throw new ParseError('W podstawieniu [x/t] przed ukośnikiem stoi zmienna, np. φ[x/a]');
+        k++;
+        if (!eat('slash')) throw new ParseError('Brakuje ukośnika w podstawieniu — zapisz je jak φ[x/a]');
+        if (pairs.some(([y]) => y === v.n)) throw new ParseError(`Zmienna ${plainName(v.n)} występuje w podstawieniu dwa razy`);
+        pairs.push([v.n, term()]);
+      } while (eat('comma'));
+      if (!eat('rb')) throw new ParseError('Brakuje nawiasu ] zamykającego podstawienie');
+      const ps = args.length ? args : pairs.map(([y]) => VAR(y));
+      if (!ps.every(a => a.t === 'var')) {
+        throw new ParseError(`Podstawienie [x/t] można zapisać, gdy argumentami ${plainName(n)} są zmienne, np. ${plainName(n)}(x)[x/a]`);
+      }
+      const missing = pairs.find(([y]) => !ps.some(a => a.n === y));
+      if (missing) throw new ParseError(`Zmiennej ${plainName(missing[0])} nie ma wśród argumentów ${plainName(n)}`);
+      const by = new Map(pairs);
+      return withArgs(ATOM(n, ps), ps.map(a => by.get(a.n) || a));
+    }
     const done = () => {
       if (k < toks.length) {
         throw new ParseError(toks[k].t === 'rp' ? 'Zbędny nawias zamykający' : 'Nieoczekiwany symbol — może brakuje spójnika?');
@@ -387,7 +460,7 @@
   function checkSize(toks, limits = LIMITS) {
     if (!toks.length) throw new ParseError('Pusta formuła');
     // Każdy token daje co najwyżej jeden węzeł, więc ten limit ogranicza też głębokość rekurencji.
-    if (toks.filter(t => !['lp', 'rp', 'comma', 'dot'].includes(t.t)).length > limits.size) {
+    if (toks.filter(t => !['lp', 'rp', 'comma', 'dot', 'lb', 'rb', 'slash'].includes(t.t)).length > limits.size) {
       throw new ParseError(`Formuła jest za duża (maks. ${limits.size} symboli)`);
     }
   }
@@ -437,9 +510,10 @@
   });
   const isFree = (x, f) => freeVars(f).includes(x);
 
-  /** Wszystkie nazwy zmiennych występujące w formule (wolne, związane i wiązane). */
+  /** Wszystkie nazwy zmiennych występujące w formule (wolne, związane i wiązane, także x w zapisie φ[x/a]). */
   function allVars(f, acc = new Set()) {
     if (f.t === 'var') acc.add(f.n);
+    if (f.ps) f.ps.forEach(x => acc.add(x));
     if (isQuant(f)) acc.add(f.x);
     if (f.args) f.args.forEach(x => allVars(x, acc));
     if (f.a) allVars(f.a, acc);
@@ -461,8 +535,10 @@
           if (g.n !== x) return g;
           if (tv.some(v => bound.has(v))) { ok = false; return g; }
           return t;
-        case 'fn': case 'v':
-          return g.args && g.args.length ? { ...g, args: g.args.map(a => rec(a, bound)) } : g;
+        case 'fn':
+          return g.args.length ? { ...g, args: g.args.map(a => rec(a, bound)) } : g;
+        case 'v':                                        // schemat: φ(x)[x/t] = φ[x/t], nie φ(t)
+          return g.args && g.args.length ? withArgs(g, g.args.map(a => rec(a, bound))) : g;
         case 'all': case 'ex':
           if (g.x === x) return g;                       // x jest tu związana — brak wolnych wystąpień
           return isFree(x, g.a) ? { ...g, a: rec(g.a, new Set([...bound, g.x])) } : g;
@@ -587,7 +663,7 @@
 
   ND.F = Object.freeze({
     VARS, ALL_VARS, FO, LIMITS, TOP, BOT, V, ATOM, META, NOT, AND, OR, IMP, ALL, EX, VAR, FN, MSUB,
-    isFormula, isTerm, isPrintable, isQuant, isInfix, isNumeral, size, key, text, html, tex, runs, eq, plainName, htmlName, texName,
+    isFormula, isTerm, isPrintable, isQuant, isInfix, isNumeral, isSchema, withArgs, size, key, code, text, html, tex, runs, eq, plainName, htmlName, texName,
     ParseError, parse, parseTerm, classOf, arityClash,
     freeVars, isFree, allVars, subst, match, freshVar, termsOf, isVarName,
     subformulas, vars, evaluate, countermodel, entails,

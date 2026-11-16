@@ -98,6 +98,11 @@ select { font: inherit; padding: 7px 8px; border-radius: 9px; border: 1px solid 
   background: var(--panel); background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
+.beta {
+  flex: 0 0 calc(100% + 40px); margin: -10px -20px 0; padding: 5px 16px; display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: #fdecec; background: color-mix(in srgb, var(--err) 12%, var(--panel)); color: var(--err); border-bottom: 1px solid var(--err); font-size: .86rem; font-weight: 700; text-align: center;
+}
+.beta .ic { width: 16px; height: 16px; }
 .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .brand > div { min-width: 0; }
 .logo { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-family: var(--math); font-size: 22px; font-weight: 700; flex: none; }
@@ -454,6 +459,7 @@ main, aside { min-width: 0; }
 }
 @media (max-width: 640px) {
   .top { padding: 8px 12px 8px 16px; gap: 8px; }
+  .beta { flex-basis: calc(100% + 28px); margin: -8px -12px 0 -16px; font-size: .8rem; }
   .top .sp { display: none; }
   .brand { flex: 1; }
   .brand h1 { font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

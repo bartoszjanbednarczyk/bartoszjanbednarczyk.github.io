@@ -16,7 +16,7 @@
    ===================================================================== */
 (function (ND) {
   'use strict';
-  const { TOP, BOT, META, NOT, AND, OR, IMP, ALL: FORALL, EX: EXISTS, VAR, MSUB, eq, subst, match, isFree, freeVars, isVarName, freshVar, text, key, isTerm, termsOf, allVars, FO } = ND.F;
+  const { TOP, BOT, META, NOT, AND, OR, IMP, ALL: FORALL, EX: EXISTS, VAR, MSUB, eq, subst, match, withArgs, isFree, freeVars, isVarName, freshVar, text, key, isTerm, termsOf, allVars, FO } = ND.F;
   const { T } = ND.Seg;
   const P = ND.Proof;
 
@@ -154,7 +154,7 @@
         return g.args && g.args.length ? { ...g, args: g.args.map(a => rec(a, blocked)) } : g;
       }
       switch (g.t) {
-        case 'v': return g.args && g.args.length ? { ...g, args: g.args.map(a => rec(a, blocked)) } : g;
+        case 'v': return g.args && g.args.length ? withArgs(g, g.args.map(a => rec(a, blocked))) : g;
         case 'all': case 'ex': return { ...g, a: rec(g.a, blocked || tv.includes(g.x)) };
         case 'not': return { ...g, a: rec(g.a, blocked) };
         case 'and': case 'or': case 'imp': return { ...g, a: rec(g.a, blocked), b: rec(g.b, blocked) };
@@ -173,13 +173,28 @@
     const spare = FO.vars.find(n => !names.has(n)) || freshVar('x', names);
     for (const t of termsOf(A).values()) {
       if (t.t === 'var' ? !isFree(t.n, A) : onlyVars) continue;
-      const x = t.t === 'var' ? t.n : spare;
-      const g = Q(x, t.t === 'var' ? A : abstract(A, t, x));
-      if (!match(g.a, g.x, A) || seen.has(key(g))) continue;
-      seen.add(key(g));
-      out.push(g);
+      // najpierw zmienne schematów, za które podstawiono t: z φ[x/a] — ∃x φ(x)
+      const own = t.t === 'var' ? t.n : spare;
+      for (const x of [...schemaVarsFor(A, t), own]) {
+        const g = Q(x, x === own && t.t === 'var' ? A : abstract(A, t, x));
+        if (!match(g.a, g.x, A) || seen.has(key(g))) continue;
+        seen.add(key(g));
+        out.push(g);
+      }
     }
     return out;
+  }
+
+  /** Zmienne schematów z A, za które podstawiono term t (φ[x/t] → x). */
+  function schemaVarsFor(A, t) {
+    const k = key(t), out = new Set();
+    const rec = g => {
+      if (g.ps) g.args.forEach((a, i) => { if (key(a) === k) out.add(g.ps[i]); });
+      if (g.a) rec(g.a);
+      if (g.b) rec(g.b);
+    };
+    rec(A);
+    return [...out];
   }
 
   /** Zmienna `y`, przy której α[x/y] jest jedną z hipotez `hyps` (do (∃e) „od przesłanek”). */

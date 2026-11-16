@@ -191,7 +191,7 @@
   /** Symbole, które w którymś fragmencie mają różną liczbę argumentów (np. p i p(a)). */
   const clashingSymbols = () => new Set(state.frags.map(r => F.arityClash(Proof.formulas(r))).filter(Boolean));
   /** Stan przed zmianą: klucze formuł i symbole z kolizjami (starsze zapisy bywają nimi obciążone). */
-  const readability = () => ({ keys: new Set(allFormulas().map(F.key)), clashes: clashingSymbols() });
+  const readability = () => ({ keys: new Set(allFormulas().map(F.code)), clashes: clashingSymbols() });
 
   /**
    * Zapis musi się dać odczytać (z localStorage i z linku czyta się go ściśle): każda nowa formuła
@@ -201,7 +201,7 @@
   function unreadableChange(before) {
     const arity = n => `Symbol ${F.plainName(n)} miałby w jednym dowodzie różną liczbę argumentów — ten krok cofnięto`;
     for (const f of allFormulas()) {
-      const k = F.key(f);
+      const k = F.code(f);
       if (before.keys.has(k)) continue;
       try { F.parse(k, { logic }); } catch (e) {
         const n = F.arityClash([f]);

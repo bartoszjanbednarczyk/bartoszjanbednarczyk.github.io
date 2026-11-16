@@ -136,6 +136,39 @@ test('podstawienia: dopuszczalność (Def. 52) i dopasowanie α[x/t] = β', () =
   assert.equal(F.freshVar('x', new Set(['x0', 'x1'])), 'x2');
 });
 
+test('schematy φ, ψ: podstawienie daje φ[x/a], nie φ(a); konkretne relacje podstawia się zwykle', () => {
+  const a = T('a');
+  assert.equal(F.text(F.subst(P('φ(x) ∧ p(x)'), 'x', a)), 'φ[x/a] ∧ p(a)');
+  assert.equal(F.tex(F.subst(P('φ(x)'), 'x', T('x0'))), '\\phi[x/x_0]');
+  assert.equal(F.text(F.subst(P('∀x φ(x, y)'), 'y', T('y0'))), '∀x φ(x, y)[y/y₀]');
+  assert.equal(F.text(F.subst(F.subst(P('φ(x, y)'), 'x', T('x0')), 'y', T('y0'))), 'φ[x/x₀, y/y₀]');
+  assert.equal(F.text(F.subst(P('φ(x, x)'), 'x', a)), 'φ(x, x)[x/a]');
+  assert.equal(F.text(F.subst(F.subst(P('φ(x)'), 'x', T('y')), 'y', T('x'))), 'φ(x)');
+  assert.equal(F.text(F.subst(P('φ(x, b)'), 'x', a)), 'φ(a, b)');   // argument nie jest zmienną — zwykle
+  // φ[x/a] to ta sama formuła co φ(a) (klucz), ale zapis pamięta podstawienie
+  const s = F.subst(P('φ(x)'), 'x', a);
+  assert.ok(F.eq(s, P('φ(a)')));
+  assert.equal(F.code(s), 'φ[x/a]');
+  // wpisywanie i ponowne czytanie
+  for (const src of ['φ[x/a]', 'φ(x, y)[y/f(z)]', 'φ[x/a, y/b]', '¬ψ[x/x0] ⇒ φ', '∀x φ(x, y)[y/y0]', 'φ(x, x)[x/a]']) {
+    const f = P(src);
+    assert.equal(F.code(P(F.text(f))), F.code(f), src);
+    assert.equal(F.code(P(F.code(f))), F.code(f), src);
+  }
+  assert.equal(F.text(P('φ[x/x]')), 'φ(x)');
+  for (const [src, msg] of [['p(x)[x/a]', /tylko dla schematów/], ['φ(a)[x/b]', /argumentami φ są zmienne/], ['φ(x)[y/a]', /nie ma wśród argumentów/],
+    ['φ[x/a, x/b]', /dwa razy/], ['φ[a/b]', /stoi zmienna/], ['φ[x/a', /nawiasu \]/]]) {
+    assert.throws(() => P(src), msg, src);
+  }
+  // zapis dowodu zachowuje φ[x/a]; (∃i) „od przesłanek” proponuje najpierw ∃x φ(x)
+  const m = Proof.node(s, 'allE', [Proof.node(P('∀x φ(x)'))]);
+  assert.equal(F.text(roundtrip(m).f), 'φ[x/a]');
+  assert.equal(F.text(Rules.get('exI').fwd.param.best([s], { openGoals: [] })[0]), '∃x φ(x)');
+  // dowód słowny: schemat z podstawieniem w nawiasach
+  const pf = proofOf(P('(∃x (φ(x) ∧ ψ(x))) ⇒ ∃x φ(x)'));
+  assert.match(Render.proseText(Explain.prose(pf, fo), {}), /𝔄 ⊨ \(φ\[x\/x₀\]\)\[v₁\]/);
+});
+
 /* ---------- reguły ---------- */
 
 test('reguły dla kwantyfikatorów „od celu” dają węzły, które przechodzą weryfikację', () => {

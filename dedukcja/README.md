@@ -7,7 +7,8 @@ Trzy działy (zakładki pod nagłówkiem):
 
 - **Rachunek zdań** — dedukcja naturalna z rozdz. 2.9 skryptu, uzupełniona o regułę (wś) — prawo wyłączonego środka α ∨ ¬α bez przesłanek (w tabeli reguł obok „założenia”; dostępna też w rachunku kwantyfikatorów, ale dowodzący i podpowiedzi z niej nie korzystają) (link `#d=…`),
 - **Rachunek kwantyfikatorów** — dedukcja naturalna z rozdz. 3.3: termy z funkcjami (także stałe liczbowe 0, 42),
-  relacje pisane między argumentami (=, <, >, ≤, ≥, ≠ jako skrót ¬(x = y)), symbole relacyjne p–t, P–S, φ, ψ,
+  relacje pisane między argumentami (=, <, >, ≤, ≥, ≠ jako skrót ¬(x = y)), symbole relacyjne p–t, P–S, φ, ψ
+  (φ, ψ, χ to schematy: podstawienie daje φ[x/a], nie φ(a); wpisuje się je też jako `φ[x/a]`, `φ(x, y)[y/a]`),
   reguły (∀i), (∀e), (∃i), (∃e), okna ze świeżymi zmiennymi, dowód słowny ze strukturą 𝔄 i wartościowaniami
   (link `#q=…`); aplikacja zakłada, że dowodzone formuły są tautologiami (bez kontrprzykładów),
 - **Rezolucja** — rezolucyjne dowody sprzeczności dla rachunku zdań z rozdz. 2.7 (link `#r=…`):
