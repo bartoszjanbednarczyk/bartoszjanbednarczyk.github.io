@@ -125,6 +125,9 @@
 \NewDocumentCommand{\entry}{m m m +m}{%
   \Needspace{3.2\baselineskip}\item[{\datefont #1}]{\titlefont #2}\ifblank{#3}{}{\nobreak\hfill\nobreak{\placefont\hspace{3mm}#3}}%
   \ifblank{#4}{}{\par\vspace{1pt}{\small #4\par}}}
+% further line of the same entry (title + right column), e.g. a second role under one label
+\NewDocumentCommand{\moreentry}{m m}{%
+  \par\vspace{2pt}{\titlefont #1}\ifblank{#2}{}{\nobreak\hfill\nobreak{\placefont\hspace{3mm}#2}}}
 % two-line date range for the label column
 \newcommand{\range}[2]{#1\\[-1.5pt]{\FiraBook\scriptsize\color{muted}to\hspace{0.28em}#2}}
 
