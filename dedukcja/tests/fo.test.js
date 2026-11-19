@@ -426,6 +426,50 @@ test('wstawienie fragmentu i nowe okno „od przesłanek”: zmienne okien wewn�
   assert.equal(Rules.verify([root]).size, 0);
 });
 
+test('wpisywanie: schemat podaje w nawiasie zmienne wolne (φ(x), φ()), podstawienie jako φ[x/a]', () => {
+  const I = s => F.parse(s, { logic: 'fo', input: true });
+  const err = (s, re) => assert.throws(() => I(s), e => e instanceof F.ParseError && re.test(e.message), s);
+  // samo φ — błąd z podpowiedzią; φ() — schemat bez zmiennych wolnych, wypisywany jak w skrypcie
+  err('Ex φ -> Ax φ', /φ to schemat formuły — podaj w nawiasie jego zmienne wolne, np\. φ\(x\), albo napisz φ\(\)/);
+  err('ψ', /ψ to schemat/);
+  const closed = I('(Ax (φ() -> ψ(x))) -> (φ() -> Ax ψ(x))');
+  assert.ok(F.eq(closed, P('(Ax (φ -> ψ(x))) -> (φ -> Ax ψ(x))')));       // jak dawne φ (linki)
+  assert.equal(F.text(closed), '(∀x (φ ⇒ ψ(x))) ⇒ φ ⇒ ∀x ψ(x)');
+  assert.equal(F.source(closed), '(∀x (φ() ⇒ ψ(x))) ⇒ φ() ⇒ ∀x ψ(x)');
+  assert.ok(F.eq(I(F.source(closed)), closed));
+  assert.equal(F.code(closed), F.code(P(F.code(closed))));                // zapis bez zmian
+  // w nawiasie tylko różne zmienne; termy — przez podstawienie
+  err('φ(a)', /W nawiasie przy φ podaje się zmienne wolne — podstawienie termu zapisz jako φ\(x\)\[x\/a\]/);
+  err('Ax ψ(f(x))', /ψ\(x\)\[x\/f\(x\)\]/);
+  err('φ(x, b)', /podstawienie termu/);
+  err('φ(x, x)', /Zmienna x występuje w nawiasie przy φ dwa razy/);
+  err('φ()[x/a]', /φ\(\) nie ma zmiennych wolnych/);
+  err('φ() -> φ(x)', /Schemat φ występuje w formule z różną liczbą zmiennych wolnych/);
+  err('p()', /Puste nawiasy/);                                             // konkretne relacje bez zmian
+  assert.ok(F.eq(I('φ(x)[x/a]'), P('φ[x/a]')));
+  assert.ok(F.eq(I('φ[x/a]'), P('φ(a)')));
+  assert.ok(F.eq(I('φ(x, y)[y/f(x)]'), P('φ(x, f(x))')));
+  assert.ok(F.eq(I('Ax Ey φ(x, y)'), P('Ax Ey φ(x, y)')));
+  assert.ok(F.eq(I('p(a) & q -> p(f(a))'), P('p(a) & q -> p(f(a))')));    // p(a), q — bez zmian
+  // bez opcji input (linki, zapisane dowody) starszy zapis nadal się wczytuje
+  for (const s of ['φ', 'φ(a)', 'φ(x, b)', 'φ(x, x)', 'Ex φ -> Ax φ']) assert.doesNotThrow(() => P(s), s);
+  // propozycje kreatora wracają do pola jako poprawny wpis
+  for (const s of ['φ(x)[x/a]', 'φ(x, y)[y/x]', 'Ax (φ() | ψ(x, y)[y/c])', 'φ[x/x0] -> ψ(x0)']) {
+    const f = I(s);
+    assert.ok(F.eq(I(F.source(f)), f), s);
+    assert.equal(F.code(I(F.source(f))), F.code(f), s);
+  }
+});
+
+test('zadania rachunku kwantyfikatorów dają się wpisać tak, jak są zapisane (φ(x), φ())', () => {
+  assert.ok(Examples.FO.LIST.length > 50);
+  for (const e of Examples.FO.LIST) {
+    assert.doesNotThrow(() => F.parse(e.formula, { logic: 'fo', input: true }), e.title);
+    const f = P(e.formula);
+    assert.ok(F.eq(F.parse(F.source(f), { logic: 'fo', input: true }), f), e.title);
+  }
+});
+
 if (failures.length) {
   console.error(failures.join('\n\n'));
   console.error(`\n${failures.length} z ${passed + failures.length} testów nie przeszło`);

@@ -35,7 +35,7 @@
       EDIT,
     ],
     fo: [
-      ['relacje', F.FO.rels.map(r => italic(r + '(', r, `symbol relacyjny ${r}`))],
+      ['relacje', F.FO.rels.map(r => italic(r + '(', r, F.isSchema(r) ? `schemat ${r} — w nawiasie jego zmienne wolne: ${r}(x), ${r}(x, y), ${r}()` : `symbol relacyjny ${r}`))],
       ['porównania', F.FO.infix.map(s => sym(s, Render.esc(s), RELATION_TITLES[s]))],
       ...TERMS,
       ['spójniki', ['∀', '∃', '¬', '∧', '∨', '⇒', '⊤', '⊥'].map(s => sym(s))],
@@ -111,7 +111,7 @@
     if (!v.trim()) html = `<span class="muted">Tu pojawi się podgląd ${term ? 'termu' : 'formuły'}.</span>`;
     else {
       try {
-        f = term ? F.parseTerm(v) : F.parse(v, { logic: UI.store.logic() });
+        f = term ? F.parseTerm(v) : F.parse(v, { logic: UI.store.logic(), input: true });
         const problem = pending && pending.check ? pending.check(f) : null;
         if (problem) { html = `<span class="bad">${Render.esc(problem)}</span>`; f = null; }
         else html = `<span class="ok">✓</span> ${Render.math(f)}`;
@@ -135,7 +135,7 @@
       const c = document.createElement('button');
       c.type = 'button';
       c.innerHTML = F.html(f);
-      c.addEventListener('click', () => { input().value = F.text(f); preview(); input().focus(); });
+      c.addEventListener('click', () => { input().value = F.source(f); preview(); input().focus(); });
       box.appendChild(c);
     });
     $('askSuggestWrap').hidden = !list.length;

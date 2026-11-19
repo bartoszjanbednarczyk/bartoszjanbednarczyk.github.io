@@ -7,6 +7,8 @@
                                                 relacje =, <, >, ≤, ≥ to symbole o takich nazwach (x = y)
                   { t: 'v', n, args, ps }       — schemat po podstawieniu: φ(x)[x/a] (ps — zmienne φ(x),
                                                 args — termy po podstawieniu), wypisywany jako φ[x/a]
+                                                Schemat bez argumentów to φ bez zmiennych wolnych — wpisuje
+                                                się go jako φ(), a wypisuje jako φ (jak w skrypcie).
                   { t: 'T' } | { t: 'F' }       — ⊤, ⊥
                   { t: 'not', a } | { t: 'and' | 'or' | 'imp', a, b }
                   { t: 'all' | 'ex', x, a }     — ∀x α, ∃x α (x — nazwa zmiennej)
@@ -147,7 +149,7 @@
    * Na kolokwiach i egzaminach zasięg kwantyfikatora sięga do nawiasu zamykającego — bez nawiasów
    * zapis ∀x p(x) ⇒ q zostałby przeczytany jako ∀x (p(x) ⇒ q).
    */
-  function printer(sym, { clear = false, schema = true } = {}) {
+  function printer(sym, { clear = false, schema = true, closed = false } = {}) {
     const args = xs => sym.lp + xs.map(x => go(x)).join(sym.comma) + sym.rp;
     const sub = pairs => sym.lb + pairs.map(([x, t]) => sym.name(x) + sym.slash + go(t)).join(sym.comma) + sym.rb;
     /** tail — czy po formule nic już nie stoi (aż do nawiasu zamykającego albo do końca). */
@@ -159,6 +161,8 @@
             const { pairs, short } = schemaSubst(f);
             return sym.name(f.n) + (short ? '' : args(f.ps.map(VAR))) + sub(pairs);
           }
+          // schemat bez zmiennych wolnych: na ekranie φ (jak w skrypcie), do wpisania φ()
+          if (closed && isSchema(f.n) && !(f.args && f.args.length)) return sym.name(f.n) + sym.lp + sym.rp;
           return sym.name(f.n) + (f.args && f.args.length ? args(f.args) : '');
         case 'var': return sym.name(f.n);
         case 'fn': return sym.name(f.n) + (f.args.length ? args(f.args) : '');
@@ -208,6 +212,11 @@
   const code = memo(printer(KEY_SYMBOLS));
   /** Zwykły tekst (Unicode). */
   const text = printer({ ...UNICODE, name: plainName, meta: n => n, rel: n => ` ${INFIX[n].text} ` }, { clear: true });
+  /**
+   * Zapis do wpisania w kreatorze (np. kliknięta propozycja): jak `text`, ale schemat bez zmiennych
+   * wolnych to φ() — przy wpisywaniu każdy schemat podaje w nawiasie swoje zmienne wolne.
+   */
+  const source = printer({ ...UNICODE, name: plainName, meta: n => n, rel: n => ` ${INFIX[n].text} ` }, { clear: true, closed: true });
   /** HTML: nazwy kursywą. Bezpieczne — nazwy pochodzą z białej listy parsera. */
   const html = printer({ ...UNICODE, name: htmlName, meta: n => `<i>${n}</i>`, rel: n => ` ${INFIX[n].html} ` }, { clear: true });
   /** LaTeX (tryb matematyczny). */
@@ -250,7 +259,7 @@
   /** Równoważności nie ma wśród spójników systemu (rozdz. 2.9 traktuje ją jako skrót). */
   const IFF = ['<->', '<=>', '⇔', '↔'];
   const SUB_INPUT = { '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4', '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9' };
-  const FO_SYMBOLS = 'zmienne to u–z, stałe a–e i liczby, symbole funkcyjne f–h, relacyjne p–t, P–S, φ, ψ (także z podstawieniem: φ[x/a]) oraz =, <, >, ≤, ≥, ≠';
+  const FO_SYMBOLS = 'zmienne to u–z, stałe a–e i liczby, symbole funkcyjne f–h, relacyjne p–t, P–S, schematy φ(x), ψ(x, y), χ() (także z podstawieniem: φ[x/a]) oraz =, <, >, ≤, ≥, ≠';
 
   /** Nazwa w rachunku kwantyfikatorów: litera, a po niej cyfry (także ₀–₉ albo _0). */
   function readName(src, i) {
@@ -324,6 +333,7 @@
   /** Sprawdza, że każdy symbol ma w całej formule tę samą liczbę argumentów. */
   function checkArities(f) {
     const n = arityClash([f]);
+    if (n && isSchema(n)) throw new ParseError(`Schemat ${plainName(n)} występuje w formule z różną liczbą zmiennych wolnych (np. ${plainName(n)}() i ${plainName(n)}(x))`);
     if (n) throw new ParseError(`Symbol ${plainName(n)} występuje w formule z różną liczbą argumentów`);
   }
 
@@ -333,7 +343,7 @@
    * kwantyfikator wiąże jak negacja, a kropka (∀x. α) rozciąga jego zasięg maksymalnie w prawo.
    * Relacje =, <, >, ≤, ≥ (i ≠ jako ¬(x = y)) pisze się między termami: f(x) > 0.
    */
-  function makeParser(toks, fo) {
+  function makeParser(toks, fo, input = false) {
     let k = 0;
     const peek = () => toks[k];
     const eat = t => (toks[k] && toks[k].t === t ? toks[k++] : null);
@@ -398,8 +408,17 @@
         const cls = classOf(x.n);
         if (cls === 'rel') {
           k++;
-          const args = termList();
-          return peek() && peek().t === 'lb' ? substituted(x.n, args) : ATOM(x.n, args);
+          const paren = !!peek() && peek().t === 'lp';
+          if (paren && isSchema(x.n) && toks[k + 1] && toks[k + 1].t === 'rp') {   // φ() — bez zmiennych wolnych
+            k += 2;
+            if (peek() && peek().t === 'lb') {
+              throw new ParseError(`${plainName(x.n)}() nie ma zmiennych wolnych — nie ma czego podstawiać`);
+            }
+            return ATOM(x.n);
+          }
+          const args = termList(), sub = !!peek() && peek().t === 'lb';
+          if (input && isSchema(x.n)) schemaVars(x.n, args, paren || sub);
+          return sub ? substituted(x.n, args) : ATOM(x.n, args);
         }
         if (!cls) throw new ParseError(`Nieznany symbol ${plainName(x.n)} — ${FO_SYMBOLS}`);
         // term na początku formuły atomowej: relacja między termami (x = y, f(x) > 0)
@@ -418,6 +437,23 @@
         return f;
       }
       throw new ParseError('Nieoczekiwany symbol — brakuje argumentu spójnika');
+    }
+    /**
+     * Wpisywanie: schemat podaje w nawiasie swoje zmienne wolne — różne zmienne, np. φ(x, y);
+     * φ() — bez zmiennych wolnych. Samo φ byłoby symbolem 0-argumentowym, czyli formułą bez
+     * zmiennych wolnych, choć piszący zwykle ma na myśli φ(x). Podstawienie: φ(x)[x/a], φ[x/a].
+     */
+    function schemaVars(n, args, written) {
+      const N = plainName(n);
+      if (!written) {
+        throw new ParseError(`${N} to schemat formuły — podaj w nawiasie jego zmienne wolne, np. ${N}(x), albo napisz ${N}(), gdy nie ma zmiennych wolnych`);
+      }
+      const bad = args.find(a => a.t !== 'var');
+      if (bad) {
+        throw new ParseError(`W nawiasie przy ${N} podaje się zmienne wolne — podstawienie termu zapisz jako ${N}(x)[x/${text(bad)}]`);
+      }
+      const twice = args.find((a, i) => args.findIndex(b => b.n === a.n) !== i);
+      if (twice) throw new ParseError(`Zmienna ${plainName(twice.n)} występuje w nawiasie przy ${N} dwa razy — podaj różne zmienne wolne`);
     }
     /** Schemat z podstawieniem: φ[x/a] albo φ(x, y)[x/a] (zmienne schematu — w nawiasie albo przed ukośnikami). */
     function substituted(n, args) {
@@ -469,15 +505,17 @@
    * Czyta formułę; rzuca ParseError z komunikatem po polsku. Pilnuje limitów rozmiaru.
    * logic: 'prop' (rachunek zdań, domyślnie) albo 'fo' (rachunek kwantyfikatorów);
    * trusted — własna kopia aplikacji (np. z historii zmian): luźniejsze limity (odczyt kopii nie może
-   * się nie udać); arities — czy pilnować stałej liczby argumentów symboli (domyślnie tak).
+   * się nie udać); arities — czy pilnować stałej liczby argumentów symboli (domyślnie tak);
+   * input — formuła wpisana w kreatorze: schematy φ, ψ, χ muszą podać w nawiasie zmienne wolne
+   * (φ(x), φ()); bez tej opcji (linki, zapisane dowody, zadania) samo φ to schemat bez zmiennych wolnych.
    */
-  function parse(src, { logic = 'prop', trusted = false, arities = true } = {}) {
+  function parse(src, { logic = 'prop', trusted = false, arities = true, input = false } = {}) {
     const limits = trusted ? RELAXED : LIMITS;
     prepare(src, limits);
     const fo = logic === 'fo';
     const toks = tokenize(src, fo);
     checkSize(toks, limits);
-    const f = makeParser(toks, fo).formula();
+    const f = makeParser(toks, fo, input).formula();
     if (fo && arities) checkArities(f);
     return f;
   }
@@ -663,7 +701,7 @@
 
   ND.F = Object.freeze({
     VARS, ALL_VARS, FO, LIMITS, TOP, BOT, V, ATOM, META, NOT, AND, OR, IMP, ALL, EX, VAR, FN, MSUB,
-    isFormula, isTerm, isPrintable, isQuant, isInfix, isNumeral, isSchema, withArgs, size, key, code, text, html, tex, runs, eq, plainName, htmlName, texName,
+    isFormula, isTerm, isPrintable, isQuant, isInfix, isNumeral, isSchema, withArgs, size, key, code, text, source, html, tex, runs, eq, plainName, htmlName, texName,
     ParseError, parse, parseTerm, classOf, arityClash,
     freeVars, isFree, allVars, subst, match, freshVar, termsOf, isVarName,
     subformulas, vars, evaluate, countermodel, entails,

@@ -112,8 +112,9 @@
 
   /* =====================================================================
      Rachunek kwantyfikatorów (rozdz. 3.3): zadania z kolokwiów i egzaminów oraz przykłady i zadania
-     ze skryptu — same prawa rachunku kwantyfikatorów. Schematy φ, ψ zapisujemy jako symbole relacyjne:
-     φ(x), ψ(x) — formuły, w których x może występować wolno, φ — formuła bez wolnego x.
+     ze skryptu — same prawa rachunku kwantyfikatorów. Schematy φ, ψ zapisujemy jak przy wpisywaniu,
+     z ich zmiennymi wolnymi w nawiasie: φ(x), ψ(x) — formuły, w których x może występować wolno,
+     φ() — formuła bez zmiennych wolnych (na ekranie: φ, jak w skrypcie).
      Na kolokwiach i egzaminach zasięg kwantyfikatora sięga do nawiasu zamykającego
      („(∀x p(x) ⇒ q(x))” to ∀x (p(x) ⇒ q(x))) — tu zapisujemy to nawiasami (składnia aplikacji).
      ===================================================================== */
@@ -167,28 +168,28 @@
     { group: 'q149', title: 'Zadanie 166', formula: '(Ax φ(x)) -> Ex φ(x)', note: 'uniwersum jest niepuste' },
     { group: 'q149', title: 'Zadanie 169', formula: '(Ey Ax φ(x, y)) -> Ax Ey φ(x, y)', note: 'prawo; implikacja odwrotna (zad. 168) nie jest prawem' },
 
-    { group: 'q170', title: 'Zadanie 170 (⇒)', formula: '(Ax (φ -> ψ(x))) -> (φ -> Ax ψ(x))', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 170 (⇐)', formula: '(φ -> Ax ψ(x)) -> Ax (φ -> ψ(x))', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 171', formula: '(Ax (φ -> ψ(x))) -> (φ -> Ex ψ(x))', note: 'tylko w tę stronę' },
-    { group: 'q170', title: 'Zadanie 172', formula: '(Ax (ψ(x) -> φ)) -> ((Ax ψ(x)) -> φ)', note: 'tylko w tę stronę' },
-    { group: 'q170', title: 'Zadanie 173 (⇒)', formula: '(Ax (ψ(x) -> φ)) -> ((Ex ψ(x)) -> φ)', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 173 (⇐)', formula: '((Ex ψ(x)) -> φ) -> Ax (ψ(x) -> φ)', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 176 (⇒)', formula: '(Ex (φ -> ψ(x))) -> (φ -> Ex ψ(x))', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 176 (⇐)', formula: '(φ -> Ex ψ(x)) -> Ex (φ -> ψ(x))', note: 'formuły są równoważne · wymaga (¬¬e)' },
-    { group: 'q170', title: 'Zadanie 177', formula: '(φ -> Ax ψ(x)) -> Ex (φ -> ψ(x))', note: 'tylko w tę stronę' },
-    { group: 'q170', title: 'Zadanie 178', formula: '((Ex ψ(x)) -> φ) -> Ex (ψ(x) -> φ)', note: 'tylko w tę stronę' },
-    { group: 'q170', title: 'Zadanie 179 (⇒)', formula: '(Ex (ψ(x) -> φ)) -> ((Ax ψ(x)) -> φ)', note: 'formuły są równoważne' },
-    { group: 'q170', title: 'Zadanie 179 (⇐)', formula: '((Ax ψ(x)) -> φ) -> Ex (ψ(x) -> φ)', note: 'formuły są równoważne · wymaga (¬¬e)' },
+    { group: 'q170', title: 'Zadanie 170 (⇒)', formula: '(Ax (φ() -> ψ(x))) -> (φ() -> Ax ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 170 (⇐)', formula: '(φ() -> Ax ψ(x)) -> Ax (φ() -> ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 171', formula: '(Ax (φ() -> ψ(x))) -> (φ() -> Ex ψ(x))', note: 'tylko w tę stronę' },
+    { group: 'q170', title: 'Zadanie 172', formula: '(Ax (ψ(x) -> φ())) -> ((Ax ψ(x)) -> φ())', note: 'tylko w tę stronę' },
+    { group: 'q170', title: 'Zadanie 173 (⇒)', formula: '(Ax (ψ(x) -> φ())) -> ((Ex ψ(x)) -> φ())', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 173 (⇐)', formula: '((Ex ψ(x)) -> φ()) -> Ax (ψ(x) -> φ())', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 176 (⇒)', formula: '(Ex (φ() -> ψ(x))) -> (φ() -> Ex ψ(x))', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 176 (⇐)', formula: '(φ() -> Ex ψ(x)) -> Ex (φ() -> ψ(x))', note: 'formuły są równoważne · wymaga (¬¬e)' },
+    { group: 'q170', title: 'Zadanie 177', formula: '(φ() -> Ax ψ(x)) -> Ex (φ() -> ψ(x))', note: 'tylko w tę stronę' },
+    { group: 'q170', title: 'Zadanie 178', formula: '((Ex ψ(x)) -> φ()) -> Ex (ψ(x) -> φ())', note: 'tylko w tę stronę' },
+    { group: 'q170', title: 'Zadanie 179 (⇒)', formula: '(Ex (ψ(x) -> φ())) -> ((Ax ψ(x)) -> φ())', note: 'formuły są równoważne' },
+    { group: 'q170', title: 'Zadanie 179 (⇐)', formula: '((Ax ψ(x)) -> φ()) -> Ex (ψ(x) -> φ())', note: 'formuły są równoważne · wymaga (¬¬e)' },
 
     { group: 'q53', title: 'Przykład 54 (∀, ⇐)', formula: '(Ax φ(x)) & (Ax ψ(x)) -> Ax (φ(x) & ψ(x))', note: 'rozdzielność ∀ względem ∧' },
     { group: 'q53', title: 'Przykład 54 (∃, ⇒)', formula: '(Ex (φ(x) | ψ(x))) -> (Ex φ(x)) | (Ex ψ(x))', note: 'rozdzielność ∃ względem ∨' },
     { group: 'q53', title: 'Przykład 54 (∃, ⇐)', formula: '(Ex φ(x)) | (Ex ψ(x)) -> Ex (φ(x) | ψ(x))', note: 'rozdzielność ∃ względem ∨' },
-    { group: 'q53', title: 'Przykład 55 (∀, ∨)', formula: '(Ax (φ | ψ(x))) -> φ | Ax ψ(x)', note: 'wymaga (¬¬e)' },
-    { group: 'q53', title: 'Przykład 55 (∀, ∨, ⇐)', formula: 'φ | (Ax ψ(x)) -> Ax (φ | ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
-    { group: 'q53', title: 'Przykład 55 (∀, ∧)', formula: '(Ax (φ & ψ(x))) -> φ & Ax ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
-    { group: 'q53', title: 'Przykład 55 (∃, ∧)', formula: '(Ex (φ & ψ(x))) -> φ & Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
-    { group: 'q53', title: 'Przykład 55 (∃, ∧, ⇐)', formula: 'φ & (Ex ψ(x)) -> Ex (φ & ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
-    { group: 'q53', title: 'Przykład 55 (∃, ∨)', formula: '(Ex (φ | ψ(x))) -> φ | Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∨)', formula: '(Ax (φ() | ψ(x))) -> φ() | Ax ψ(x)', note: 'wymaga (¬¬e)' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∨, ⇐)', formula: 'φ() | (Ax ψ(x)) -> Ax (φ() | ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∀, ∧)', formula: '(Ax (φ() & ψ(x))) -> φ() & Ax ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∧)', formula: '(Ex (φ() & ψ(x))) -> φ() & Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∧, ⇐)', formula: 'φ() & (Ex ψ(x)) -> Ex (φ() & ψ(x))', note: 'wyłączanie φ spod kwantyfikatora' },
+    { group: 'q53', title: 'Przykład 55 (∃, ∨)', formula: '(Ex (φ() | ψ(x))) -> φ() | Ex ψ(x)', note: 'wyłączanie φ spod kwantyfikatora' },
 
     { group: 'qterm', title: 'Sokrates', formula: '(Ax (p(x) -> q(x))) & p(c) -> q(c)', note: 'każdy człowiek jest śmiertelny…' },
     { group: 'qterm', title: 'Podstawienie termu', formula: '(Ax p(x)) -> p(f(a))', note: 'reguła (∀e) z termem f(a)' },
