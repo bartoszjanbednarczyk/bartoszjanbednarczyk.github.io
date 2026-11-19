@@ -263,12 +263,15 @@ test('H przy zaznaczonym założeniu okna: zaznaczenie przechodzi na cel i wida�
   A.loadExample(SAMPLES[2][1]);
   H.press(); H.press(); H.press();                       // (⇒i): okno z założeniem
   const box = [...st.boxes.keys()][0];
-  S.pick([`a:${box}`]);
-  assert.equal(st.picks.length, 1);
-  H.press();
-  assert.equal(st.picks.length, 0);
-  assert.equal(st.sel.length, 1);
-  assert.ok(st.hint);
+  S.setFacts(true);                                      // wnioski z założeń są w aplikacji wyłączone
+  try {
+    S.pick([`a:${box}`]);
+    assert.equal(st.picks.length, 1);
+    H.press();
+    assert.equal(st.picks.length, 0);
+    assert.equal(st.sel.length, 1);
+    assert.ok(st.hint);
+  } finally { S.setFacts(false); }
 });
 
 if (failures.length) {

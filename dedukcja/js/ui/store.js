@@ -101,6 +101,15 @@
   /* ---------- założenia i wnioski okien ---------- */
 
   /**
+   * Wyciąganie wniosków z założeń okien (klik w założenie → reguła → „wnioski:” pod założeniem).
+   * Wyłączone: założenia okien nie dają się zaznaczać, a wnioski z zapisanej pracy i starych linków
+   * znikają (cele, które już zamknęły, zostają uzasadnione pełnym wyprowadzeniem). Testy włączają je setFacts(true).
+   */
+  let factsOn = false;
+  const factsEnabled = () => factsOn;
+  const setFacts = on => { factsOn = !!on; };
+
+  /**
    * Zaznaczone założenie albo wniosek okna:
    * { key, kind: 'asm' | 'fact', box (z boxIndex), boxKey, k, f, fact } albo null, gdy już nie istnieje.
    */
@@ -117,6 +126,7 @@
   function pruneFacts(roots) {
     Proof.boxIndex(roots).forEach(({ b, scope }) => {
       if (!b.facts) return;
+      if (!factsOn) { if (b.facts.length) b.facts = []; return; }
       const keep = b.facts.filter(w => Rules.validFact(w, scope));
       if (keep.length !== b.facts.length) b.facts = keep;
     });
@@ -328,7 +338,7 @@
 
   /** Zaznacza założenia/wnioski okien (zaznaczenie formuł dowodu znika). */
   function pick(keys) {
-    state.picks = keys;
+    state.picks = factsOn ? keys : [];
     state.sel = [];
     state.hint = null;
     refresh();
@@ -538,7 +548,7 @@
     state, prefs, setPref, setAutoHyp, setAutoCloseFor, autoCloses, on, emit,
     logic: () => logic, system: () => system, setSystem,
     status, completeNodes, isFresh,
-    commit, refresh, select, pick, resolvePick, setMode,
+    commit, refresh, select, pick, resolvePick, setMode, factsEnabled, setFacts,
     undo, redo, canUndo: history.canUndo, canRedo: history.canRedo,
     load, save, noteSaved, persistent: (channel = 'nd') => saved[channel],
     linkHash, shareHash, parseLink, isLinkHash, openLink, onStorageEvent,

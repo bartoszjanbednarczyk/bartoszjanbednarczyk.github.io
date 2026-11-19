@@ -20,6 +20,7 @@ globalThis.ND.UI.kit = {
   storage: { get: k => (memory.has(k) ? memory.get(k) : null), set: (k, v) => { memory.set(k, String(v)); return true; }, available: () => true },
 };
 js('ui/store');
+globalThis.ND.UI.store.setFacts(true);   // funkcja jest w aplikacji wyłączona
 js('ui/actions');
 const ND = globalThis.ND;
 ND.UI.workspace = { reveal() {}, revealFragment() {} };
@@ -287,6 +288,29 @@ test('wnioski działają też w trybie „od przesłanek” (w oknach fragmentó
   S.pick([`a:${boxKey('p & q')}`]);
   A.apply('andE2');
   assert.ok(complete());
+});
+
+/* ---------- funkcja wyłączona (tak jest w aplikacji) ---------- */
+
+test('wyłączone wnioski: założenia nie dają się zaznaczać, stare wnioski znikają, dowód zostaje', () => {
+  start('p & q -> q & p');
+  back('p & q -> q & p', 'impI');
+  const k = boxKey('p & q');
+  S.pick([`a:${k}`]);
+  A.apply('andE1');
+  A.apply('andE2');
+  back('q & p', 'andI');
+  assert.ok(complete());
+  S.setFacts(false);
+  try {
+    S.pick([`a:${k}`]);
+    assert.equal(st.picks.length, 0, 'założenia okna nie da się zaznaczyć');
+    S.commit(() => true);                             // porządki usuwają wnioski (np. ze starego linku)
+    assert.deepEqual(factsIn(boxKey('p & q')), []);
+    assert.ok(complete(), 'cele zamknięte wcześniej wnioskami mają pełne wyprowadzenie');
+    assert.equal(Rules.verify(st.frags).size, 0);
+    assert.ok(!/"w"/.test(plain()), 'zapis bez wniosków');
+  } finally { S.setFacts(true); }
 });
 
 (async () => {

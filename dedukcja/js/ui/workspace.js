@@ -101,7 +101,7 @@
     ].join('');
     return `<section class="frag card${selectedFragments.has(i) ? ' has-sel' : ''}${s.complete ? ' done' : ''}" data-fi="${i}" data-root="${root.id}">
       <div class="fhead"><span class="num">${st.frags.length > 1 ? 'Fragment ' + (i + 1) : 'Dowód'}</span><span class="seq">${sequentHTML(root, s)}</span>${pill}<span class="sp"></span><div class="acts">${actions}</div></div>
-      <div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: nodeDecorator(root), interactive: true, facts: { picked: new Set(st.picks) } })}</div></div>
+      <div class="fbody"><div class="inner">${Render.proofHTML(root, { decorate: nodeDecorator(root), interactive: true, facts: S.factsEnabled() ? { picked: new Set(st.picks) } : null })}</div></div>
       ${s.complete ? proseHTML(root) : ''}
     </section>`;
   }
@@ -294,7 +294,7 @@
       if (Proof.inScope(info.scope, info.n.f)) return 'Ten cel jest założeniem otaczającego okna — zamknij go regułą <b>założenie</b>.';
       if (Proof.factFor(info.boxes, info.n.f)) return 'Ten cel jest wnioskiem wyciągniętym w otaczającym oknie — zamknij go regułą <b>założenie</b>.';
       return 'Wybierz regułę z dolnego paska albo z tabeli — obramowane są wszystkie reguły, które da się zastosować do tego celu.'
-        + (info.scope.length ? ' Możesz też <b>kliknąć założenie okna</b> (nad celem) i wyciągać z niego wnioski, np. z <span class="math">p ∧ q</span> — <span class="math">p</span> oraz <span class="math">q</span>.' : '');
+        + (info.scope.length && S.factsEnabled() ? ' Możesz też <b>kliknąć założenie okna</b> (nad celem) i wyciągać z niego wnioski, np. z <span class="math">p ∧ q</span> — <span class="math">p</span> oraz <span class="math">q</span>.' : '');
     }
     const ops = new Set(A.offeredOps().map(op => op.name));
     const undo = [ops.has('step') && '<b>Cofnij krok</b> (<span class="kbd">Delete</span>)', ops.has('clear') && '<b>Cofnij całe poddrzewo</b> (<span class="kbd">Shift+Delete</span>)'].filter(Boolean);
