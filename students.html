@@ -71,9 +71,13 @@
         .st-topics .fa-angle-right { color: var(--pl-accent-ink); font-size: 18px; transition: transform .2s; }
         .st-topics:hover { border-color: var(--pl-accent); box-shadow: 0 6px 16px -10px rgba(3, 150, 100, .6); color: var(--pl-ink); }
         .st-topics:hover .fa-angle-right { transform: translateX(3px); }
-        .st-now { display: flex; flex-direction: column; }
-        .st-now .st-person { flex: 1; }
+        .st-join, .st-now { grid-column: 1 / -1; }
+        .st-join p { max-width: 760px; }
+        .st-join .st-topics { max-width: 560px; }
+        .st-people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
         .st-person { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+        .st-people .st-person { margin-top: 0; align-items: flex-start; }
+        @media (max-width: 700px) { .st-people { grid-template-columns: 1fr; } }
         .st-avatar {
             flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
             background: linear-gradient(135deg, #03cc85, #02a46b); color: #fff; font-size: 18px; font-weight: 700; letter-spacing: .04em;
@@ -81,6 +85,7 @@
         }
         .st-person > div strong { display: block; font-size: 18px; font-weight: 700; color: var(--pl-ink); }
         .st-person > div span { display: block; font-size: 14.5px; color: #888; margin-top: 2px; }
+        .st-person > div em { display: block; font-size: 14.5px; line-height: 1.45; color: #555; margin-top: 2px; text-wrap: pretty; }
         @media (max-width: 900px) { .st-cards { grid-template-columns: 1fr; } }
         .pl-student .fa { color: #bbb; margin-right: 4px; font-size: 13px; }
     </style>
@@ -226,13 +231,39 @@
                                 </section>
                                 <section class="st-card st-now">
                                     <h3><i class="fa fa-flask"></i> Currently supervising</h3>
-                                    <div class="st-person">
-                                        <span class="st-avatar" aria-hidden="true">MS</span>
-                                        <div>
+                                    <ul class="st-people">
+                                        <li class="st-person">
+                                            <span class="st-avatar" aria-hidden="true">MS</span>
+                                            <div>
                                             <strong>Mikołaj Swoboda</strong>
                                             <span>PhD student since October 2026</span>
-                                        </div>
-                                    </div>
+                                            </div>
+                                        </li>
+                                        <li class="st-person">
+                                            <span class="st-avatar" aria-hidden="true">GZ</span>
+                                            <div>
+                                            <strong>Grzegorz Zielonka</strong>
+                                            <em>Undecidability for some two-variable logic over data words</em>
+                                            <span>BSc thesis · expected defence February 2027</span>
+                                            </div>
+                                        </li>
+                                        <li class="st-person">
+                                            <span class="st-avatar" aria-hidden="true">TF</span>
+                                            <div>
+                                            <strong>Tymoteusz Filipiak</strong>
+                                            <em>On Łoś–Tarski Theorem for the two-variable logic</em>
+                                            <span>BSc thesis · expected defence June 2027</span>
+                                            </div>
+                                        </li>
+                                        <li class="st-person">
+                                            <span class="st-avatar" aria-hidden="true">EW</span>
+                                            <div>
+                                            <strong>Emilia Wiśniewska</strong>
+                                            <em>Decidability of Hybrid Two-Way Graph Automata and Hybrid Two-Way Mu-Calculus</em>
+                                            <span>MSc thesis · expected defence June 2027</span>
+                                            </div>
+                                        </li>
+                                    </ul>
                                 </section>
                             </div>
 
